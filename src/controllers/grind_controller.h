@@ -193,6 +193,11 @@ private:
     float learned_coast_time_s;          // Coast time for the profile of the running session (0 = never learned)
     bool coast_time_dirty_;              // A new observation is waiting to be written to NVS at session end
 
+    // A coast observation is measured mid-grind but only folded into the average once
+    // the grind finishes cleanly, because whether it hit the target is not known yet
+    float pending_coast_time_s_;         // Candidate from this session (0 = nothing pending)
+    int anomaly_count_at_motor_stop_;    // Instability count when the coast window opened
+
 public:
     enum class GrindSessionResult {
         UNKNOWN,
@@ -287,7 +292,10 @@ public:
     // Learned coast model. Coast is stored as a time so it stays valid across dose
     // sizes and grind settings - the weight it predicts scales with the live flow rate.
     float get_learned_coast_time_s() const { return learned_coast_time_s; }
-    void observe_coast(float coast_weight_g);   // Fold one grind's measured coast into the average
+    void mark_coast_window_start();             // Motor just stopped - snapshot instability so the settle can be judged
+    void observe_coast(float coast_weight_g);   // Record this grind's measured coast as a candidate
+    void commit_coast_observation();            // Accept the candidate if the grind finished cleanly
+    void discard_coast_observation(const char* reason);
     void load_coast_time(uint8_t profile_id);   // Read the profile's learned value from NVS
     void save_coast_time();                     // Persist it (called once per session, off the control path)
     

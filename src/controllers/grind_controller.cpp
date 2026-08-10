@@ -49,6 +49,8 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     last_purge_runtime_ms = 0;
     learned_coast_time_s = 0.0f;
     coast_time_dirty_ = false;
+    pending_coast_time_s_ = 0.0f;
+    anomaly_count_at_motor_stop_ = 0;
     if (preferences) {
         last_purge_runtime_ms = preferences->getULong64(PREF_KEY_LAST_GRIND_RUNTIME, 0);
     }
@@ -199,6 +201,8 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     session_descriptor.time_use_scale = time_use_scale;
 
     // Only weight grinds use, or can measure, the coast model
+    pending_coast_time_s_ = 0.0f;
+    anomaly_count_at_motor_stop_ = 0;
     if (mode == GrindMode::WEIGHT) {
         load_coast_time(current_profile_id);
     } else {
@@ -267,9 +271,10 @@ void GrindController::stop_grind() {
     if (!grinder) return;
     
     grinder->stop();
-    
+
     // Cancelled grinds just discard PSRAM data and go to IDLE
     grind_logger.discard_current_session();
+    discard_coast_observation("stopped by user");
     
     LOG_BLE("--- GRIND STOPPED BY USER ---\n");
 
@@ -890,8 +895,10 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
             preferences->putULong64(PREF_KEY_LAST_GRIND_RUNTIME, last_purge_runtime_ms);
         }
 
-        // Persist the coast model here rather than when it is observed, so the NVS
-        // write lands after grinding instead of inside the control loop
+        // The grind outcome is settled by this point, so the held coast observation
+        // can finally be judged. Persisting here also keeps the NVS write out of the
+        // control loop.
+        commit_coast_observation();
         save_coast_time();
 
         event_data.event = UIGrindEvent::COMPLETED;
@@ -909,6 +916,7 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
         if (last_session_result_ == GrindSessionResult::UNKNOWN) {
             last_session_result_ = GrindSessionResult::TIMEOUT;
         }
+        discard_coast_observation("grind aborted");
         event_data.event = UIGrindEvent::TIMEOUT;
         if (last_error_message[0] == '\0') {
             set_error_message("Error");
@@ -1195,11 +1203,26 @@ void GrindController::load_coast_time(uint8_t profile_id) {
     LOG_BLE("[CONTROLLER] Profile %u learned coast time: %.3fs\n", (unsigned)profile_id, stored);
 }
 
+void GrindController::mark_coast_window_start() {
+    // Only instability during the settle can corrupt the coast reading; a bump earlier
+    // in the grind is irrelevant, so the baseline is taken here rather than at start
+    anomaly_count_at_motor_stop_ = mechanical_anomaly_count_;
+}
+
 void GrindController::observe_coast(float coast_weight_g) {
     // Convert the observed coast weight into a time using the flow rate that was
     // running when the motor stopped, so the value transfers across dose sizes
     float flow_rate = pulse_flow_rate;
     if (!isfinite(coast_weight_g) || flow_rate < GRIND_FLOW_RATE_MIN_SANE_GPS) {
+        return;
+    }
+
+    // A single wobble during the settle is enough to discard. The instability
+    // diagnostic needs three before it complains, but one bad coast reading skews
+    // the average for the next several grinds, so this is deliberately stricter.
+    if (mechanical_anomaly_count_ != anomaly_count_at_motor_stop_) {
+        queue_log_message("[COAST] Rejected - scale disturbed during settle (%d events)\n",
+                          mechanical_anomaly_count_ - anomaly_count_at_motor_stop_);
         return;
     }
 
@@ -1210,16 +1233,54 @@ void GrindController::observe_coast(float coast_weight_g) {
         return;
     }
 
+    // Held, not applied: whether this grind actually hit its target is not known
+    // until it finishes, and a grind that missed teaches the wrong coast
+    pending_coast_time_s_ = observed_s;
+    queue_log_message("[COAST] Candidate %.3fs (%.2fg at %.2fg/s), pending grind outcome\n",
+                      observed_s, coast_weight_g, flow_rate);
+}
+
+void GrindController::discard_coast_observation(const char* reason) {
+    if (pending_coast_time_s_ > 0.0f) {
+        queue_log_message("[COAST] Discarded candidate %.3fs - %s\n",
+                          pending_coast_time_s_, reason ? reason : "grind did not complete");
+        pending_coast_time_s_ = 0.0f;
+    }
+}
+
+void GrindController::commit_coast_observation() {
+    if (pending_coast_time_s_ <= 0.0f) {
+        return;
+    }
+
+    // Only a grind that landed on target teaches anything useful about coast. An
+    // overshoot means the prediction was already wrong; an undershoot means the
+    // pulses gave up early. Either way the measured coast reflects a miss, not the
+    // machine, so learning from it would drag the model further off.
+    if (last_session_result_ != GrindSessionResult::SUCCESS) {
+        discard_coast_observation("grind did not finish cleanly");
+        return;
+    }
+
+    float error = final_weight - target_weight;
+    if (fabsf(error) > GRIND_ACCURACY_TOLERANCE_G) {
+        discard_coast_observation("target not reached");
+        return;
+    }
+
+    float observed_s = pending_coast_time_s_;
+    pending_coast_time_s_ = 0.0f;
+
     if (learned_coast_time_s <= 0.0f) {
-        learned_coast_time_s = observed_s;  // First grind on this profile seeds the average
+        learned_coast_time_s = observed_s;  // First clean grind on this profile seeds the average
     } else {
         learned_coast_time_s = GRIND_COAST_LEARNING_ALPHA * observed_s +
                                (1.0f - GRIND_COAST_LEARNING_ALPHA) * learned_coast_time_s;
     }
     coast_time_dirty_ = true;
 
-    queue_log_message("[COAST] Observed %.3fs (%.2fg at %.2fg/s), learned now %.3fs\n",
-                      observed_s, coast_weight_g, flow_rate, learned_coast_time_s);
+    queue_log_message("[COAST] Accepted %.3fs (error %+.2fg), learned now %.3fs\n",
+                      observed_s, error, learned_coast_time_s);
 }
 
 void GrindController::save_coast_time() {

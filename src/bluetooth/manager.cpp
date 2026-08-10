@@ -925,6 +925,22 @@ void BluetoothManager::update_system_info() {
     // The low-water mark shows how close this boot has come to the edge.
     DiagnosticsController::MemorySnapshot memory = DiagnosticsController::sample_memory();
 
+    // Learned coast time per profile. Surfaced because the model silently stops
+    // learning if every grind is rejected - a value stuck at 0 explains why accuracy
+    // never improves, and there is nowhere else to see it.
+    float coast[3] = {0.0f, 0.0f, 0.0f};
+    {
+        Preferences coast_prefs;
+        if (coast_prefs.begin("grinder", true)) {
+            for (int i = 0; i < 3; i++) {
+                char key[16];
+                snprintf(key, sizeof(key), "%s%d", GrindController::PREF_KEY_COAST_TIME_PREFIX, i);
+                coast[i] = coast_prefs.getFloat(key, 0.0f);
+            }
+            coast_prefs.end();
+        }
+    }
+
     snprintf(buffer, sizeof(buffer),
         "{"
         "\"version\":\"%s\","
@@ -940,6 +956,7 @@ void BluetoothManager::update_system_info() {
         "\"int_min_ever\":%u,"
         "\"lvgl_free\":%u,"
         "\"lvgl_frag\":%u,"
+        "\"coast_s\":[%.3f,%.3f,%.3f],"
         "\"flash_size\":%u,"
         "\"cpu_freq\":%u"
         "}",
@@ -956,6 +973,7 @@ void BluetoothManager::update_system_info() {
         (unsigned int)memory.internal_min_free_ever_bytes,
         (unsigned int)memory.lvgl_pool_free_bytes,
         (unsigned int)memory.lvgl_pool_frag_pct,
+        coast[0], coast[1], coast[2],
         (unsigned int)flash_size,
         (unsigned int)ESP.getCpuFreqMHz()
     );

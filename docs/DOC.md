@@ -579,6 +579,15 @@ Coffee keeps falling after the motor stops. The firmware stops early by that amo
 - Storing a *time* rather than a weight is what makes it transferable: change dose or grind setting and the coast time barely moves, while the coast weight changes a lot. The model multiplies by whatever flow rate it sees today
 - Only the very first grind on a profile falls back to seeding the coast from the spin-up latency
 
+**A coast measurement is only learned from a grind that went cleanly.** The reading is taken mid-grind but held, and folded into the average only once the outcome is known. It is discarded if:
+
+- The scale was disturbed during the settle (any single instability event — stricter than the 3 needed to raise the diagnostic, because one bad coast value skews the next several grinds)
+- The final weight missed the target in either direction, beyond tolerance. An overshoot means the prediction was already wrong; an undershoot means the pulses gave up early. Either way the measured coast reflects the miss, not the machine
+- The grind ended as OVERSHOOT, MAX PULSES, TIMEOUT or an error
+- You stopped the grind by hand, or it was aborted automatically
+
+The learned value per profile is reported in the BLE system info as `coast_s`. If it stays at `0.000` after several grinds, every observation is being rejected — check the log for `[COAST] Rejected` / `[COAST] Discarded` lines, which state the reason.
+
 **Motor Response Latency Model:**
 
 The motor response latency represents the physical system lag between relay activation and grounds production. This value is hardware-specific and accounts for:

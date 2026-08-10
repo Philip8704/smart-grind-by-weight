@@ -117,6 +117,7 @@ void WeightGrindStrategy::run_predictive_phase(GrindController& controller,
         controller.grinder->stop();
         controller.predictive_end_weight = loop_data.current_weight;
         controller.pulse_flow_rate = controller.weight_sensor->get_flow_rate_95th_percentile(GRIND_PULSE_FLOW_RATE_WINDOW_MS);
+        controller.mark_coast_window_start();
         controller.switch_phase(GrindPhase::PULSE_SETTLING, loop_data);
     }
 }
