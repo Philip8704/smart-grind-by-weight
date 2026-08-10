@@ -29,3 +29,6 @@ failed_session_*.bin
 # Locally packaged firmware for the web flasher - regenerated per build
 tools/web-flasher/firmware/
 crash_*.log
+
+# Self-signed cert for the local HTTPS flasher - never commit the private key
+tools/web-flasher/.certs/
