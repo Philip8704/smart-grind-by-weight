@@ -24,6 +24,9 @@ struct GrindEventData {
     const char* phase_display_text;
     bool show_taring_text;
     float flow_rate;              // For PROGRESS_UPDATED event
+    uint32_t time_remaining_ms;   // Remaining grind time in time mode (0 otherwise)
+    bool time_show_weight;        // Time mode with scale: show live weight below countdown
+    const char* notice_message;   // Non-fatal warning to flash on screen (nullptr when there is none)
     
     // Additional data for specific events
     float final_weight;           // For COMPLETED event

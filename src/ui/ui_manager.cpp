@@ -364,7 +364,19 @@ void UIManager::refresh_auto_action_settings() {
     prefs.begin("autogrind", true);
     auto_actions_.auto_start_enabled = prefs.getBool("auto_start", false);
     auto_actions_.auto_return_enabled = prefs.getBool("auto_return", false);
+    auto_actions_.min_start_weight_g = prefs.getInt("min_weight_g", USER_AUTO_GRIND_MIN_WEIGHT_DEFAULT_G);
     prefs.end();
+
+    if (auto_actions_.min_start_weight_g < 0 ||
+        auto_actions_.min_start_weight_g > USER_AUTO_GRIND_MIN_WEIGHT_MAX_G) {
+        auto_actions_.min_start_weight_g = USER_AUTO_GRIND_MIN_WEIGHT_DEFAULT_G;
+    }
+
+    // Require the scale to be unloaded once before the threshold trigger can fire, so
+    // changing this setting with a portafilter already in place does not start a grind
+    auto_actions_.start_armed = false;
+    auto_actions_.settled_since_ms = 0;
+    auto_actions_.unloaded_since_ms = 0;
 
     uint32_t now = millis();
     auto_actions_.last_auto_start_ms = now;
@@ -391,43 +403,48 @@ void UIManager::update_auto_actions() {
     const bool grinder_active = (grind_controller && grind_controller->is_active());
     const bool on_ready_tab = state_machine->is_state(UIState::READY) && current_tab < 3;
 
-    if (auto_actions_.auto_start_enabled && on_ready_tab && !grinder_active && grinding_controller_) {
-        auto* filter = sensor->get_raw_filter();
+    if (auto_actions_.auto_start_enabled && on_ready_tab && !grinder_active && grinding_controller_ &&
+        auto_actions_.min_start_weight_g > 0) {
+        // Threshold mode: seat the portafilter, work the slider, and the grind starts
+        // once the scale comes to rest above the threshold. No sudden placement needed,
+        // and anything lighter than the portafilter simply never reaches the threshold.
+        const float threshold_g = static_cast<float>(auto_actions_.min_start_weight_g);
+        const float resting_weight = sensor->get_weight_low_latency();
+        const bool settled = sensor->is_settled();
 
-        // Extended window = settling period + trigger window
-        constexpr uint32_t kExtendedWindow = USER_AUTO_GRIND_TRIGGER_SETTLING_MS + USER_AUTO_GRIND_TRIGGER_WINDOW_MS;
+        if (!settled) {
+            auto_actions_.settled_since_ms = 0;
+        } else if (auto_actions_.settled_since_ms == 0) {
+            auto_actions_.settled_since_ms = now;
+        }
 
-        if (filter && filter->get_buffer_time_span_ms() >= kExtendedWindow) {
-            constexpr int kBaseSampleRequirement =
-                (HW_LOADCELL_SAMPLE_RATE_SPS * kExtendedWindow) / 1000;
-            constexpr int kMinSamplesForWindow = (kBaseSampleRequirement > 2) ? kBaseSampleRequirement : 2;
-
-            if (sensor->get_sample_count() >= kMinSamplesForWindow) {
-                // Check settled state first (cheap) to short-circuit expensive delta calculation
-                if (sensor->is_settled()) {
-                    float delta_g = 0.0f;
-                    int samples_used = 0;
-                    uint32_t span_ms = 0;
-
-                    // Weight is settled - now check delta over extended window
-                    if (sensor->get_weight_delta(kExtendedWindow, &delta_g, &samples_used, &span_ms) &&
-                        samples_used >= kMinSamplesForWindow &&
-                        span_ms <= kExtendedWindow &&
-                        delta_g >= USER_AUTO_GRIND_TRIGGER_DELTA_G) {
-
-                        const bool rearm_ready =
-                            (now - auto_actions_.last_auto_start_ms) >= USER_AUTO_GRIND_REARM_DELAY_MS;
-
-                        if (rearm_ready) {
-                            LOG_BLE("[AUTO ACTION] Trigger confirmed: %.1fg over %lums with settled weight - auto-starting grind\n",
-                                    static_cast<double>(delta_g),
-                                    static_cast<unsigned long>(span_ms));
-                            auto_actions_.last_auto_start_ms = now;
-                            grinding_controller_->handle_grind_button();
-                        }
-                    }
-                }
+        // Unloading the scale re-arms the trigger, so acknowledging a grind with the
+        // portafilter still in place cannot immediately start another one. The drop has
+        // to hold for a dwell period, so briefly lifting the portafilter or knocking the
+        // scale does not re-arm it.
+        if (resting_weight < (threshold_g - USER_AUTO_GRIND_REARM_DROP_G)) {
+            if (auto_actions_.unloaded_since_ms == 0) {
+                auto_actions_.unloaded_since_ms = now;
+            } else if ((now - auto_actions_.unloaded_since_ms) >= USER_AUTO_GRIND_REARM_DWELL_MS) {
+                auto_actions_.start_armed = true;
             }
+        } else {
+            auto_actions_.unloaded_since_ms = 0;
+        }
+
+        const bool settled_long_enough =
+            settled && auto_actions_.settled_since_ms != 0 &&
+            (now - auto_actions_.settled_since_ms) >= USER_AUTO_GRIND_TRIGGER_SETTLING_MS;
+        const bool rearm_ready =
+            (now - auto_actions_.last_auto_start_ms) >= USER_AUTO_GRIND_REARM_DELAY_MS;
+
+        if (auto_actions_.start_armed && settled_long_enough && rearm_ready &&
+            resting_weight >= threshold_g) {
+            LOG_BLE("[AUTO ACTION] Scale settled at %.0fg (threshold %dg) - auto-starting grind\n",
+                    static_cast<double>(resting_weight), auto_actions_.min_start_weight_g);
+            auto_actions_.start_armed = false;
+            auto_actions_.last_auto_start_ms = now;
+            grinding_controller_->handle_grind_button();
         }
     }
 

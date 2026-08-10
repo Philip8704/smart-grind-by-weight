@@ -117,6 +117,9 @@ void GrindingUIController::on_state_changed(UIState new_state) {
         lv_timer_del(grind_timeout_timer_);
         grind_timeout_timer_ = nullptr;
     }
+    if (new_state != UIState::GRINDING) {
+        cancel_notice();
+    }
 
     switch (new_state) {
         case UIState::READY:
@@ -239,6 +242,19 @@ void GrindingUIController::handle_pulse_button() {
         return;
     }
 
+    // During time-mode grinding the pulse button acts as PAUSE/RESUME
+    if (ui_manager_->state_machine->is_state(UIState::GRINDING) &&
+        ui_manager_->current_mode == GrindMode::TIME) {
+        if (ui_manager_->grind_controller->is_time_paused()) {
+            LOG_BLE("[UIManager] Resume button clicked - resuming time grind\n");
+            ui_manager_->grind_controller->resume_time_grind();
+        } else if (ui_manager_->grind_controller->can_pause_time_grind()) {
+            LOG_BLE("[UIManager] Pause button clicked - pausing time grind\n");
+            ui_manager_->grind_controller->pause_time_grind();
+        }
+        return;
+    }
+
     // Normal time mode pulse behavior
     if (ui_manager_->grind_controller->can_pulse()) {
         LOG_BLE("[UIManager] Pulse button clicked - requesting additional pulse\n");
@@ -302,9 +318,10 @@ void GrindingUIController::update_grind_button_icon() {
         lv_obj_set_style_bg_color(grind_button_, lv_color_hex(THEME_COLOR_ERROR), 0);
     } else if (ui_manager_->state_machine->is_state(UIState::GRINDING)) {
         lv_img_set_src(grind_icon_, LV_SYMBOL_STOP);
+        // Time mode shows STOP in red next to the blue pause/resume button
         lv_obj_set_style_bg_color(grind_button_,
                                   ui_manager_->current_mode == GrindMode::TIME
-                                      ? lv_color_hex(THEME_COLOR_ACCENT)
+                                      ? lv_color_hex(THEME_COLOR_ERROR)
                                       : lv_color_hex(THEME_COLOR_PRIMARY),
                                   0);
     } else if (ui_manager_->state_machine->is_state(UIState::GRIND_COMPLETE)) {
@@ -339,7 +356,11 @@ void GrindingUIController::update_button_layout() {
     bool should_show_pulse = (ui_manager_->state_machine->is_state(UIState::GRIND_COMPLETE) &&
                               ui_manager_->current_mode == GrindMode::TIME);
 
-    if (in_purge_confirm || should_show_pulse) {
+    // During time-mode grinding show STOP + PAUSE/RESUME
+    bool grinding_time_mode = (ui_manager_->state_machine->is_state(UIState::GRINDING) &&
+                               ui_manager_->current_mode == GrindMode::TIME);
+
+    if (in_purge_confirm || should_show_pulse || grinding_time_mode) {
         // Dual button layout: left button at -60, right button at +60
         lv_obj_align(grind_button_, LV_ALIGN_BOTTOM_MID, -60, -10);
         if (pulse_button_) {
@@ -352,6 +373,21 @@ void GrindingUIController::update_button_layout() {
                 lv_obj_set_style_bg_color(pulse_button_, lv_color_hex(THEME_COLOR_SUCCESS), 0);
                 lv_obj_clear_state(pulse_button_, LV_STATE_DISABLED);
                 lv_obj_set_style_bg_opa(pulse_button_, LV_OPA_COVER, 0);
+            } else if (grinding_time_mode) {
+                // Time-mode grinding: pulse button acts as PAUSE (grinding) or RESUME (paused)
+                bool paused = ui_manager_->grind_controller && ui_manager_->grind_controller->is_time_paused();
+                bool pausable = ui_manager_->grind_controller && ui_manager_->grind_controller->can_pause_time_grind();
+                lv_img_set_src(pulse_icon_, paused ? LV_SYMBOL_PLAY : LV_SYMBOL_PAUSE);
+                lv_obj_set_style_bg_color(pulse_button_,
+                                          paused ? lv_color_hex(THEME_COLOR_SUCCESS)
+                                                 : lv_color_hex(THEME_COLOR_ACCENT), 0);
+                if (paused || pausable) {
+                    lv_obj_clear_state(pulse_button_, LV_STATE_DISABLED);
+                    lv_obj_set_style_bg_opa(pulse_button_, LV_OPA_COVER, 0);
+                } else {
+                    lv_obj_add_state(pulse_button_, LV_STATE_DISABLED);
+                    lv_obj_set_style_bg_opa(pulse_button_, LV_OPA_50, LV_STATE_DISABLED);
+                }
             } else if (ui_manager_->grind_controller && ui_manager_->grind_controller->can_pulse()) {
                 // Time mode pulse: enable/disable based on can_pulse()
                 lv_img_set_src(pulse_icon_, LV_SYMBOL_PLUS);
@@ -441,11 +477,30 @@ void GrindingUIController::handle_grind_event(const GrindEventData& event_data) 
                 update_button_layout();
             }
 
+            // Time-mode pause/resume: swap button icons and show/clear PAUSED label
+            if (event_data.mode == GrindMode::TIME &&
+                ui_manager_->state_machine->is_state(UIState::GRINDING)) {
+                if (event_data.phase == GrindPhase::TIME_PAUSED) {
+                    cancel_notice();  // PAUSED owns the label until the grind resumes
+                    ui_manager_->grinding_screen.update_target_weight_text("PAUSED");
+                } else if (event_data.phase == GrindPhase::TIME_GRINDING) {
+                    update_grinding_targets();  // Restores "Time: X.Xs" label
+                }
+                update_grind_button_icon();
+            }
+
             if (event_data.show_taring_text) {
                 ui_manager_->grinding_screen.update_tare_display();
             } else {
                 ui_manager_->grinding_screen.update_current_weight(event_data.current_weight);
                 ui_manager_->grinding_screen.update_progress(event_data.progress_percent);
+                if (event_data.mode == GrindMode::TIME &&
+                    ui_manager_->state_machine->is_state(UIState::GRINDING)) {
+                    ui_manager_->grinding_screen.update_time_remaining(event_data.time_remaining_ms / 1000.0f);
+                    if (event_data.time_show_weight) {
+                        ui_manager_->grinding_screen.update_time_weight(event_data.current_weight);
+                    }
+                }
 
                 if (chart_updates_enabled_ &&
                     event_data.phase != GrindPhase::IDLE && event_data.phase != GrindPhase::TARING &&
@@ -455,6 +510,11 @@ void GrindingUIController::handle_grind_event(const GrindEventData& event_data) 
                     event_data.phase != GrindPhase::PURGE_CONFIRM) {
                     ui_manager_->grinding_screen.add_chart_data_point(event_data.current_weight, event_data.flow_rate, millis());
                 }
+            }
+
+            // Applied last so it wins over the target/PAUSED label written above
+            if (event_data.notice_message) {
+                show_notice(event_data.notice_message);
             }
             break;
         }
@@ -466,6 +526,13 @@ void GrindingUIController::handle_grind_event(const GrindEventData& event_data) 
                 ui_manager_->grinding_screen.set_mode(ui_manager_->current_mode);
                 ui_manager_->grinding_screen.update_current_weight(event_data.current_weight);
                 ui_manager_->grinding_screen.update_progress(event_data.progress_percent);
+                if (event_data.mode == GrindMode::TIME &&
+                    ui_manager_->state_machine->is_state(UIState::GRINDING)) {
+                    ui_manager_->grinding_screen.update_time_remaining(event_data.time_remaining_ms / 1000.0f);
+                    if (event_data.time_show_weight) {
+                        ui_manager_->grinding_screen.update_time_weight(event_data.current_weight);
+                    }
+                }
 
                 if (chart_updates_enabled_ &&
                     event_data.phase != GrindPhase::IDLE && event_data.phase != GrindPhase::TARING &&
@@ -475,6 +542,10 @@ void GrindingUIController::handle_grind_event(const GrindEventData& event_data) 
                     event_data.phase != GrindPhase::PURGE_CONFIRM) {
                     ui_manager_->grinding_screen.add_chart_data_point(event_data.current_weight, event_data.flow_rate, millis());
                 }
+            }
+
+            if (event_data.notice_message) {
+                show_notice(event_data.notice_message);
             }
             break;
         }
@@ -616,6 +687,9 @@ void GrindingUIController::enter_grind_complete_state() {
     ui_manager_->grinding_screen.set_mode(ui_manager_->current_mode);
     ui_manager_->grinding_screen.update_current_weight(final_grind_weight_);
     ui_manager_->grinding_screen.update_progress(final_grind_progress_);
+    if (ui_manager_->current_mode == GrindMode::TIME) {
+        ui_manager_->grinding_screen.update_center_text("DONE");
+    }
 }
 
 void GrindingUIController::enter_grind_timeout_state() {
@@ -665,6 +739,45 @@ void GrindingUIController::cancel_timers() {
     if (grind_timeout_timer_) {
         lv_timer_del(grind_timeout_timer_);
         grind_timeout_timer_ = nullptr;
+    }
+    cancel_notice();
+}
+
+void GrindingUIController::show_notice(const char* message) {
+    if (!ui_manager_ || !message || !message[0]) {
+        return;
+    }
+
+    ui_manager_->grinding_screen.update_target_weight_text(message);
+
+    if (notice_timer_) {
+        lv_timer_del(notice_timer_);
+    }
+    notice_timer_ = lv_timer_create(notice_timer_cb, GRIND_NOTICE_DISPLAY_MS, this);
+    lv_timer_set_repeat_count(notice_timer_, 1);
+}
+
+void GrindingUIController::cancel_notice() {
+    if (notice_timer_) {
+        lv_timer_del(notice_timer_);
+        notice_timer_ = nullptr;
+    }
+}
+
+void GrindingUIController::notice_timer_cb(lv_timer_t* timer) {
+    auto* controller = static_cast<GrindingUIController*>(lv_timer_get_user_data(timer));
+    if (!controller) {
+        return;
+    }
+
+    controller->notice_timer_ = nullptr;
+
+    // Only restore the target label if the grind is still running and not paused -
+    // the paused screen owns the label and must keep showing "PAUSED"
+    UIManager* ui = controller->ui_manager_;
+    if (ui && ui->state_machine && ui->state_machine->is_state(UIState::GRINDING) &&
+        !(ui->grind_controller && ui->grind_controller->is_time_paused())) {
+        controller->update_grinding_targets();
     }
 }
 

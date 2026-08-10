@@ -49,6 +49,14 @@ void GrindingScreenArc::create() {
     lv_obj_set_style_text_font(weight_label, &lv_font_montserrat_56, 0);
     lv_obj_set_style_text_color(weight_label, lv_color_hex(THEME_COLOR_TEXT_PRIMARY), 0);
     lv_obj_center(weight_label);
+
+    // Small live weight below the countdown (scale-assisted time mode only)
+    time_weight_label = lv_label_create(progress_arc);
+    lv_label_set_text(time_weight_label, "");
+    lv_obj_set_style_text_font(time_weight_label, &lv_font_montserrat_24, 0);
+    lv_obj_set_style_text_color(time_weight_label, lv_color_hex(THEME_COLOR_TEXT_SECONDARY), 0);
+    lv_obj_align(time_weight_label, LV_ALIGN_CENTER, 0, 48);
+    lv_obj_add_flag(time_weight_label, LV_OBJ_FLAG_HIDDEN);
     
     // MODIFIED: Ensure all child widgets pass click events to the parent screen
     for (uint32_t i = 0; i < lv_obj_get_child_cnt(screen); i++) {
@@ -94,9 +102,26 @@ void GrindingScreenArc::update_target_time(float seconds) {
 }
 
 void GrindingScreenArc::update_current_weight(float weight) {
+    if (time_mode) {
+        return;  // Time mode shows remaining time instead of weight
+    }
     char weight_text[16];
     snprintf(weight_text, sizeof(weight_text), SYS_WEIGHT_DISPLAY_FORMAT, weight);
     lv_label_set_text(weight_label, weight_text);
+}
+
+void GrindingScreenArc::update_center_text(const char* text) {
+    lv_label_set_text(weight_label, text);
+}
+
+void GrindingScreenArc::update_time_weight(float weight) {
+    if (!time_weight_label) {
+        return;
+    }
+    char weight_text[16];
+    snprintf(weight_text, sizeof(weight_text), SYS_WEIGHT_DISPLAY_FORMAT, weight);
+    lv_label_set_text(time_weight_label, weight_text);
+    lv_obj_clear_flag(time_weight_label, LV_OBJ_FLAG_HIDDEN);
 }
 
 void GrindingScreenArc::update_tare_display() {
@@ -110,4 +135,8 @@ void GrindingScreenArc::update_progress(int percent) {
 
 void GrindingScreenArc::set_time_mode(bool enabled) {
     time_mode = enabled;
+    // Hide the small weight readout until a scale-assisted time grind updates it
+    if (time_weight_label) {
+        lv_obj_add_flag(time_weight_label, LV_OBJ_FLAG_HIDDEN);
+    }
 }

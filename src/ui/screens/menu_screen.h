@@ -59,7 +59,9 @@ private:
     // Grind mode tab elements
     lv_obj_t* grind_mode_radio_group;
     lv_obj_t* grind_mode_swipe_toggle;
+    lv_obj_t* time_scale_toggle;
     lv_obj_t* auto_start_toggle;
+    lv_obj_t* auto_start_min_weight_dropdown;
     lv_obj_t* auto_return_toggle;
     lv_obj_t* grinder_purge_mode_radio_group;
     lv_obj_t* grinder_purge_amount_slider;
@@ -134,7 +136,10 @@ public:
     lv_obj_t* get_brightness_screensaver_slider() const { return brightness_screensaver_slider; }
     lv_obj_t* get_grind_mode_radio_group() const { return grind_mode_radio_group; }
     lv_obj_t* get_grind_mode_swipe_toggle() const { return grind_mode_swipe_toggle; }
+    lv_obj_t* get_time_scale_toggle() const { return time_scale_toggle; }
     lv_obj_t* get_auto_start_toggle() const { return auto_start_toggle; }
+    lv_obj_t* get_auto_start_min_weight_dropdown() const { return auto_start_min_weight_dropdown; }
+    static const char* auto_start_min_weight_options();
     lv_obj_t* get_auto_return_toggle() const { return auto_return_toggle; }
     lv_obj_t* get_grinder_purge_mode_radio_group() const { return grinder_purge_mode_radio_group; }
     lv_obj_t* get_grinder_purge_amount_slider() const { return grinder_purge_amount_slider; }
@@ -153,6 +158,8 @@ private:
     lv_obj_t* create_separator(lv_obj_t* parent, const char* text = nullptr);
     lv_obj_t* create_menu_item(lv_obj_t* parent, const char* text);
     lv_obj_t *create_toggle_row(lv_obj_t *parent, const char *text,lv_obj_t **out_toggle);
+    lv_obj_t *create_dropdown_row(lv_obj_t *parent, const char *text, const char *options,
+                                  lv_obj_t **out_dropdown);
     lv_obj_t *create_slider_row(lv_obj_t *parent, const char *text,
                                 lv_obj_t **label, lv_obj_t **slider,
                                 lv_color_t slider_color = lv_color_hex(THEME_COLOR_ACCENT),

@@ -1,0 +1,6 @@
+[20:30:52.988] === MONITOR STARTED - waiting for device ===
+[20:30:53.004] === CONNECTED on COM5 ===
+[20:34:54.150] === PORT LOST (device resetting?) - waiting to reconnect ===
+[20:35:04.362] === RECONNECTED on COM5 (device likely rebooted) ===
+[20:35:05.369] [1200ms MENU] Menu UI created successfully
+[20:35:05.369] [Error]	(1.337, +1337)	 lv_label_set_text: Asserted at expression: obj != NULL (NULL pointer) lv_label.c:133

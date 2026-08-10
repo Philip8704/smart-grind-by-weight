@@ -9,4 +9,5 @@ struct GrindSessionDescriptor {
     uint32_t target_time_ms = 0;     // milliseconds
     float tolerance = 0.0f;          // grams
     uint8_t profile_id = 0;          // active profile index
+    bool time_use_scale = false;     // time mode: tare + show live weight (standard) vs sensor-free
 };

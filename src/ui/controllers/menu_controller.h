@@ -25,8 +25,10 @@ public:
     void handle_ble_startup_toggle();
     void handle_logging_toggle();
     void handle_grind_mode_swipe_toggle();
+    void handle_time_scale_toggle();
     void handle_grind_mode_radio_button();
     void handle_auto_start_toggle();
+    void handle_auto_start_min_weight_dropdown();
     void handle_auto_return_toggle();
     void handle_grinder_purge_mode_radio_button();
     void handle_grinder_purge_amount_slider();

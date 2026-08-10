@@ -54,7 +54,23 @@
 //------------------------------------------------------------------------------
 // AUTO ACTIONS
 //------------------------------------------------------------------------------
-#define USER_AUTO_GRIND_TRIGGER_DELTA_G 50.0f                                   // Weight change threshold used for auto actions (grams)
-#define USER_AUTO_GRIND_TRIGGER_WINDOW_MS 5000                                  // Time window for delta detection (milliseconds)
-#define USER_AUTO_GRIND_TRIGGER_SETTLING_MS 1000                                // Settling period after trigger detection before confirmation (milliseconds)
+#define USER_AUTO_GRIND_TRIGGER_SETTLING_MS 1000                                // Scale must stay settled this long before auto-start fires
 #define USER_AUTO_GRIND_REARM_DELAY_MS 1500                                     // Minimum delay between auto actions (milliseconds)
+
+// Minimum weight that must be sitting on the scale before auto-start will tare and grind.
+// Set this to just under the portafilter weight so lighter objects - a dosing funnel, a
+// cup, a hand resting on the scale - produce the trigger delta but never start a grind.
+// The threshold IS the auto-start trigger: the grind begins once the scale comes to
+// rest above it. That way you can seat the portafilter, work the slider, and let it
+// fire when everything stops moving - no sudden placement needed, and nothing lighter
+// than the portafilter ever reaches the threshold. Left at 0 there is no trigger at
+// all and grinding only starts from the on-screen button.
+#define USER_AUTO_GRIND_MIN_WEIGHT_DEFAULT_G 0                                  // 0 = auto-start disabled, manual button only
+#define USER_AUTO_GRIND_MIN_WEIGHT_STEP_G 100                                   // Dropdown granularity
+#define USER_AUTO_GRIND_MIN_WEIGHT_MAX_G 1000                                   // Highest selectable threshold
+
+// Re-arming: after a grind the portafilter is still on the scale, settled and heavy, so
+// the trigger stays disarmed until the scale is clearly unloaded again. Requiring both a
+// large drop and a dwell time stops a lift-and-replace or a knock from re-arming it.
+#define USER_AUTO_GRIND_REARM_DROP_G 100.0f                                     // Weight must fall this far below the threshold
+#define USER_AUTO_GRIND_REARM_DWELL_MS 2000                                     // ...and stay there this long

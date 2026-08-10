@@ -1,0 +1,1509 @@
+[19:47:36.471] === MONITOR STARTED - waiting for device ===
+[19:51:43.441] === CONNECTED on COM5 ===
+[19:51:43.760] Initializing WeightSensor configuration and filters...
+[19:51:43.760] Created HX711 ADC driver
+[19:51:43.760] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:51:43.760] Time-series Logger initialized:
+[19:51:43.760]   - Event Buffer: 2 KB (50 events)
+[19:51:43.769]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:51:43.769]   - Next session ID: 31
+[19:51:43.769] UI event queue created successfully
+[19:51:43.769] Flash operation queue created successfully
+[19:51:43.770] Log message queue created successfully
+[19:51:43.770] Motor latency: Loaded 50.0ms from preferences
+[19:51:44.349] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:51:44.349] OTA: Handler initialized
+[19:51:44.350] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:51:44.350] [   608][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:51:44.350] [661ms MENU] Creating menu UI
+[19:51:44.552] [1180ms MENU] Menu UI created successfully
+[19:51:44.552] [  1368][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:51:44.552] [  1376][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:51:44.552] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:51:45.562] OTA Power: Switching from 240MHz to 240MHz
+[19:51:45.562] OTA Power: Reduced power mode enabled
+[19:51:45.618] Bluetooth: Ready - device is advertising (5m timeout)
+[19:51:45.618] [STARTUP] Initializing task module dependencies...
+[19:51:45.619] WeightSamplingTask: Initialized with hardware interfaces
+[19:51:45.619] GrindControlTask: Initialized with hardware interfaces
+[19:51:45.619] ✅ Task module dependencies initialized
+[19:51:45.619] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:51:45.619] TaskManager: Initializing FreeRTOS task architecture...
+[19:51:45.619] WeightSamplingTask hardware validation:
+[19:51:45.619]   weight_sensor != nullptr: YES
+[19:51:45.619]   weight_sensor initialized: YES
+[19:51:45.619] GrindControlTask hardware validation:
+[19:51:45.620]   grind_controller != nullptr: YES
+[19:51:45.620]   weight_sensor ready: YES
+[19:51:45.620]   grinder ready: YES
+[19:51:45.620]   logger != nullptr: YES
+[19:51:45.620] TaskManager validation: All hardware and task dependencies ready
+[19:51:45.620] TaskManager: Inter-task communication queues created successfully
+[19:51:45.620] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:51:45.621] WeightSamplingTask started on Core 0 at 50Hz
+[19:51:45.621] WeightSamplingTask: Initializing WeightSensor hardware on CoreGrindControlTask started on Core 0 at 50Hz
+[19:51:45.621] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:51:45.682] UI Render Task started on Core 1
+[19:51:45.682] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:51:45.682] Bluetooth Task started on Core 1
+[19:51:45.682] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:51:45.682] FileIOTask started on Core 1 at 10Hz
+[19:51:46.697] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:51:46.697] TaskManager: All tasks created successfully
+[19:51:46.697] ✅ TaskManager initialized successfully
+[19:51:46.697] FileIOTask: LittleFS filesystem available
+[19:51:46.697] FileIOTask: Initialized with file I/O queue
+[19:51:46.697] ✅ All task modules initialized
+[19:51:47.712] Initializing HX711 ADC hardware...
+[19:51:47.713] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:51:47.713] HX711Driver: First sample acquired successfully
+[19:51:47.713] HX711 ADC initialized successfully
+[19:51:47.713]   Waiting for WeightSensor hardware stabilization...
+[19:51:48.942] [5756ms BUTTON_PRESS] Grind button pressed in state: READY
+[19:51:48.942] [5757ms MENU] Showing menu screen
+[19:51:48.943] [  5758][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:51:48.943] [  5767][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:51:49.621] [  5773][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:51:49.621] [  5780][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: grinder_amount_g NOT_FOUND
+[19:51:49.622] [5791ms MENU] Menu screen shown successfully
+[19:51:49.872] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:51:49.872] HX711Driver: Validation read 1/3 successful
+[19:51:49.872] HX711Driver: Validation read 2/3 successful
+[19:51:49.872] HX711Driver: Validation read 3/3 successful
+[19:51:49.872] [6691ms MENU] Hiding menu screen
+[19:51:49.872] [6692ms MENU] Menu screen hidden successfully
+[19:51:49.873] HX711Driver: Hardware validation completed - 3/3 successful reads in 250ms (rate ≈ 10.9 SPS)
+[19:51:49.873]   WeightSensor initialization complete:
+[19:51:49.873]     Calibration factor: 4322.74
+[19:51:49.873]     Tare offset: 0
+[19:51:49.873]     Hardware ready: FALSE
+[19:51:49.873]     Sample rate detected: 10.9 SPS
+[19:51:50.877]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:51:50.877] ✅ WeightSensor hardware initialization successful on Core 0
+[19:51:50.877] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:51:53.910] [10012ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:51:54.922] Scale tared successfully
+[19:51:55.687] [10895ms TASK_HEARTBEAT_UIRender] Cycles: 358/10s | Avg: 17ms (0-1850ms) | Build: #3
+[19:51:55.687] [12470ms GRIND_CONTROL_HEARTBEAT] Cycles: 502/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: -0.046g | Build: #3
+[19:51:56.692] [12518ms FILE_IO_HEARTBEAT] Cycles: 101/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:51:56.693] [12519ms MAIN_LOOP_HEARTBEAT] Cycles: 686/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:52:03.743] [16710ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 714/10s | Avg: 0ms (0-1ms) | Weight: -0.028g | Raw: 8215732 | SPS: 11.5 | Samples: 67 | Build: #3
+[19:52:03.743] [20012ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:52:05.759] [20899ms TASK_HEARTBEAT_UIRender] Cycles: 649/10s | Avg: 12ms (0-71ms) | Build: #3
+[19:52:05.759] [22470ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: -0.083g | Build: #3
+[19:52:06.772] [22629ms MAIN_LOOP_HEARTBEAT] Cycles: 355/10s | Avg: 0ms (0-1ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:52:06.772] [22560ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-1ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:52:10.793] [26710ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: -0.080g | Raw: 8215509 | SPS: 11.5 | Samples: 179 | Build: #3
+[19:52:13.238] [30012ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:52:13.238] 
+[19:52:13.238] abort() was called at PC 0x403771fb on core 1
+[19:52:13.238] 
+[19:52:13.238] 
+[19:52:13.243] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:52:13.244] 
+[19:52:13.244] 
+[19:52:13.244] 
+[19:52:13.244] 
+[19:52:13.244] ELF file SHA256: 26d867175
+[19:52:13.244] 
+[19:52:13.244] E (12161) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:52:13.244] E (12170) esp_core_dump_elf: Elf write init failed!
+[19:52:13.267] E (12175) esp_core_dump_common: Core dump write failed with error=-1
+[19:52:13.268] Rebooting...
+[19:52:13.268] ESP-ROM:esp32s3-20210327
+[19:52:13.268] Build:Mar 27 2021
+[19:52:13.268] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:52:13.268] Saved PC:0x4037f54a
+[19:52:13.268] SPIWP:0xee
+[19:52:13.268] mode:DIO, clock div:1
+[19:52:13.268] load:0x3fce2820,len:0x116c
+[19:52:13.268] load:0x403c8700,len:0xc2c
+[19:52:13.675] load:0x403cb700,len:0x3108
+[19:52:13.675] entry 0x403c88b8
+[19:52:13.675] E (403) esp_core_dump_flash: No core dump partition found!
+[19:52:13.676] E (403) esp_core_dump_flash: No core dump partition found!
+[19:52:13.676] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:52:14.244] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:52:14.245] ✅ LittleFS mounted successfully
+[19:52:14.245] Initializing WeightSensor configuration and filters...
+[19:52:14.245] Created HX711 ADC driver
+[19:52:14.245] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:52:14.245] Time-series Logger initialized:
+[19:52:14.245]   - Event Buffer: 2 KB (50 events)
+[19:52:14.245]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:52:14.245]   - Next session ID: 31
+[19:52:14.245] UI event queue created successfully
+[19:52:14.245] Flash operation queue created successfully
+[19:52:14.245] Log message queue created successfully
+[19:52:14.254] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:52:14.255] Motor latency: Loaded 50.0ms from preferences
+[19:52:14.255] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:52:14.255] OTA: Handler initialized
+[19:52:14.255] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:52:15.023] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:52:15.023] [   603][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:52:15.023] [656ms MENU] Creating menu UI
+[19:52:15.023] [1175ms MENU] Menu UI created successfully
+[19:52:15.038] [  1364][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:52:15.038] [  1372][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:52:15.038] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:52:16.037] OTA Power: Switching from 240MHz to 240MHz
+[19:52:16.037] OTA Power: Reduced power mode enabled
+[19:52:16.105] Bluetooth: Ready - device is advertising (5m timeout)
+[19:52:16.105] [STARTUP] Initializing task module dependencies...
+[19:52:16.105] WeightSamplingTask: Initialized with hardware interfaces
+[19:52:16.105] GrindControlTask: Initialized with hardware interfaces
+[19:52:16.106] ✅ Task module dependencies initialized
+[19:52:16.106] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:52:16.106] TaskManager: Initializing FreeRTOS task architecture...
+[19:52:16.106] WeightSamplingTask hardware validation:
+[19:52:16.106]   weight_sensor != nullptr: YES
+[19:52:16.106]   weight_sensor initialized: YES
+[19:52:16.106] GrindControlTask hardware validation:
+[19:52:16.106]   grind_controller != nullptr: YES
+[19:52:16.106]   weight_sensor ready: YES
+[19:52:16.106]   grinder ready: YES
+[19:52:16.106]   logger != nullptr: YES
+[19:52:16.106] TaskManager validation: All hardware and task dependencies ready
+[19:52:16.106] TaskManager: Inter-task communication queues created successfully
+[19:52:16.107] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:52:16.107] WeightSamplingTask started on Core 0 at 50Hz
+[19:52:16.107] WeightSamplingTask: Initializing WeightSensor hardware on Core 0...
+[19:52:16.107] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:52:16.107] GrindControlTask started on Core 0 at 50Hz
+[19:52:16.169] UI Render Task started on Core 1
+[19:52:16.169] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:52:16.169] Bluetooth Task started on Core 1
+[19:52:16.169] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:52:16.169] FileIOTask started on Core 1 at 10Hz
+[19:52:17.172] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:52:17.172] TaskManager: All tasks created successfully
+[19:52:17.172] ✅ TaskManager initialized successfully
+[19:52:17.172] FileIOTask: LittleFS filesystem available
+[19:52:17.172] FileIOTask: Initialized with file I/O queue
+[19:52:17.172] ✅ All task modules initialized
+[19:52:18.173] Initializing HX711 ADC hardware...
+[19:52:18.173] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:52:18.173] HX711Driver: First sample acquired successfully
+[19:52:18.173] HX711 ADC initialized successfully
+[19:52:18.173]   Waiting for WeightSensor hardware stabilization...
+[19:52:20.192] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:52:20.192] HX711Driver: Validation read 1/3 successful
+[19:52:20.359] HX711Driver: Validation read 2/3 successful
+[19:52:20.359] HX711Driver: Validation read 3/3 successful
+[19:52:20.359] HX711Driver: Hardware validation completed - 3/3 successful reads in 250ms (rate ≈ 10.9 SPS)
+[19:52:20.359]   WeightSensor initialization complete:
+[19:52:20.359]     Calibration factor: 4322.74
+[19:52:20.359]     Tare offset: 0
+[19:52:20.359]     Hardware ready: FALSE
+[19:52:20.359]     Sample rate detected: 10.9 SPS
+[19:52:20.359]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:52:20.359] ✅ WeightSensor hardware initialization successful on Core 0
+[19:52:21.359] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:52:24.383] [10006ms TASK_HEARTBEAT_UIRender] Cycles: 473/10s | Avg: 6ms (1-54ms) | Build: #3
+[19:52:24.384] [10009ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:52:26.177] [12448ms GRIND_CONTROL_HEARTBEAT] Cycles: 501/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1900.751g | Build: #3
+[19:52:26.177] [12509ms FILE_IO_HEARTBEAT] Cycles: 101/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:52:27.187] [12518ms MAIN_LOOP_HEARTBEAT] Cycles: 939/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:52:31.209] [16707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 714/10s | Avg: 0ms (0-0ms) | Weight: 1901.054g | Raw: 8217773 | SPS: 11.5 | Samples: 112 | Build: #3
+[19:52:34.235] [20006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:52:34.235] [20009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:52:36.182] [22448ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1900.982g | Build: #3
+[19:52:36.183] [22509ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:52:37.188] [22523ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:52:41.219] [26707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1901.072g | Raw: 8217848 | SPS: 11.5 | Samples: 224 | Build: #3
+[19:52:43.712] [30006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:52:43.712] [30009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0
+[19:52:43.712] abort() was called at PC 0x403771fb on core 1
+[19:52:43.712] 
+[19:52:43.712] 
+[19:52:43.718] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:52:43.718] 
+[19:52:43.718] 
+[19:52:43.718] 
+[19:52:43.718] 
+[19:52:43.718] ELF file SHA256: 26d867175
+[19:52:43.718] 
+[19:52:43.718] E (12272) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:52:43.718] E (12281) esp_core_dump_elf: Elf write init failed!
+[19:52:43.736] E (12285) esp_core_dump_common: Core dump write failed with error=-1
+[19:52:43.736] Rebooting...
+[19:52:43.736] ESP-ROM:esp32s3-20210327
+[19:52:43.736] Build:Mar 27 2021
+[19:52:43.736] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:52:43.736] Saved PC:0x4037f54a
+[19:52:43.736] SPIWP:0xee
+[19:52:43.737] mode:DIO, clock div:1
+[19:52:44.150] load:0x3fce2820,len:0x116c
+[19:52:44.150] load:0x403c8700,len:0xc2c
+[19:52:44.150] load:0x403cb700,len:0x3108
+[19:52:44.150] entry 0x403c88b8
+[19:52:44.150] E (403) esp_core_dump_flash: No core dump partition found!
+[19:52:44.150] E (403) esp_core_dump_flash: No core dump partition found!
+[19:52:44.150] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:52:44.714] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:52:44.715] ✅ LittleFS mounted successfully
+[19:52:44.715] Initializing WeightSensor configuration and filters...
+[19:52:44.715] Created HX711 ADC driver
+[19:52:44.719] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:52:44.719] Time-series Logger initialized:
+[19:52:44.719]   - Event Buffer: 2 KB (50 events)
+[19:52:44.719]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:52:44.719]   - Next session ID: 31
+[19:52:44.719] UI event queue created successfully
+[19:52:44.719] Flash operation queue created successfully
+[19:52:44.728] Log message queue created successfully
+[19:52:44.729] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:52:44.729] Motor latency: Loaded 50.0ms from preferences
+[19:52:44.729] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:52:44.729] OTA: Handler initialized
+[19:52:44.790] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:52:44.790] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:52:44.790] [   604][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:52:45.512] [657ms MENU] Creating menu UI
+[19:52:45.512] [1176ms MENU] Menu UI created successfully
+[19:52:45.512] [  1364][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:52:45.513] [  1373][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:52:46.519] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:52:46.519] OTA Power: Switching from 240MHz to 240MHz
+[19:52:46.519] OTA Power: Reduced power mode enabled
+[19:52:46.579] Bluetooth: Ready - device is advertising (5m timeout)
+[19:52:46.579] [STARTUP] Initializing task module dependencies...
+[19:52:46.579] WeightSamplingTask: Initialized with hardware interfaces
+[19:52:46.579] GrindControlTask: Initialized with hardware interfaces
+[19:52:46.579] ✅ Task module dependencies initialized
+[19:52:46.579] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:52:46.580] TaskManager: Initializing FreeRTOS task architecture...
+[19:52:46.580] WeightSamplingTask hardware validation:
+[19:52:46.580]   weight_sensor != nullptr: YES
+[19:52:46.580]   weight_sensor initialized: YES
+[19:52:46.580] GrindControlTask hardware validation:
+[19:52:46.580]   grind_controller != nullptr: YES
+[19:52:46.580]   weight_sensor ready: YES
+[19:52:46.580]   grinder ready: YES
+[19:52:46.580]   logger != nullptr: YES
+[19:52:46.580] TaskManager validation: All hardware and task dependencies ready
+[19:52:46.580] TaskManager: Inter-queues created successfully
+[19:52:46.581] WeightSamplingTask started on Core 0 at 50Hz
+[19:52:46.581] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:52:46.581] WeightSamplingTask: Initializing WeightSensor hardware on Core 0...
+[19:52:46.581] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:52:46.581] UI Render Task started on Core 1
+[19:52:46.641] GrindControlTask started on Core 0 at 50Hz
+[19:52:46.642] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:52:46.642] Bluetooth Task started on Core 1
+[19:52:46.642] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:52:46.642] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:52:46.642] TaskManager: All tasks created successfully
+[19:52:47.641] ✅ TaskManager initialized successfully
+[19:52:47.641] FileIOTask started on Core 1 at 10Hz
+[19:52:47.642] FileIOTask: LittleFS filesystem available
+[19:52:47.642] FileIOTask: Initialized with file I/O queue
+[19:52:47.642] ✅ All task modules initialized
+[19:52:48.643] Initializing HX711 ADC hardware...
+[19:52:48.643] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:52:48.643] HX711Driver: First sample acquired successfully
+[19:52:48.643] HX711 ADC initialized successfully
+[19:52:48.643]   Waiting for WeightSensor hardware stabilization...
+[19:52:50.654] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:52:50.654] HX711Driver: Validation read 1/3 successful
+[19:52:50.843] HX711Driver: Validation read 2/3 successful
+[19:52:50.843] HX711Driver: Validation read 3/3 successful
+[19:52:50.843] HX711Driver: Hardware validation comples in 250ms (rate ≈ 10.5 SPS)
+[19:52:50.843]   WeightSensor initialization complete:
+[19:52:50.843]     Calibration factor: 4322.74
+[19:52:50.843]     Tare offset: 0
+[19:52:50.843]     Hardware ready: FALSE
+[19:52:50.843]     Sample rate detected: 10.5 SPS
+[19:52:50.843]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:52:50.843] ✅ WeightSensor hardware initialization successful on Core 0
+[19:52:51.847] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:52:54.869] [10005ms TASK_HEARTBEAT_UIRender] Cycles: 473/10s | Avg: 6ms (1-54ms) | Build: #3
+[19:52:54.869] [10009ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:52:56.650] [12448ms GRIND_CONTROL_HEARTBEAT] Cycles: 501/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1900.450g | Build: #3
+[19:52:57.662] [12517ms MAIN_LOOP_HEARTBEAT] Cycles: 939/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:52:57.662] [12603ms FILE_IO_HEARTBEAT] Cycles: 102/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:53:01.696] [16727ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 715/10s | Avg: 0ms (0-0ms) | Weight: 1900.546g | Raw: 8215576 | SPS: 11.0 | Samples: 112 | Build: #3
+[19:53:04.726] [20005ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:53:04.726] [20009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:53:06.656] [22448ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1900.580g | Build: #3
+[19:53:07.663] [22522ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:53:07.664] [22603ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:53:11.689] [26727ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1900.923g | Raw: 8217205 | SPS: 11.0 | Samples: 224 | Build: #3
+[19:53:14.181] [30005ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-
+[19:53:14.181] abort() was called at PC 0x403771fb on core 1
+[19:53:14.181] 
+[19:53:14.181] 
+[19:53:14.181] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:53:14.181] 
+[19:53:14.181] 
+[19:53:14.181] 
+[19:53:14.182] 
+[19:53:14.201] ELF file SHA256: 26d867175
+[19:53:14.201] 
+[19:53:14.201] E (12268) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:53:14.201] E (12276) esp_core_dump_elf: Elf write init failed!
+[19:53:14.201] E (12281) esp_core_dump_common: Core dump write failed with error=-1
+[19:53:14.219] Rebooting...
+[19:53:14.219] ESP-ROM:esp32s3-20210327
+[19:53:14.219] Build:Mar 27 2021
+[19:53:14.219] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:53:14.219] Saved PC:0x4037f54a
+[19:53:14.219] SPIWP:0xee
+[19:53:14.219] mode:DIO, clock div:1
+[19:53:14.219] load:0x3fce2820,len:0x116c
+[19:53:14.219] load:0x403c8700,len:0xc2c
+[19:53:14.219] load:0x403cb700,len:0x3108
+[19:53:14.624] entry 0x403c88b8
+[19:53:14.624] E (403) esp_core_dump_flash: No core dump partition found!
+[19:53:14.624] E (403) esp_core_dump_flash: No core dump partition found!
+[19:53:14.624] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:53:14.624] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:53:15.188] ✅ LittleFS mounted successfully
+[19:53:15.188] Initializing WeightSensor configuration and filters...
+[19:53:15.188] Created HX711 ADC driver
+[19:53:15.188] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:53:15.189] Time-series Logger initialized:
+[19:53:15.189]   - Event Buffer: 2 KB (50 events)
+[19:53:15.189]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:53:15.189]   - Next session ID: 31
+[19:53:15.189] UI event queue created successfully
+[19:53:15.189] Flash operation queue created successfully
+[19:53:15.189] Log message queue created successfully
+[19:53:15.198] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:53:15.198] Motor latency: Loaded 50.0ms from preferences
+[19:53:15.198] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:53:15.199] OTA: Handler initialized
+[19:53:15.199] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:53:15.967] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:53:15.967] [   603][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:53:15.967] [656ms MENU] Creating menu UI
+[19:53:15.967] [1176ms MENU] Menu UI created successfully
+[19:53:15.981] [  1364][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:53:15.982] [  1372][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:53:15.982] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:53:15.982] OTA Power: Switching from 240MHz to 240MHz
+[19:53:16.974] OTA Power: Reduced power mode enabled
+[19:53:17.048] Bluetooth: Ready - device is advertising (5m timeout)
+[19:53:17.049] [STARTUP] Initializing task module dependencies...
+[19:53:17.049] WeightSamplingTask: Initialized with hardware interfaces
+[19:53:17.049] GrindControlTask: Initialized with hardware interfaces
+[19:53:17.049] ✅ Task module dependencies initialized
+[19:53:17.049] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:53:17.049] TaskManager: Initializing FreeRTOS task architecture...
+[19:53:17.049] WeightSamplingTask hardware validation:
+[19:53:17.049]   weight_sensor != nullptr: YES
+[19:53:17.049]   weight_sensor initialized: YES
+[19:53:17.049] GrindControlTask hardware validation:
+[19:53:17.050]   grind_controller != nullptr: YES
+[19:53:17.050]   weight_sensor ready: YES
+[19:53:17.050]   grinder ready: YES
+[19:53:17.050]   logger != nullptr: YES
+[19:53:17.050] TaskManager validation: All hardware and task dependencies ready
+[19:53:17.050] TaskManager: Inter-task communication queues created successfully
+[19:53:17.051] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:53:17.051] WeightSamplingTask started on Core 0 at 50Hz
+[19:53:17.051] WeightSamplingTask: Initializing WeightSensor hardware on Core 0...
+[19:53:17.051] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:53:17.051] UI Render Task started on Core 1
+[19:53:17.112] GrindControlTask started on Core 0 at 50Hz
+[19:53:17.112] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:53:17.112] Bluetooth Task started on Core 1
+[19:53:17.112] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:53:17.112] FileIOTask started on Core 1 at 10Hz
+[19:53:18.116] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:53:18.116] TaskManager: All tasks created successfully
+[19:53:18.116] ✅ TaskManager initialized successfully
+[19:53:18.116] FileIOTask: LittleFS filesystem available
+[19:53:18.116] FileIOTask: Initialized with file I/O queue
+[19:53:18.116] ✅ All task modules initialized
+[19:53:19.116] Initializing HX711 ADC hardware...
+[19:53:19.118] HX711Driver: Waiting for t: 400ms)
+[19:53:19.118] HX711Driver: First sample acquired successfully
+[19:53:19.118] HX711 ADC initialized successfully
+[19:53:19.118]   Waiting for WeightSensor hardware stabilization...
+[19:53:21.124] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:53:21.124] HX711Driver: Validation read 1/3 successful
+[19:53:21.313] HX711Driver: Validation read 2/3 successful
+[19:53:21.313] HX711Driver: Validation read 3/3 successful
+[19:53:21.313] HX711Driver: Hardware validation completed - 3/3 successful reads in 250ms (rate ≈ 10.5 SPS)
+[19:53:21.313]   WeightSensor initialization complete:
+[19:53:21.313]     Calibration factor: 4322.74
+[19:53:21.313]     Tare offset: 0
+[19:53:21.313]     Hardware ready: FALSE
+[19:53:21.313]     Sample rate detected: 10.5 SPS
+[19:53:21.313]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:53:21.313] ✅ WeightSensor hardware initialization successful on Core 0
+[19:53:22.316] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:53:25.340] [10005ms TASK_HEARTBEAT_UIRender] Cycles: 473/10s | Avg: 6ms (1-54ms) | Build: #3
+[19:53:25.340] [10009ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:53:27.120] [12448ms GRIND_CONTROL_HEARTBEAT] Cycles: 501/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1900.316g | Build: #3
+[19:53:28.123] [12517ms MAIN_LOOP_HEARTBEAT] Cycles: 939/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:53:28.124] [12608ms FILE_IO_HEARTBEAT] Cycles: 102/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:53:34.612] [16727ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 715/10s | Avg: 0ms (0-0ms) | Weight: 1900.934g | Raw: 8217254 | SPS: 11.0 | Samples: 112 | Build: #3
+[19:53:34.612] [20005ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:53:35.612] [20009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:53:37.126] [22448ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1900.047g | Build: #3
+[19:53:38.121] [22522ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:53:38.121] [22608ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:53:42.145] [26727ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1900.943g | Raw: 8217291 | SPS: 11.0 | Samples: 224 | Build: #3
+[19:53:44.654] [30005ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:53:44.655] 
+[19:53:44.655] abort() was called at PC 0x403771fb on core 1
+[19:53:44.655] 
+[19:53:44.655] 
+[19:53:44.660] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:53:44.660] 
+[19:53:44.660] 
+[19:53:44.660] 
+[19:53:44.660] 
+[19:53:44.660] ELF file SHA256: 26d867175
+[19:53:44.660] 
+[19:53:44.660] E (12271) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:53:44.660] E (12280) esp_core_dump_elf: Elf write init failed!
+[19:53:44.684] E (12284) esp_core_dump_common: Core dump write failed with error=-1
+[19:53:44.684] Rebooting...
+[19:53:44.684] ESP-ROM:esp32s3-20210327
+[19:53:44.684] Build:Mar 27 2021
+[19:53:44.684] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:53:44.684] Saved PC:0x4037f54a
+[19:53:44.684] SPIWP:0xee
+[19:53:44.684] mode:DIO, clock div:1
+[19:53:44.684] load:0x3fce2820,len:0x116c
+[19:53:44.684] load:0x403c8700,len:0xc2c
+[19:53:45.092] load:0x403cb700,len:0x3108
+[19:53:45.092] entry 0x403c88b8
+[19:53:45.092] E (403) esp_core_dump_flash: No core dump partition found!
+[19:53:45.092] E (403) esp_core_dump_flash: No core dump partition found!
+[19:53:45.092] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:53:45.661] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:53:45.661] ✅ LittleFS mounted successfully
+[19:53:45.661] Initializing WeightSensor configuration and filters...
+[19:53:45.661] Created HX711 ADC driver
+[19:53:45.661] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:53:45.661] Time-series Logger initialized:
+[19:53:45.661]   - Event Buffer: 2 KB (50 events)
+[19:53:45.661]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:53:45.662]   - Next session ID: 31
+[19:53:45.662] UI event queue created successfully
+[19:53:45.662] Flash operation queue created successfully
+[19:53:45.662] Log message queue created successfully
+[19:53:45.671] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:53:45.671] Motor latency: Loaded 50.0ms from preferences
+[19:53:45.671] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:53:45.671] OTA: Handler initialized
+[19:53:45.671] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:53:46.440] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:53:46.440] [   604][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:53:46.440] [657ms MENU] Creating menu UI
+[19:53:46.455] [  1364][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob [1176ms MENU] Menu UI created successfully
+[19:53:46.455] len fail: normal NOT_FOUND
+[19:53:46.455] [  1373][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:53:46.455] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:53:47.458] OTA Power: Switching from 240MHz to 240MHz
+[19:53:47.458] OTA Power: Reduced power mode enabled
+[19:53:47.522] Bluetooth: Ready - device is advertising (5m timeout)
+[19:53:47.522] [STARTUP] Initializing task module dependencies...
+[19:53:47.522] WeightSamplingTask: Initialized with hardware interfaces
+[19:53:47.522] GrindControlTask: Initialized with hardware interfaces
+[19:53:47.523] ✅ Task module dependencies initialized
+[19:53:47.523] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:53:47.523] TaskManager: Initializing FreeRTOS task architecture...
+[19:53:47.523] WeightSamplingTask hardware validation:
+[19:53:47.523]   weight_sensor != nullptr: YES
+[19:53:47.523]   weight_sensor initialized: YES
+[19:53:47.523] GrindControlTask hardware validation:
+[19:53:47.524]   grind_controller != nullptr: YES
+[19:53:47.524]   weight_sensor ready: YES
+[19:53:47.524]   grinder ready: YES
+[19:53:47.524]   logger != nullptr: YES
+[19:53:47.524] TaskManager validation: All hardware and task dependencies ready
+[19:53:47.524] TaskManager: Inter-task communication queues created successfully
+[19:53:47.524] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:53:47.524] WeightSamplingTask started on Core 0 at 50Hz
+[19:53:47.525] WeightSamplingTask: Initializing WeightSensor hardware on Core 0...
+[19:53:47.525] GrindControlTask started on Core 0 at 50Hz
+[19:53:47.525] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:53:47.586] UI Render Task started on Core 1
+[19:53:47.586] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:53:47.586] Bluetooth Task started on Core 1
+[19:53:47.586] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:53:47.586] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:53:48.590] TaskManager: All tasks created successfully
+[19:53:48.591] ✅ TaskManager initialized successfully
+[19:53:48.591] FileIOTask started on Core 1 at 10Hz
+[19:53:48.591] FileIOTask: LittleFS filesystem available
+[19:53:48.591] FileIOTask: Initialized with file I/O queue
+[19:53:48.591] ✅ All task modules initialized
+[19:53:49.595] Initializing HX711 ADC hardware...
+[19:53:49.595] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:53:49.595] HX711Driver: First sample acquired successfully
+[19:53:49.595] HX711 ADC initialized successfully
+[19:53:49.595]   Waiting for WeightSensor hardware stabilization...
+[19:53:51.135] [6042ms BUTTON_PRESS] Grind button pressed in state: READY
+[19:53:51.135] [6043ms MENU] Showing menu screen
+[19:53:51.135] [  6044][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:53:51.135] [  6053][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:53:51.525] [  6059][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:53:51.526] [  6066][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: grinder_amount_g NOT_FOUND
+[19:53:51.526] [6077ms MENU] Menu screen shown successfully
+[19:53:51.777] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:53:51.777] HX711Driver: Validation read 1/3 successful
+[19:53:51.777] HX711Driver: Validation read 2/3 successful
+[19:53:51.777] HX711Driver: Validation read 3/3 successful
+[19:53:51.777] HX711Driver: Hardware validation completed - 3/3 successful reads in 250ms (rate ≈ 10.9 SPS)
+[19:53:51.777]   WeightSensor initialization complete:
+[19:53:51.778]     Calibration factor: 4322.74
+[19:53:51.778]     Tare offset: 0
+[19:53:51.778]     Hardware ready: FALSE
+[19:53:51.778]     Sample rate detected: 10.9 SPS
+[19:53:51.778]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:53:52.781] ✅ WeightSensor hardware initialization successful on Core 0
+[19:53:52.781] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:53:52.781] [6930ms MENU] Hiding menu screen
+[19:53:52.781] [6930ms MENU] Menu screen hidden successfully
+[19:53:55.802] Scale tared successfully
+[19:53:55.803] [10001ms TASK_HEARTBEAT_UIRender] Cycles: 386/10s | Avg: 14ms (0-1790ms) | Build: #3
+[19:53:55.803] [10010ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:53:57.593] [12468ms GRIND_CONTROL_HEARTBEAT] Cycles: 502/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: -0.175g | Build: #3
+[19:53:57.593] [12516ms FILE_IO_HEARTBEAT] Cycles: 101/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:53:58.599] [12517ms MAIN_LOOP_HEARTBEAT] Cycles: 717/10s | Avg: 0ms (0-1ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:54:02.627] [16708ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 714/10s | Avg: 0ms (0-0ms) | Weight: -0.102g | Raw: 8217672 | SPS: 11.5 | Samples: 78 | Build: #3
+[19:54:05.635] [20010ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:54:05.635] [20066ms TASK_HEARTBEAT_UIRender] Cycles: 557/10s | Avg: 14ms (0-83ms) | Build: #3
+[19:54:07.644] [22468ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: -0.666g | Build: #3
+[19:54:08.660] [22577ms MAIN_LOOP_HEARTBEAT] Cycles: 277/10s | Avg: 0ms (0-1ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:54:08.660] [22648ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-1ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:54:15.170] [26708ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: -0.204g | Raw: 8217232 | SPS: 11.5 | Samples: 190 | Build: #3
+[19:54:15.170] [30010ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:54:15.170] 
+[19:54:15.171] abort() was called at PC 0x403771fb on core 1
+[19:54:15.171] 
+[19:54:15.171] 
+[19:54:15.171] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:54:15.171] 
+[19:54:15.171] 
+[19:54:15.171] 
+[19:54:15.171] 
+[19:54:15.171] ELF file SHA256: 26d867175
+[19:54:15.171] 
+[19:54:15.191] E (12314) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:54:15.191] E (12323) esp_core_dump_elf: Elf write init failed!
+[19:54:15.191] E (12327) esp_core_dump_common: Core dump write failed with error=-1
+[19:54:15.191] Rebooting...
+[19:54:15.191] ESP-ROM:esp32s3-20210327
+[19:54:15.191] Build:Mar 27 2021
+[19:54:15.593] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:54:15.593] Saved PC:0x4037f54a
+[19:54:15.593] SPIWP:0xee
+[19:54:15.593] mode:DIO, clock div:1
+[19:54:15.593] load:0x3fce2820,len:0x116c
+[19:54:15.593] load:0x403c8700,len:0xc2c
+[19:54:15.593] load:0x403cb700,len:0x3108
+[19:54:15.593] entry 0x403c88b8
+[19:54:15.593] E (403) esp_core_dump_flash: No core dump partition found!
+[19:54:16.173] E (403) esp_core_dump_flash: No core dump partition found!
+[19:54:16.173] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:54:16.173] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:54:16.173] ✅ LittleFS mounted successfully
+[19:54:16.173] Initializing WeightSensor configuration and filters...
+[19:54:16.177] Created HX711 ADC driver
+[19:54:16.177] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:54:16.177] Time-series Logger initialized:
+[19:54:16.177]   - Event Buffer: 2 KB (50 events)
+[19:54:16.177]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:54:16.177]   - Next session ID: 31
+[19:54:16.187] UI event queue created successfully
+[19:54:16.187] Flash operation queue created successfully
+[19:54:16.187] Log message queue created successfully
+[19:54:16.187] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:54:16.187] Motor latency: Loaded 50.0ms from preferences
+[19:54:16.196] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:54:16.196] OTA: Handler initialized
+[19:54:16.196] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:54:16.196] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:54:16.965] [   604][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:54:16.965] [657ms MENU] Creating menu UI
+[19:54:16.965] [1176ms MENU] Menu UI created successfully
+[19:54:16.965] [  1365][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:54:17.972] [  1373][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:54:17.973] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:54:17.973] OTA Power: Switching from 240MHz to 240MHz
+[19:54:17.973] OTA Power: Reduced power mode enabled
+[19:54:18.037] Bluetooth: Ready - device is advertising (5m timeout)
+[19:54:18.037] [STARTUP] Initializing task module dependencies...
+[19:54:18.037] WeightSamplingTask: Initialized with hardware interfaces
+[19:54:18.037] GrindControlTask: Initialized with hardware interfaces
+[19:54:18.038] ✅ Task module dependencies initialized
+[19:54:18.039] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:54:18.039] TaskManager: Initializing FreeRTOS task architecture...
+[19:54:18.039] WeightSamplingTask hardware validation:
+[19:54:18.039]   weight_sensor != nullptr: YES
+[19:54:18.039]   weight_sensor initialized: YES
+[19:54:18.039] GrindControlTask hardware validation:
+[19:54:18.039]   grind_controller != nullptr: YES
+[19:54:18.039]   weight_sensor ready: YES
+[19:54:18.039]   grinder ready: YES
+[19:54:18.039]   logger != nullptr: YES
+[19:54:18.039] TaskManager validation: All hardware and task dependencies ready
+[19:54:18.039] TaskManager: Inter-task communication queues created successfully
+[19:54:18.040] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:54:18.040] WeightSamplingTask started on Core 0 at 50Hz
+[19:54:18.040] WeightSamplingTask: Initializing WeightSensor hardware on Core 0...
+[19:54:18.040] GrindControlTask started on Core 0 at 50Hz
+[19:54:18.040] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:54:18.101] UI Render Task started on Core 1
+[19:54:18.101] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:54:18.101] Bluetooth Task started on Core 1
+[19:54:18.101] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:54:18.101] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:54:19.108] TaskManager: All tasks created successfully
+[19:54:19.109] ✅ TaskManager initialized successfully
+[19:54:19.109] FileIOTask started on Core 1 at 10Hz
+[19:54:19.109] FileIOTask: LittleFS filesystem available
+[19:54:19.109] FileIOTask: Initialized with file I/O queue
+[19:54:19.109] ✅ All task modules initialized
+[19:54:20.110] Initializing HX711 ADC hardware...
+[19:54:20.111] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:54:20.111] HX711Driver: First sample acquired successfully
+[19:54:20.111] HX711 ADC initialized successfully
+[19:54:20.111]   Waiting for WeightSensor hardware stabilization...
+[19:54:22.114] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:54:22.114] HX711Driver: Validation read 1/3 successful
+[19:54:22.292] HX711Driver: Validation read 2/3 successful
+[19:54:22.292] HX711Driver: Validation read 3/3 successful
+[19:54:22.292] HX711Driver: Hardware validation completed - 3/3 successful reads in 250ms (rate ≈ 10.9 SPS)
+[19:54:22.292]   WeightSensor initialization complete:
+[19:54:22.292]     Calibration factor: 4322.74
+[19:54:22.292]     Tare offset: 0
+[19:54:22.292]     Hardware ready: FALSE
+[19:54:22.292]     Sample rate detected: 10.9 SPS
+[19:54:22.292]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:54:22.292] ✅ WeightSensor hardware initialization successful on Core 0
+[19:54:23.292] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:54:26.307] [10006ms TASK_HEARTBEAT_UIRender] Cycles: 473/10s | Avg: 6ms (1-54ms) | Build: #3
+[19:54:26.307] [10009ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:54:28.206] [12467ms GRIND_CONTROL_HEARTBEAT] Cycles: 502/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1896.965g | Build: #3
+[19:54:29.205] [12518ms MAIN_LOOP_HEARTBEAT] Cycles: 939/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:54:29.205] [12609ms FILE_IO_HEARTBEAT] Cycles: 102/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:54:33.224] [16707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 714/10s | Avg: 0ms (0-0ms) | Weight: 1897.919g | Raw: 8204220 | SPS: 11.5 | Samples: 112 | Build: #3
+[19:54:36.237] [20006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:54:36.237] [20009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:54:38.115] [22467ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.653g | Build: #3
+[19:54:39.121] [22523ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:54:39.121] [22609ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:54:43.152] [26707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.515g | Raw: 8202473 | SPS: 11.5 | Samples: 224 | Build: #3
+[19:54:45.644] [30006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:54:45.644] [30009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0
+[19:54:45.644] abort() was called at PC 0x403771fb on core 1
+[19:54:45.644] 
+[19:54:45.644] 
+[19:54:45.650] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:54:45.650] 
+[19:54:45.650] 
+[19:54:45.651] 
+[19:54:45.651] 
+[19:54:45.651] ELF file SHA256: 26d867175
+[19:54:45.651] 
+[19:54:45.651] E (12272) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:54:45.651] E (12281) esp_core_dump_elf: Elf write init failed!
+[19:54:45.669] E (12285) esp_core_dump_common: Core dump write failed with error=-1
+[19:54:45.669] Rebooting...
+[19:54:45.669] ESP-ROM:esp32s3-20210327
+[19:54:45.669] Build:Mar 27 2021
+[19:54:45.669] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:54:45.669] Saved PC:0x4037f54a
+[19:54:45.669] SPIWP:0xee
+[19:54:45.670] mode:DIO, clock div:1
+[19:54:46.082] load:0x3fce2820,len:0x116c
+[19:54:46.083] load:0x403c8700,len:0xc2c
+[19:54:46.083] load:0x403cb700,len:0x3108
+[19:54:46.083] entry 0x403c88b8
+[19:54:46.083] E (403) esp_core_dump_flash: No core dump partition found!
+[19:54:46.083] E (403) esp_core_dump_flash: No core dump partition found!
+[19:54:46.083] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:54:46.647] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:54:46.647] ✅ LittleFS mounted successfully
+[19:54:46.647] Initializing WeightSensor configuration and filters...
+[19:54:46.647] Created HX711 ADC driver
+[19:54:46.651] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:54:46.651] Time-series Logger initialized:
+[19:54:46.651]   - Event Buffer: 2 KB (50 events)
+[19:54:46.651]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:54:46.651]   - Next session ID: 31
+[19:54:46.651] UI event queue created successfully
+[19:54:46.651] Flash operation queue created successfully
+[19:54:46.661] Log message queue created successfully
+[19:54:46.661] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:54:46.661] Motor latency: Loaded 50.0ms from preferences
+[19:54:46.661] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:54:46.661] OTA: Handler initialized
+[19:54:46.722] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:54:46.722] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:54:46.723] [   604][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:54:47.444] [657ms MENU] Creating menu UI
+[19:54:47.445] [1176ms MENU] Menu UI created successfully
+[19:54:47.445] [  1364][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:54:47.445] [  1373][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:54:48.454] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:54:48.454] OTA Power: Switching from 240MHz to 240MHz
+[19:54:48.454] OTA Power: Reduced power mode enabled
+[19:54:48.511] Bluetooth: Ready - device is advertising (5m timeout)
+[19:54:48.512] [STARTUP] Initializing task module dependencies...
+[19:54:48.512] WeightSamplingTask: Initialized with hardware interfaces
+[19:54:48.512] GrindControlTask: Initialized with hardware interfaces
+[19:54:48.512] ✅ Task module dependencies initialized
+[19:54:48.512] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:54:48.512] TaskManager: Initializing FreeRTOS task architecture...
+[19:54:48.512] WeightSamplingTask hardware validation:
+[19:54:48.512]   weight_sensor != nullptr: YES
+[19:54:48.512]   weight_sensor initialized: YES
+[19:54:48.512] GrindControlTask hardware validation:
+[19:54:48.513]   grind_controller != nullptr: YES
+[19:54:48.513]   weight_sensor ready: YES
+[19:54:48.513]   grinder ready: YES
+[19:54:48.513]   logger != nullptr: YES
+[19:54:48.513] TaskManager validation: All hardware and task dependencies ready
+[19:54:48.513] TaskManager: Inter-task communication queues created successfully
+[19:54:48.513] WeightSamplingTask started on Core 0 at 50Hz
+[19:54:48.513] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:54:48.513] WeightSamplingTask: Initializing WeightSensor hardware on Core 0...
+[19:54:48.513] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:54:48.513] UI Render Task started on Core 1
+[19:54:48.574] GrindControlTask started on Core 0 at 50Hz
+[19:54:48.574] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:54:48.574] Bluetooth Task started on Core 1
+[19:54:48.574] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:54:48.574] FileIOTask started on Core 1 at 10Hz
+[19:54:49.584] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:54:49.584] TaskManager: All tasks created successfully
+[19:54:49.584] ✅ TaskManager initialized successfully
+[19:54:49.584] FileIOTask: LittleFS filesystem available
+[19:54:49.584] FileIOTask: Initialized with file I/O queue
+[19:54:49.584] ✅ All task modules initialized
+[19:54:50.588] Initializing HX711 ADC hardware...
+[19:54:50.588] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:54:50.588] HX711Driver: First sample acquired successfully
+[19:54:50.588] HX711 ADC initialized successfully
+[19:54:50.589]   Waiting for WeightSensor hardware stabilization...
+[19:54:52.604] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:54:52.605] HX711Driver: Validation read 1/3 successful
+[19:54:52.775] HX711Driver: Validation read 2/3 successful
+[19:54:52.775] HX711Driver: Validation read 3/3 successful
+[19:54:52.775] HX711Driver: Hardware validation completed - 3/3 successful reads in 250ms (rate ≈ 10.5 SPS)
+[19:54:52.775]   WeightSensor initialization complete:
+[19:54:52.775]     Calibration factor: 4322.74
+[19:54:52.776]     Tare offset: 0
+[19:54:52.776]     Hardware ready: FALSE
+[19:54:52.776]     Sample rate detected: 10.5 SPS
+[19:54:52.776]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:54:52.776] ✅ WeightSensor hardware initialization successful on Core 0
+[19:54:53.788] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:54:56.806] [10005ms TASK_HEARTBEAT_UIRender] Cycles: 473/10s | Avg: 6ms (1-54ms) | Build: #3
+[19:54:56.806] [10009ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:54:58.583] [12448ms GRIND_CONTROL_HEARTBEAT] Cycles: 501/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.132g | Build: #3
+[19:54:59.587] [12517ms MAIN_LOOP_HEARTBEAT] Cycles: 939/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:54:59.587] [12603ms FILE_IO_HEARTBEAT] Cycles: 102/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:55:03.604] [16727ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 715/10s | Avg: 0ms (0-0ms) | Weight: 1898.699g | Raw: 8207592 | SPS: 11.0 | Samples: 112 | Build: #3
+[19:55:06.615] [20005ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:55:06.615] [20009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:55:08.589] [22448ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.703g | Build: #3
+[19:55:09.589] [22522ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:55:09.590] [22603ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:55:13.608] [26727ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.713g | Raw: 8207650 | SPS: 11.0 | Samples: 224 | Build: #3
+[19:55:16.114] 
+[19:55:16.114] abort() was called at PC 0x403771fb on core 1
+[19:55:16.114] 
+[19:55:16.114] 
+[19:55:16.114] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:55:16.114] 
+[19:55:16.114] 
+[19:55:16.114] 
+[19:55:16.114] 
+[19:55:16.114] ELF file SHA256: 26d867175
+[19:55:16.114] 
+[19:55:16.135] E (12268) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:55:16.135] E (12276) esp_core_dump_elf: Elf write init failed!
+[19:55:16.135] E (12281) esp_core_dump_common: Core dump write failed with error=-1
+[19:55:16.135] Rebooting...
+[19:55:16.135] ESP-ROM:esp32s3-20210327
+[19:55:16.135] Build:Mar 27 2021
+[19:55:16.537] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:55:16.537] Saved PC:0x4037f54a
+[19:55:16.537] SPIWP:0xee
+[19:55:16.537] mode:DIO, clock div:1
+[19:55:16.537] load:0x3fce2820,len:0x116c
+[19:55:16.537] load:0x403c8700,len:0xc2c
+[19:55:16.537] load:0x403cb700,len:0x3108
+[19:55:16.537] entry 0x403c88b8
+[19:55:17.116] E (403) esp_core_dump_flash: No core dump partition found!
+[19:55:17.116] E (403) esp_core_dump_flash: No core dump partition found!
+[19:55:17.116] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:55:17.116] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:55:17.116] ✅ LittleFS mounted successfully
+[19:55:17.121] Initializing WeightSensor configuration and filters...
+[19:55:17.121] Created HX711 ADC driver
+[19:55:17.121] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:55:17.121] Time-series Logger initialized:
+[19:55:17.121]   - Event Buffer: 2 KB (50 events)
+[19:55:17.121]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:55:17.130]   - Next session ID: 31
+[19:55:17.130] UI event queue created successfully
+[19:55:17.130] Flash operation queue created successfully
+[19:55:17.130] Log message queue created successfully
+[19:55:17.130] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:55:17.131] Motor latency: Loaded 50.0ms from preferences
+[19:55:17.131] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:55:17.131] OTA: Handler initialized
+[19:55:17.131] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:55:17.899] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:55:17.899] [   603][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:55:17.899] [656ms MENU] Creating menu UI
+[19:55:17.899] [1176ms MENU] Menu UI created successfully
+[19:55:18.911] [  1364][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:55:18.911] [  1372][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:55:18.911] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:55:18.911] OTA Power: Switching from 240MHz to 240MHz
+[19:55:18.911] OTA Power: Reduced power mode enabled
+[19:55:18.982] Bluetooth: Ready - device is advertising (5m timeout)
+[19:55:18.982] [STARTUP] Initializing task module dependencies...
+[19:55:18.982] WeightSamplingTask: Initialized with hardware interfaces
+[19:55:18.982] GrindControlTask: Initialized with hardware interfaces
+[19:55:18.983] ✅ Task module dependencies initialized
+[19:55:18.983] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:55:18.983] TaskManager: Initializing FreeRTOS task architecture...
+[19:55:18.983] WeightSamplingTask hardware validation:
+[19:55:18.983]   weight_sensor != nullptr: YES
+[19:55:18.983]   weight_sensor initialized: YES
+[19:55:18.983] GrindControlTask hardware validation:
+[19:55:18.984]   grind_controller != nullptr: YES
+[19:55:18.984]   weight_sensor ready: YES
+[19:55:18.984]   grinder ready: YES
+[19:55:18.984]   logger != nullptr: YES
+[19:55:18.984] TaskManager validation: All hardware and task dependencies ready
+[19:55:18.984] TaskManager: Inter-task communication queues created successfully
+[19:55:18.985] WeightSamplingTask started on Core 0 at 50Hz
+[19:55:18.985] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:55:18.985] gTask: Initializing WeightSensor hardware on Core 0...
+[19:55:18.985] GrindControlTask started on Core 0 at 50Hz
+[19:55:18.985] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:55:19.046] UI Render Task started on Core 1
+[19:55:19.046] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:55:19.046] Bluetooth Task started on Core 1
+[19:55:19.046] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:55:19.046] FileIOTask started on Core 1 at 10Hz
+[19:55:19.046] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:55:20.052] TaskManager: All tasks created successfully
+[19:55:20.052] ✅ TaskManager initialized successfully
+[19:55:20.052] FileIOTask: LittleFS filesystem available
+[19:55:20.052] FileIOTask: Initialized with file I/O queue
+[19:55:20.052] ✅ All task modules initialized
+[19:55:21.064] Initializing HX711 ADC hardware...
+[19:55:21.064] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:55:21.064] HX711Driver: First sample acquired successfully
+[19:55:21.064] HX711 ADC initialized successfully
+[19:55:21.064]   Waiting for WeightSensor hardware stabilization...
+[19:55:23.081] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:55:23.081] HX711Driver: Validation read 1/3 successful
+[19:55:23.236] HX711Driver: Validation read 2/3 successful
+[19:55:23.236] HX711Driver: Validation read 3/3 successful
+[19:55:23.236] HX711Driver: Hardware validatios in 250ms (rate ≈ 11.3 SPS)
+[19:55:23.236]   WeightSensoplete:
+[19:55:23.236]     Calibration factor: 4322.74
+[19:55:23.236]     Tare offset: 0
+[19:55:23.236]     Hardware ready: FALSE
+[19:55:24.235]     Sample rate detected: 11.3 SPS
+[19:55:24.235]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:55:24.235] ✅ WeightSensor hardware initialization successful on Core 0
+[19:55:24.235] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:55:27.247] [10007ms TASK_HEARTBEAT_UIRender] Cycles: 473/10s | Avg: 6ms (1-54ms) | Build: #3
+[19:55:27.248] [10010ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:55:29.055] [12468ms GRIND_CONTROL_HEARTBEAT] Cycles: 502/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.915g | Build: #3
+[19:55:30.062] [12519ms MAIN_LOOP_HEARTBEAT] Cycles: 939/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:55:30.062] [12610ms FILE_IO_HEARTBEAT] Cycles: 102/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:55:34.086] [16708ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 714/10s | Avg: 0ms (0-1ms) | Weight: 1898.003g | Raw: 8204581 | SPS: 11.5 | Samples: 112 | Build: #3
+[19:55:37.112] [20007ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:55:37.112] [20010ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:55:39.060] [22468ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.666g | Build: #3
+[19:55:40.061] [22524ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:55:40.061] [22610ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:55:44.086] [26708ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.606g | Raw: 8207189 | SPS: 11.5 | Samples: 224 | Build: #3
+[19:55:46.588] [30007ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:55:46.588] 
+[19:55:46.588] abort() was called at PC 0x403771fb on core 1
+[19:55:46.588] 
+[19:55:46.588] 
+[19:55:46.594] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:55:46.594] 
+[19:55:46.594] 
+[19:55:46.594] 
+[19:55:46.594] 
+[19:55:46.594] ELF file SHA256: 26d867175
+[19:55:46.594] 
+[19:55:46.594] E (12272) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:55:46.594] E (12281) esp_core_dump_elf: Elf write init failed!
+[19:55:46.618] E (12285) esp_core_dump_common: Core dump write failed with error=-1
+[19:55:46.618] Rebooting...
+[19:55:46.618] ESP-ROM:esp32s3-20210327
+[19:55:46.618] Build:Mar 27 2021
+[19:55:46.618] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:55:46.618] Saved PC:0x4037f54a
+[19:55:46.618] SPIWP:0xee
+[19:55:46.618] mode:DIO, clock div:1
+[19:55:46.618] load:0x3fce2820,len:0x116c
+[19:55:46.618] load:0x403c8700,len:0xc2c
+[19:55:47.026] load:0x403cb700,len:0x3108
+[19:55:47.026] entry 0x403c88b8
+[19:55:47.026] E (403) esp_core_dump_flash: No core dump partition found!
+[19:55:47.026] E (403) esp_core_dump_flash: No core dump partition found!
+[19:55:47.026] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:55:47.595] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:55:47.595] ✅ LittleFS mounted successfully
+[19:55:47.595] Initializing WeightSensor configuration and filters...
+[19:55:47.595] Created HX711 ADC driver
+[19:55:47.595] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:55:47.595] Time-series Logger initialized:
+[19:55:47.595]   - Event Buffer: 2 KB (50 events)
+[19:55:47.595]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:55:47.595]   - Next session ID: 31
+[19:55:47.595] UI event queue created successfully
+[19:55:47.595] Flash operation queue created successfully
+[19:55:47.596] Log message queue created successfully
+[19:55:47.605] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:55:47.605] Motor latency: Loaded 50.0ms from preferences
+[19:55:47.605] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:55:47.605] OTA: Handler initialized
+[19:55:47.605] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:55:48.373] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:55:48.374] [   604][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:55:48.374] [657ms MENU] Creating menu UI
+[19:55:48.374] [1176ms MENU] Menu UI created successfully
+[19:55:48.388] [  1364][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:55:48.388] [  1372][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:55:48.388] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:55:49.394] OTA Power: Switching from 240MHz to 240MHz
+[19:55:49.394] OTA Power: Reduced power mode enabled
+[19:55:49.455] Bluetooth: Ready - device is advertising (5m timeout)
+[19:55:49.455] [STARTUP] Initializing task module dependencies...
+[19:55:49.455] WeightSamplingTask: Initialized with hardware interfaces
+[19:55:49.455] GrindControlTask: Initialized with hardware interfaces
+[19:55:49.456] ✅ Task module dependencies initialized
+[19:55:49.456] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:55:49.456] TaskManager: Initializing FreeRTOS task architecture...
+[19:55:49.456] WeightSamplingTask hardware validation:
+[19:55:49.456]   weight_sensor != nullptr: YES
+[19:55:49.456]   weight_sensor initialized: YES
+[19:55:49.456] GrindControlTask hardware validation:
+[19:55:49.457]   grind_controller != nullptr: YES
+[19:55:49.457]   weight_sensor ready: YES
+[19:55:49.457]   grinder ready: YES
+[19:55:49.457]   logger != nullptr: YES
+[19:55:49.457] TaskManager validation: All hardware and task dependencies ready
+[19:55:49.457] TaskManager: Inter-task communication queues created successfully
+[19:55:49.458] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:55:49.459] WeightSamplingTask started on Core 0 at 50Hz
+[19:55:49.459] WeightSamplingTask: Initializing WeightSensor hardware on Core 0...
+[19:55:49.459] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:55:49.459] GrindControlTask started on Core 0 at 50Hz
+[19:55:49.520] UI Render Task started on Core 1
+[19:55:49.520] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:55:49.520] Bluetooth Task started on Core 1
+[19:55:49.520] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:55:49.520] FileIOTask started on Core 1 at 10Hz
+[19:55:50.526] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:55:50.526] TaskManager: All tasks created successfully
+[19:55:50.526] ✅ TaskManager initialized successfully
+[19:55:50.526] FileIOTask: LittleFS filesystem available
+[19:55:50.526] FileIOTask: Initialized with file I/O queue
+[19:55:50.527] ✅ All task modules initialized
+[19:55:51.531] Initializing HX711 ADC hardware...
+[19:55:51.531] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:55:51.531] HX711Driver: First sample acquired successfully
+[19:55:51.531] HX711 ADC initialized successfully
+[19:55:51.531]   Waiting for WeightSensor hardware stabilization...
+[19:55:53.542] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:55:53.709] HX711Driver: Validation read 1/3 successful
+[19:55:53.709] HX711Driver: Validation read 2/3 successful
+[19:55:53.709] HX711Driver: Validation read 3/3 succese validation completed - 3/3 successful reads in 250ms (rate ≈ 10.9 SPS)
+[19:55:53.709]   WeightSensor initialization complete:
+[19:55:53.709]     Calibration factor: 4322.74
+[19:55:53.709]     Tare offset: 0
+[19:55:53.709]     Hardware ready: FALSE
+[19:55:53.709]     Sample rate detected: 10.9 SPS
+[19:55:53.709]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:55:53.709] ✅ WeightSensor hardware initialization successful on Core 0
+[19:55:54.709] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:55:57.716] [10007ms TASK_HEARTBEAT_UIRender] Cycles: 473/10s | Avg: 6ms (1-54ms) | Build: #3
+[19:55:57.717] [10010ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:55:59.528] [12467ms GRIND_CONTROL_HEARTBEAT] Cycles: 502/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.671g | Build: #3
+[19:55:59.529] [12510ms FILE_IO_HEARTBEAT] Cycles: 101/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:56:00.543] [12519ms MAIN_LOOP_HEARTBEAT] Cycles: 939/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:56:07.020] [16707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 714/10s | Avg: 0ms (0-0ms) | Weight: 1898.684g | Raw: 8207528 | SPS: 11.5 | Samples: 112 | Build: #3
+[19:56:07.020] [20007ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:56:08.028] [20010ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:56:09.534] [22467ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.634g | Build: #3
+[19:56:09.534] [22510ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:56:10.545] [22524ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:56:14.578] [26707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.797g | Raw: 8203691 | SPS: 11.5 | Samples: 224 | Build: #3
+[19:56:17.063] [30007ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:56:17.063] [30010ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0
+[19:56:17.063] abort() was called at PC 0x403771fb on core 1
+[19:56:17.063] 
+[19:56:17.063] 
+[19:56:17.069] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:56:17.069] 
+[19:56:17.069] 
+[19:56:17.069] 
+[19:56:17.069] 
+[19:56:17.069] ELF file SHA256: 26d867175
+[19:56:17.069] 
+[19:56:17.069] E (12273) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:56:17.069] E (12282) esp_core_dump_elf: Elf write init failed!
+[19:56:17.088] E (12286) esp_core_dump_common: Core dump write failed with error=-1
+[19:56:17.088] Rebooting...
+[19:56:17.088] ESP-ROM:esp32s3-20210327
+[19:56:17.088] Build:Mar 27 2021
+[19:56:17.088] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:56:17.088] Saved PC:0x4037f54a
+[19:56:17.088] SPIWP:0xee
+[19:56:17.088] mode:DIO, clock div:1
+[19:56:17.501] load:0x3fce2820,len:0x116c
+[19:56:17.501] load:0x403c8700,len:0xc2c
+[19:56:17.501] load:0x403cb700,len:0x3108
+[19:56:17.501] entry 0x403c88b8
+[19:56:17.501] E (403) esp_core_dump_flash: No core dump partition found!
+[19:56:17.501] E (403) esp_core_dump_flash: No core dump partition found!
+[19:56:17.501] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:56:18.066] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:56:18.066] ✅ LittleFS mounted successfully
+[19:56:18.066] Initializing WeightSensor configuration and filters...
+[19:56:18.066] Created HX711 ADC driver
+[19:56:18.070] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:56:18.070] Time-series Logger initialized:
+[19:56:18.070]   - Event Buffer: 2 KB (50 events)
+[19:56:18.070]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:56:18.070]   - Next session ID: 31
+[19:56:18.070] UI event queue created successfully
+[19:56:18.070] Flash operation queue created successfully
+[19:56:18.080] Log message queue created successfully
+[19:56:18.080] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:56:18.080] Motor latency: Loaded 50.0ms from preferences
+[19:56:18.080] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:56:18.080] OTA: Handler initialized
+[19:56:18.141] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:56:18.142] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:56:18.142] [   604][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:56:18.863] [657ms MENU] Creating menu UI
+[19:56:18.863] [1176ms MENU] Menu UI created successfully
+[19:56:18.863] [  1364][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:56:18.864] [  1373][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:56:19.874] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:56:19.874] OTA Power: Switching from 240MHz to 240MHz
+[19:56:19.874] OTA Power: Reduced power mode enabled
+[19:56:19.930] Bluetooth: Ready - device is advertising (5m timeout)
+[19:56:19.930] [STARTUP] Initializing task module dependencies...
+[19:56:19.930] WeightSamplingTask: Initialized with hardware interfaces
+[19:56:19.930] GrindControlTask: Initialized with hardware interfaces
+[19:56:19.931] ✅ Task module dependencies initialized
+[19:56:19.931] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:56:19.931] TaskManager: Initializing FreeRTOS task architecture...
+[19:56:19.931] WeightSamplingTask hardware validation:
+[19:56:19.931]   weight_sensor != nullptr: YES
+[19:56:19.931]   weight_sensor initialized: YES
+[19:56:19.931] GrindControlTask hardware validation:
+[19:56:19.932]   grind_controller != nullptr: YES
+[19:56:19.932]   weight_sensor ready: YES
+[19:56:19.932]   grinder ready: YES
+[19:56:19.932]   logger != nullptr: YES
+[19:56:19.932] TaskManager validation: All hardware and task dependencies ready
+[19:56:19.932] TaskManager: Inter-task communication queues created successfully
+[19:56:19.933] �ling Task created (Core 0, Priority 4, 50Hz)
+[19:56:19.933] WeightSamplingTask started on Core 0 at 50Hz
+[19:56:19.933] WeightSamplingTask: Initializing WeightSensor hardware on Core 0...
+[19:56:19.933] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:56:19.933] UI Render Task started on Core 1
+[19:56:19.993] GrindControlTask started on Core 0 at 50Hz
+[19:56:19.994] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:56:19.994] Bluetooth Task started on Core 1
+[19:56:19.994] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:56:19.994] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:56:19.994] TaskManager: All tasks created successfully
+[19:56:20.997] ✅ TaskManager initialized successfully
+[19:56:20.997] FileIOTask started on Core 1 at 10Hz
+[19:56:20.997] FileIOTask: LittleFS filesystem available
+[19:56:20.997] FileIOTask: Initialized with file I/O queue
+[19:56:20.997] ✅ All task modules initialized
+[19:56:22.010] Initializing HX711 ADC hardware...
+[19:56:22.010] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:56:22.010] HX711Driver: First sample acquired successfully
+[19:56:22.010] HX711 ADC initialized successfully
+[19:56:22.010]   Waiting for WeightSensor hardware stabilization...
+[19:56:24.024] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:56:24.024] HX711Driver: Validation read 1/3 successful
+[19:56:24.184] HX711Driver: Validation read 2/3 successful
+[19:56:24.184] HX711Driver: Validation re validation completed - 3/3 successful reads in 250ms (rate ≈ 11.3 SPS)
+[19:56:24.184]   WeightSensor initialization complete:
+[19:56:24.184]     Calibration factor: 4322.74
+[19:56:24.184]     Tare offset: 0
+[19:56:24.185]     Hardware ready: FALSE
+[19:56:24.185]     Sample rate detected: 11.3 SPS
+[19:56:24.185]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:56:24.185] ✅ WeightSensor hardware initialization successful on Core 0
+[19:56:25.191] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:56:28.222] [10006ms TASK_HEARTBEAT_UIRender] Cycles: 473/10s | Avg: 6ms (1-54ms) | Build: #3
+[19:56:28.222] [10009ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:56:30.099] [12467ms GRIND_CONTROL_HEARTBEAT] Cycles: 502/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.859g | Build: #3
+[19:56:31.096] [12518ms MAIN_LOOP_HEARTBEAT] Cycles: 939/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:56:31.096] [12609ms FILE_IO_HEARTBEAT] Cycles: 102/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:56:35.110] [16707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 714/10s | Avg: 0ms (0-0ms) | Weight: 1897.951g | Raw: 8204358 | SPS: 11.5 | Samples: 112 | Build: #3
+[19:56:38.126] [20006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:56:38.126] [20009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:56:40.008] [22467ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.182g | Build: #3
+[19:56:41.013] [22523ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:56:41.013] [22609ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:56:45.041] [26707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.914g | Raw: 8204198 | SPS: 11.5 | Samples: 224 | Build: #3
+[19:56:47.537] [30006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:56:47.537] [30009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0
+[19:56:47.537] abort() was called at PC 0x403771fb on core 1
+[19:56:47.537] 
+[19:56:47.537] 
+[19:56:47.543] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:56:47.543] 
+[19:56:47.543] 
+[19:56:47.543] 
+[19:56:47.543] 
+[19:56:47.543] ELF file SHA256: 26d867175
+[19:56:47.543] 
+[19:56:47.543] E (12272) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:56:47.543] E (12281) esp_core_dump_elf: Elf write init failed!
+[19:56:47.562] E (12285) esp_core_dump_common: Core dump write failed with error=-1
+[19:56:47.562] Rebooting...
+[19:56:47.562] ESP-ROM:esp32s3-20210327
+[19:56:47.562] Build:Mar 27 2021
+[19:56:47.562] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:56:47.562] Saved PC:0x4037f54a
+[19:56:47.562] SPIWP:0xee
+[19:56:47.562] mode:DIO, clock div:1
+[19:56:47.975] load:0x3fce2820,len:0x116c
+[19:56:47.975] load:0x403c8700,len:0xc2c
+[19:56:47.975] load:0x403cb700,len:0x3108
+[19:56:47.975] entry 0x403c88b8
+[19:56:47.975] E (403) esp_core_dump_flash: No core dump partition found!
+[19:56:47.975] E (403) esp_core_dump_flash: No core dump partition found!
+[19:56:47.976] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:56:48.539] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:56:48.539] ✅ LittleFS mounted successfully
+[19:56:48.539] Initializing WeightSensor configuration and filters...
+[19:56:48.539] Created HX711 ADC driver
+[19:56:48.545] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:56:48.545] Time-series Logger initialized:
+[19:56:48.545]   - Event Buffer: 2 KB (50 events)
+[19:56:48.545]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:56:48.545]   - Next session ID: 31
+[19:56:48.545] UI event queue created successfully
+[19:56:48.545] Flash operation queue created successfully
+[19:56:48.554] Log message queue created successfully
+[19:56:48.554] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:56:48.554] Motor latency: Loaded 50.0ms from preferences
+[19:56:48.554] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:56:48.554] OTA: Handler initialized
+[19:56:49.135] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:56:49.135] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:56:49.135] [   604][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:56:49.338] [657ms MENU] Creating menu UI
+[19:56:49.338] [1176ms MENU] Menu UI created successfully
+[19:56:49.338] [  1365][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:56:49.338] [  1373][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:56:50.345] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:56:50.345] OTA Power: Switching from 240MHz to 240MHz
+[19:56:50.345] OTA Power: Reduced power mode enabled
+[19:56:50.404] Bluetooth: Ready - device is advertising (5m timeout)
+[19:56:50.405] [STARTUP] Initializing task module dependencies...
+[19:56:50.405] WeightSamplingTask: Initialized with hardware interfaces
+[19:56:50.405] GrindControlTask: Initialized with hardware interfaces
+[19:56:50.405] ✅ Task module dependencies initialized
+[19:56:50.405] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:56:50.405] TaskManager: Initializing FreeRTOS task architecture...
+[19:56:50.405] WeightSamplingTask hardware validation:
+[19:56:50.405]   weight_sensor != nullptr: YES
+[19:56:50.405]   weight_sensor initialized: YES
+[19:56:50.405] GrindControlTask hardware validation:
+[19:56:50.406]   grind_controller != nullptr: YES
+[19:56:50.406]   weight_sensor ready: YES
+[19:56:50.406] tion: All hardware and task dependencies ready
+[19:56:50.406] TaskManager: Inter-task communication queues created successfully
+[19:56:50.406] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:56:50.408] WeightSamplingTask started on Core 0 at 50Hz
+[19:56:50.408] WeightSamplingTask: Initializing WeightSensor hardware on Core 0...
+[19:56:50.408] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:56:50.408] UI Render Task started on Core 1
+[19:56:50.408] GrindControlTask started on Core 0 at 50Hz
+[19:56:50.468] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:56:50.468] Bluetooth Task started on Core 1
+[19:56:50.468] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:56:50.468] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:56:50.468] TaskManager: All tasks created successfully
+[19:56:50.468] ✅ TaskManager initialized successfully
+[19:56:51.468] FileIOTask started on Core 1 at 10Hz
+[19:56:51.469] FileIOTask: LittleFS filesystem available
+[19:56:51.469] FileIOTask: Initialized with file I/O queue
+[19:56:51.469] ✅ All task modules initialized
+[19:56:52.477] Initializing HX711 ADC hardware...
+[19:56:52.477] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:56:52.477] HX711Driver: First sample acquired successfully
+[19:56:52.477] HX711 ADC initialized successfully
+[19:56:52.477]   Waiting for WeightSensor hardware stabilization...
+[19:56:54.486] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:56:54.486] HX711Driver: Validation read 1/3 successful
+[19:56:54.658] HX711Driver: Validation read 2/3 successful
+[19:56:54.658] HX711Driver: Validation read 3/3 successful
+[19:56:54.658] HX711Driver: Hardware validation completed - 3/3 successful rplete:
+[19:56:54.658]     Calibration factor: 4322.74
+[19:56:54.658]     Tare offset: 0
+[19:56:54.658]     Hardware ready: FALSE
+[19:56:55.663]     Sample rate detected: 11.3 SPS
+[19:56:55.664]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:56:55.664] ✅ WeightSensor hardware initialization successful on Core 0
+[19:56:55.664] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:56:58.685] [10006ms TASK_HEARTBEAT_UIRender] Cycles: 473/10s | Avg: 6ms (1-54ms) | Build: #3
+[19:56:58.685] [10009ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:57:00.477] [12467ms GRIND_CONTROL_HEARTBEAT] Cycles: 502/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.710g | Build: #3
+[19:57:01.484] [12518ms MAIN_LOOP_HEARTBEAT] Cycles: 939/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:57:01.484] [12609ms FILE_IO_HEARTBEAT] Cycles: 102/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:57:05.504] [16707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 714/10s | Avg: 0ms (0-0ms) | Weight: 1898.675g | Raw: 8207488 | SPS: 11.5 | Samples: 112 | Build: #3
+[19:57:08.524] [20006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:57:08.524] [20009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:57:10.482] [22467ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.145g | Build: #3
+[19:57:11.487] [22523ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:57:11.487] [22609ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:57:15.507] [26707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.692g | Raw: 8207561 | SPS: 11.5 | Samples: 224 | Build: #3
+[19:57:18.011] [30006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:57:18.011] [30009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0
+[19:57:18.011] abort() was called at PC 0x403771fb on core 1
+[19:57:18.011] 
+[19:57:18.011] 
+[19:57:18.017] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:57:18.017] 
+[19:57:18.017] 
+[19:57:18.018] 
+[19:57:18.018] 
+[19:57:18.018] ELF file SHA256: 26d867175
+[19:57:18.018] 
+[19:57:18.018] E (12272) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:57:18.018] E (12281) esp_core_dump_elf: Elf write init failed!
+[19:57:18.036] E (12285) esp_core_dump_common: Core dump write failed with error=-1
+[19:57:18.036] Rebooting...
+[19:57:18.036] ESP-ROM:esp32s3-20210327
+[19:57:18.036] Build:Mar 27 2021
+[19:57:18.036] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:57:18.036] Saved PC:0x4037f54a
+[19:57:18.036] SPIWP:0xee
+[19:57:18.036] mode:DIO, clock div:1
+[19:57:18.449] load:0x3fce2820,len:0x116c
+[19:57:18.449] load:0x403c8700,len:0xc2c
+[19:57:18.449] load:0x403cb700,len:0x3108
+[19:57:18.449] entry 0x403c88b8
+[19:57:18.449] E (403) esp_core_dump_flash: No core dump partition found!
+[19:57:18.449] E (403) esp_core_dump_flash: No core dump partition found!
+[19:57:18.449] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:57:19.014] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:57:19.014] ✅ LittleFS mounted successfully
+[19:57:19.014] Initializing WeightSensor configuration and filters...
+[19:57:19.014] Created HX711 ADC driver
+[19:57:19.018] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:57:19.018] Time-series Logger initialized:
+[19:57:19.018]   - Event Buffer: 2 KB (50 events)
+[19:57:19.018]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:57:19.018]   - Next session ID: 31
+[19:57:19.018] UI event queue created successfully
+[19:57:19.018] Flash operation queue created successfully
+[19:57:19.028] Log message queue created successfully
+[19:57:19.028] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:57:19.028] Motor latency: Loaded 50.0ms from preferences
+[19:57:19.028] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:57:19.028] OTA: Handler initialized
+[19:57:19.090] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:57:19.090] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:57:19.090] [   604][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:57:19.812] [657ms MENU] Creating menu UI
+[19:57:19.812] [1176ms MENU] Menu UI created successfully
+[19:57:19.812] [  1364][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:57:19.812] [  1373][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:57:20.815] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:57:20.815] OTA Power: Switching from 240MHz to 240MHz
+[19:57:20.815] OTA Power: Reduced power mode enabled
+[19:57:20.879] Bluetooth: Ready - device is advertising (5m timeout)
+[19:57:20.879] [STARTUP] Initializing task module dependencies...
+[19:57:20.879] WeightSamplingTask: Initialized with hardware interfaces
+[19:57:20.879] GrindControlTask: Initialized with hardware interfaces
+[19:57:20.879] ✅ Task module dependencies initialized
+[19:57:20.880] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:57:20.880] TaskManager: Initializing FreeRTOS task architecture...
+[19:57:20.880] WeightSamplingTask hardware validation:
+[19:57:20.880]   weight_sensor != nullptr: YES
+[19:57:20.880]   weight_sensor initialized: YES
+[19:57:20.880] GrindControlTask hardware validation:
+[19:57:20.880]   grind_controller != nullptr: YES
+[19:57:20.880]   weight_sensor ready: YES
+[19:57:20.880]   grinder ready: YES
+[19:57:20.881]   logger != nullptr: YES
+[19:57:20.881] TaskManager validation: All hardware and task dependencies ready
+[19:57:20.881] TaskManager: Inter-task communication queues created successfully
+[19:57:20.881] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:57:20.881] WeightSamplingTask started on Core 0 at 50Hz
+[19:57:20.881] WeightSamplingTask: Initializing WeightSensor hardware on Core 0...
+[19:57:20.881] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:57:20.881] GrindControlTask started on Core 0 at 50Hz
+[19:57:20.942] UI Render Task started on Core 1
+[19:57:20.943] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:57:20.943] Bluetooth Task started on Core 1
+[19:57:20.943] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:57:20.943] FileIOTask started on Core 1 at 10Hz
+[19:57:21.949] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:57:21.949] TaskManager: All tasks created successfully
+[19:57:21.949] ✅ TaskManager initialized successfully
+[19:57:21.949] FileIOTask: LittleFS filesystem available
+[19:57:21.949] FileIOTask: Initialized with file I/O queue
+[19:57:21.949] ✅ All task modules initialized
+[19:57:22.965] Initializing HX711 ADC hardware...
+[19:57:22.965] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:57:22.965] HX711Driver: First sample acquired successfully
+[19:57:22.965] HX711 ADC initialized successfully
+[19:57:22.965]   Waiting for WeightSensor hardware stabilization...
+[19:57:24.972] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:57:24.973] HX711Driver: Validation read 1/3 successful
+[19:57:25.132] HX711Driver: Validation read 2/3 successful
+[19:57:25.132] HX711Driver: Validation read 3/3 successful
+[19:57:25.132] HX711Driver: Hardware validation completed - 3/3 successful reads in 250ms (rate ≈ 11.3 SPS)
+[19:57:25.132]   WeightSensor initialization complete:
+[19:57:25.132]     Calibration factor: 4322.74
+[19:57:25.132]     Tare offset: 0
+[19:57:25.132]     Hardware ready: FALSE
+[19:57:25.132]     Sample rate detected: 11.3 SPS
+[19:57:25.132]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:57:25.132] ✅ WeightSensor hardware initialization successful on Core 0
+[19:57:26.133] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:57:29.168] [10006ms TASK_HEARTBEAT_UIRender] Cycles: 473/10s | Avg: 6ms (1-54ms) | Build: #3
+[19:57:29.168] [10009ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:57:30.950] [12448ms GRIND_CONTROL_HEARTBEAT] Cycles: 501/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.673g | Build: #3
+[19:57:30.951] [12509ms FILE_IO_HEARTBEAT] Cycles: 101/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:57:31.959] [12518ms MAIN_LOOP_HEARTBEAT] Cycles: 939/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:57:35.998] [16707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 714/10s | Avg: 0ms (0-0ms) | Weight: 1898.717g | Raw: 8207667 | SPS: 11.5 | Samples: 112 | Build: #3
+[19:57:39.027] [20006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:57:39.027] [20009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:57:40.956] [22448ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.683g | Build: #3
+[19:57:40.956] [22509ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:57:41.960] [22523ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:57:45.977] [26707ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.903g | Raw: 8204149 | SPS: 11.5 | Samples: 224 | Build: #3
+[19:57:48.485] [30006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (6-6ms) | Build: #3
+[19:57:48.485] [30009ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0
+[19:57:48.485] abort() was called at PC 0x403771fb on core 1
+[19:57:48.486] 
+[19:57:48.486] 
+[19:57:48.491] Backtrace: 0x40382c2d:0x600ff6a0 0x40382bf5:0x600ff6c0 0x40389d05:0x600ff6e0 0x403771fb:0x600ff760 0x403773d2:0x600ff780 0x42115c57:0x600ff7a0 0x42115d1f:0x600ff7c0 0x42115dc9:0x600ff7f0 0x4200252e:0x600ff810 0x42002831:0x600ff840 0x42002a31:0x600ff880 0x42001ab1:0x600ff8c0 0x4205b8e7:0x600ff8f0 0x4205b93d:0x600ff930 0x4205b9db:0x600ff950 0x4205bd65:0x600ff980 0x40383bf5:0x600ff9a0
+[19:57:48.492] 
+[19:57:48.492] 
+[19:57:48.492] 
+[19:57:48.492] 
+[19:57:48.492] ELF file SHA256: 26d867175
+[19:57:48.492] 
+[19:57:48.492] E (12272) esp_core_dump_flash: Core dump flash config is corrupted! CRC=0x7bd5c66f instead of 0x0
+[19:57:48.492] E (12281) esp_core_dump_elf: Elf write init failed!
+[19:57:48.510] E (12285) esp_core_dump_common: Core dump write failed with error=-1
+[19:57:48.510] Rebooting...
+[19:57:48.510] ESP-ROM:esp32s3-20210327
+[19:57:48.510] Build:Mar 27 2021
+[19:57:48.510] rst:0xc (RTC_SW_CPU_RST),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[19:57:48.510] Saved PC:0x4037f54a
+[19:57:48.510] SPIWP:0xee
+[19:57:48.510] mode:DIO, clock div:1
+[19:57:48.924] load:0x3fce2820,len:0x116c
+[19:57:48.924] load:0x403c8700,len:0xc2c
+[19:57:48.924] load:0x403cb700,len:0x3108
+[19:57:48.924] entry 0x403c88b8
+[19:57:48.924] E (403) esp_core_dump_flash: No core dump partition found!
+[19:57:48.924] E (403) esp_core_dump_flash: No core dump partition found!
+[19:57:48.924] [STARTUP] Reset reason: PANIC (Exception) (4)
+[19:57:49.488] [STARTUP] Initializing ESP32-S3 Coffee Scale - Build 3 - Core1 active
+[19:57:49.488] ✅ LittleFS mounted successfully
+[19:57:49.488] Initializing WeightSensor configuration and filters...
+[19:57:49.488] Created HX711 ADC driver
+[19:57:49.492] WeightSensor configuration initialized - hardware will be initialized by WeightSamplingTask
+[19:57:49.493] Time-series Logger initialized:
+[19:57:49.493]   - Event Buffer: 2 KB (50 events)
+[19:57:49.493]   - Measurement Buffer: 70 KB (3000 measurements)
+[19:57:49.493]   - Next session ID: 31
+[19:57:49.493] UI event queue created successfully
+[19:57:49.493] Flash operation queue created successfully
+[19:57:49.502] Log message queue created successfully
+[19:57:49.502] [   586][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: motor_lat_ms NOT_FOUND
+[19:57:49.502] Motor latency: Loaded 50.0ms from preferences
+[19:57:49.502] Bluetooth: Manager initialized (enable via Developer Mode)
+[19:57:49.502] OTA: Handler initialized
+[19:57:49.563] OTA Power: Initial state - CPU: 240MHz, Power mode: NORMAL
+[19:57:49.564] [   595][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_build_nr NOT_FOUND
+[19:57:49.564] [   604][E][Preferences.cpp:506] getString(): nvs_get_str len fail: new_fw_ver NOT_FOUND
+[19:57:50.285] [657ms MENU] Creating menu UI
+[19:57:50.286] [1176ms MENU] Menu UI created successfully
+[19:57:50.286] [  1364][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[19:57:50.286] [  1372][E][Preferences.cpp:47] begin(): nvs_open failed: NOT_FOUND
+[19:57:51.287] Bluetooth: Enabling BLE with reduced power settings (5m timeout)
+[19:57:51.287] OTA Power: Switching from 240MHz to 240MHz
+[19:57:51.287] OTA Power: Reduced power mode enabled
+[19:57:51.352] Bluetooth: Ready - device is advertising (5m timeout)
+[19:57:51.353] [STARTUP] Initializing task module dependencies...
+[19:57:51.353] WeightSamplingTask: Initialized with hardware interfaces
+[19:57:51.353] GrindControlTask: Initialized with hardware interfaces
+[19:57:51.353] ✅ Task module dependencies initialized
+[19:57:51.353] [STARTUP] Initializing FreeRTOS Task Architecture...
+[19:57:51.353] TaskManager: Initializing FreeRTOS task architecture...
+[19:57:51.353] WeightSamplingTask hardware validation:
+[19:57:51.353]   weight_sensor != nullptr: YES
+[19:57:51.353]   weight_sensor initialized: YES
+[19:57:51.353] GrindControlTask hardware validation:
+[19:57:51.353]   grind_controller != nullptr: YES
+[19:57:51.353]   weight_sensor ready: YES
+[19:57:51.353]   grinder ready: YES
+[19:57:51.353]   logger != nullptr: YES
+[19:57:51.353] TaskManager validation: All hardware and task dependencies ready
+[19:57:51.353] TaskManager: Inter-task communication queues created successfully
+[19:57:51.353] ✅ Weight Sampling Task created (Core 0, Priority 4, 50Hz)
+[19:57:51.353] WeightSamplingTask started on Core 0 at 50Hz
+[19:57:51.353] WeightSamplingTask: Initializing WeightSensor hardware on Core 0...
+[19:57:51.353] ✅ Grind Control Task created (Core 0, Priority 3, 50Hz)
+[19:57:51.353] UI Render Task started on Core 1
+[19:57:51.414] GrindControlTask started on Core 0 at 50Hz
+[19:57:51.414] ✅ UI Render Task created (Core 1, Priority 2, 62Hz)
+[19:57:51.414] Bluetooth Task started on Core 1
+[19:57:51.414] ✅ Bluetooth Task created (Core 1, Priority 3, 50Hz)
+[19:57:51.414] ✅ File I/O Task created (Core 1, Priority 1, 10Hz)
+[19:57:52.427] TaskManager: All tasks created successfully
+[19:57:52.428] ✅ TaskManager initialized successfully
+[19:57:52.428] FileIOTask started on Core 1 at 10Hz
+[19:57:52.428] FileIOTask: LittleFS filesystem available
+[19:57:52.428] FileIOTask: Initialized with file I/O queue
+[19:57:52.428] ✅ All task modules initialized
+[19:57:53.436] Initializing HX711 ADC hardware...
+[19:57:53.436] HX711Driver: Waiting for first sample (timeout: 400ms)
+[19:57:53.436] HX711Driver: First sample acquired successfully
+[19:57:53.436] HX711 ADC initialized successfully
+[19:57:53.436]   Waiting for WeightSensor hardware stabilization...
+[19:57:55.441] HX711Driver: Hardware validation timeout = 900ms (sample rate: 10 SPS)
+[19:57:55.441] HX711Driver: Validation read 1/3 successful
+[19:57:55.605] HX711Driver: Validation read 2/3 successful
+[19:57:55.605] HX711Driver: Validation read 3/3 successful
+[19:57:55.605] HX711Driver: Hardware validation comples in 250ms (rate ≈ 11.3 SPS)
+[19:57:55.605]   WeightSensor initialization complete:
+[19:57:55.605]     Calibration factor: 4322.74
+[19:57:55.605]     Tare offset: 0
+[19:57:55.605]     Hardware ready: FALSE
+[19:57:55.605]     Sample rate detected: 11.3 SPS
+[19:57:55.605]     Verification reading: No sample ready yet (normal for 10 SPS after validation)
+[19:57:55.605] ✅ WeightSensor hardware initialization successful on Core 0
+[19:57:56.606] WeightSamplingTask: Hardware initialization complete, starting sampling loop
+[19:57:59.640] [10004ms TASK_HEARTBEAT_UIRender] Cycles: 473/10s | Avg: 6ms (1-55ms) | Build: #3
+[19:57:59.640] [10008ms TASK_HEARTBEAT_FileIO] Cycles: 379/10s | Avg: 0ms (0-0ms) | Build: #3
+[19:58:01.519] [12466ms GRIND_CONTROL_HEARTBEAT] Cycles: 502/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.932g | Build: #3
+[19:58:02.510] [12516ms MAIN_LOOP_HEARTBEAT] Cycles: 939/10s | Avg: 0ms (0-1ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 0KB | Build: #3
+[19:58:02.510] [12607ms FILE_IO_HEARTBEAT] Cycles: 102/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #3
+[19:58:06.537] [16706ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 714/10s | Avg: 0ms (0-0ms) | Weight: 1897.850g | Raw: 8203923 | SPS: 11.5 | Samples: 112 | Build: #3

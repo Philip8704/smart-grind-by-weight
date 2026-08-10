@@ -25,3 +25,7 @@ failed_session_*.bin
 
 # Git worktrees
 .worktrees/
+
+# Locally packaged firmware for the web flasher - regenerated per build
+tools/web-flasher/firmware/
+crash_*.log

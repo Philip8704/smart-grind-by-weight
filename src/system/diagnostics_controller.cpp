@@ -3,6 +3,8 @@
 #include "../hardware/WeightSensor.h"
 #include "../controllers/grind_controller.h"
 #include "../config/constants.h"
+#include <esp_heap_caps.h>
+#include <lvgl.h>
 
 DiagnosticsController::DiagnosticsController()
     : hardware_manager_(nullptr) {
@@ -28,6 +30,59 @@ void DiagnosticsController::update(HardwareManager* hw_mgr, GrindController* gri
 
     // Phase 6: Add mechanical instability
     check_mechanical_stability(grind_ctrl);
+
+    check_memory_health(uptime_ms);
+}
+
+DiagnosticsController::MemorySnapshot DiagnosticsController::sample_memory() {
+    MemorySnapshot snapshot = {};
+    snapshot.internal_free_bytes = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+    snapshot.internal_largest_block_bytes = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
+    snapshot.internal_min_free_ever_bytes = heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL);
+
+    lv_mem_monitor_t lvgl_monitor;
+    lv_mem_monitor(&lvgl_monitor);
+    snapshot.lvgl_pool_free_bytes = lvgl_monitor.free_size;
+    snapshot.lvgl_pool_frag_pct = lvgl_monitor.frag_pct;
+
+    return snapshot;
+}
+
+void DiagnosticsController::check_memory_health(uint32_t uptime_ms) {
+    if (last_memory_check_ms_ != 0 &&
+        (uptime_ms - last_memory_check_ms_) < SYS_MEMORY_CHECK_INTERVAL_MS) {
+        return;
+    }
+    last_memory_check_ms_ = uptime_ms;
+
+    MemorySnapshot snapshot = sample_memory();
+
+    // Largest free block matters as much as the total: a fragmented heap fails an
+    // allocation long before the free total looks alarming
+    bool low = (snapshot.internal_free_bytes < SYS_MEMORY_INTERNAL_FREE_WARN_BYTES) ||
+               (snapshot.internal_largest_block_bytes < SYS_MEMORY_INTERNAL_BLOCK_WARN_BYTES);
+
+    bool already_warning = (find_diagnostic(DiagnosticCode::LOW_MEMORY) != nullptr);
+
+    // Hysteresis so a reading hovering on the threshold does not flicker the icon
+    bool recovered =
+        (snapshot.internal_free_bytes >
+             (SYS_MEMORY_INTERNAL_FREE_WARN_BYTES + SYS_MEMORY_RECOVERY_HYSTERESIS_BYTES)) &&
+        (snapshot.internal_largest_block_bytes >
+             (SYS_MEMORY_INTERNAL_BLOCK_WARN_BYTES + SYS_MEMORY_RECOVERY_HYSTERESIS_BYTES));
+
+    if (low && !already_warning) {
+        LOG_BLE("[DIAG] Low memory: %lu free internal, largest block %lu, min ever %lu, "
+                "LVGL pool %lu free (%u%% frag)\n",
+                (unsigned long)snapshot.internal_free_bytes,
+                (unsigned long)snapshot.internal_largest_block_bytes,
+                (unsigned long)snapshot.internal_min_free_ever_bytes,
+                (unsigned long)snapshot.lvgl_pool_free_bytes,
+                (unsigned)snapshot.lvgl_pool_frag_pct);
+        set_diagnostic_active(DiagnosticCode::LOW_MEMORY);
+    } else if (already_warning && recovered) {
+        clear_diagnostic(DiagnosticCode::LOW_MEMORY);
+    }
 }
 
 void DiagnosticsController::check_load_cell_calibration(WeightSensor* sensor) {
@@ -145,6 +200,10 @@ DiagnosticCode DiagnosticsController::get_highest_priority_warning() const {
     if (find_diagnostic(DiagnosticCode::MECHANICAL_INSTABILITY)) {
         return DiagnosticCode::MECHANICAL_INSTABILITY;
     }
+    // Ranked here because an exhausted heap ends in a reboot, not just a bad grind
+    if (find_diagnostic(DiagnosticCode::LOW_MEMORY)) {
+        return DiagnosticCode::LOW_MEMORY;
+    }
     if (find_diagnostic(DiagnosticCode::LOAD_CELL_NOISY_SUSTAINED)) {
         return DiagnosticCode::LOAD_CELL_NOISY_SUSTAINED;
     }
@@ -198,6 +257,8 @@ const char* DiagnosticsController::get_diagnostic_message(DiagnosticCode code) c
             return "Sustained sensor noise detected. Check connections and environment.";
         case DiagnosticCode::MECHANICAL_INSTABILITY:
             return "Mechanical instability detected. Check grinder mounting and connections.";
+        case DiagnosticCode::LOW_MEMORY:
+            return "Low memory. Restart the grinder; report this if it keeps happening.";
         case DiagnosticCode::NONE:
         default:
             return "";

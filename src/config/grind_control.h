@@ -38,7 +38,27 @@ enum class GrinderPurgeMode {
 
 // Undershoot strategy - determine when to stop grinding during the predictive phase
 #define GRIND_UNDERSHOOT_TARGET_G 1.0f                                    // Default conservative undershoot target
-#define GRIND_LATENCY_TO_COAST_RATIO 1.0f                                 // Ratio of expected coast time to measured latency (e.g., 0.8 = 80%)
+#define GRIND_LATENCY_TO_COAST_RATIO 1.0f                                 // Seed only: coast time guessed from spin-up latency until a real coast time is learned
+
+// Flow measurement windows used by the predictive phase
+#define GRIND_FLOW_DETECTION_WINDOW_MS 500                                // Window for detecting that coffee has started falling
+#define GRIND_FLOW_RATE_CALC_WINDOW_MS 1500                               // Window for the steady-state flow rate driving the stop prediction
+#define GRIND_PULSE_FLOW_RATE_WINDOW_MS 2500                              // Window for the 95th-percentile flow rate captured at motor stop
+
+// Failsafe thresholds
+#define GRIND_NEGATIVE_WEIGHT_FAILSAFE_G -1.0f                            // Weight below this during a weight grind means the cup moved or the scale broke
+#define GRIND_MIN_TARGET_FOR_DELIVERY_CHECK_G 1.0f                        // Only targets at or above this are checked for "no coffee delivered"
+
+//------------------------------------------------------------------------------
+// LEARNED COAST MODEL (per profile, persisted)
+//------------------------------------------------------------------------------
+// Coast = coffee still in flight after the motor stops. Measured every grind as
+// (settled weight - weight at motor stop) / flow rate, then averaged across grinds.
+// Storing it as a TIME rather than a weight keeps it valid across dose sizes and
+// grind settings, since the weight it turns into scales with the current flow rate.
+#define GRIND_COAST_LEARNING_ALPHA 0.25f                                  // EWMA weight of the newest observation (4-grind effective memory)
+#define GRIND_COAST_TIME_MIN_S 0.05f                                      // Reject observations below this as measurement noise
+#define GRIND_COAST_TIME_MAX_S 1.50f                                      // Reject observations above this as a stalled or mis-settled grind
 
 // Prime phase behavior
 #define GRIND_PRIME_TARGET_WEIGHT_G 1.0f                                   // Amount of coffee delivered during chute priming
@@ -55,6 +75,15 @@ enum class GrinderPurgeMode {
 //------------------------------------------------------------------------------
 #define GRIND_TIME_PULSE_DURATION_MS 100                                        // Duration of additional pulses in time mode (milliseconds)
 
+//------------------------------------------------------------------------------
+// TIME MODE SCALE HANDLING
+//------------------------------------------------------------------------------
+// Time mode never depends on the scale: the load cell only feeds the display.
+// These bounds keep a slow or dead scale from stalling a purely time-based grind.
+#define GRIND_TIME_TARE_TIMEOUT_MS 4000                                         // Give up on taring and grind anyway (18 samples @ ~11.5 SPS + settling)
+#define GRIND_TIME_SETTLING_TIMEOUT_MS 2000                                     // Max wait for the final weight reading before reporting whatever is shown
+#define GRIND_NOTICE_DISPLAY_MS 3000                                            // How long a non-fatal notice ("Tare failed") replaces the target label
+
 
 
 //------------------------------------------------------------------------------
@@ -70,6 +99,9 @@ enum class GrinderPurgeMode {
 // Motor response latency - runtime configurable via auto-tune
 #define GRIND_MOTOR_RESPONSE_LATENCY_DEFAULT_MS 50.0f                             // Safe default motor response latency
 #define GRIND_MOTOR_MAX_PULSE_DURATION_MS 250.0f                                  // Maximum pulse duration above latency (latency + GRIND_MOTOR_MAX_PULSE_DURATION_MS)
+#define GRIND_MOTOR_MIN_PULSE_DURATION_MS 20.0f                                   // Smallest productive pulse worth firing. Below this the pulse is mostly motor
+                                                                                  // latency and delivers nothing measurable, so the grind is declared done instead
+                                                                                  // of burning attempts on no-op pulses. 20ms is ~0.03g at the 1.5g/s fallback flow.
 
 // Motor timing
 #define GRIND_MOTOR_SETTLING_TIME_MS 200                                          // Motor vibration settling time

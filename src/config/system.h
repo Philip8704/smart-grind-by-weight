@@ -63,8 +63,30 @@
 //------------------------------------------------------------------------------
 // WEIGHT DISPLAY FILTER SETTINGS
 //------------------------------------------------------------------------------
-// Asymmetric display filter for smooth weight updates
-#define SYS_DISPLAY_FILTER_ALPHA_DOWN 0.9f                                     // Slower decay when weight decreases
+// Asymmetric display filter for smooth weight updates. The filter now advances once
+// per load cell sample (~10/s), so alpha is a true per-sample weight on the newest
+// reading: 0.3 gives a ~3 sample (~300ms) decay. Raising it back towards 1.0 makes
+// downward steps instant again and brings the visible bouncing back.
+#define SYS_DISPLAY_FILTER_ALPHA_DOWN 0.3f                                     // Decay rate when the weight decreases
+#define SYS_DISPLAY_DEADBAND_G 0.01f                                           // Reading must move at least this much before the display updates
+
+// Window for the least-squares estimator behind the control-path weight and the flow
+// rate. Wider = quieter but needs more samples before it engages; at 10 SPS this holds
+// ~3 samples, the minimum for a meaningful fit. The fit is reported at the newest
+// sample, so widening this reduces noise without adding lag.
+#define SYS_CONTROL_FIT_WINDOW_MS 300
+
+//------------------------------------------------------------------------------
+// MEMORY HEALTH MONITORING
+//------------------------------------------------------------------------------
+// LVGL lives in a PSRAM pool, but FreeRTOS, BLE and LittleFS all compete for the much
+// smaller internal DRAM heap - that is the one that runs out. With LV_USE_ASSERT_MALLOC
+// enabled a failed allocation aborts, so the point of these thresholds is to raise the
+// warning icon while there is still enough headroom to see what caused it.
+#define SYS_MEMORY_CHECK_INTERVAL_MS 5000                                      // How often to sample the heaps
+#define SYS_MEMORY_INTERNAL_FREE_WARN_BYTES (40 * 1024)                        // Warn below this much free internal DRAM
+#define SYS_MEMORY_INTERNAL_BLOCK_WARN_BYTES (16 * 1024)                       // Warn when fragmentation leaves no block this large
+#define SYS_MEMORY_RECOVERY_HYSTERESIS_BYTES (8 * 1024)                        // Must recover this far above the threshold to clear
 
 //------------------------------------------------------------------------------
 // JOG ACCELERATION CONFIGURATION

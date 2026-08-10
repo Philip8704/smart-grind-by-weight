@@ -195,6 +195,9 @@ void GrindingScreenChart::update_target_time(float seconds) {
 }
 
 void GrindingScreenChart::update_current_weight(float weight) {
+    if (time_mode) {
+        return;  // Time mode shows remaining time instead of weight
+    }
     char current_text[16], target_text[16];
     snprintf(current_text, sizeof(current_text), SYS_WEIGHT_DISPLAY_FORMAT, weight);
     snprintf(target_text, sizeof(target_text), " / " SYS_WEIGHT_DISPLAY_FORMAT, target_weight_value);
@@ -212,6 +215,24 @@ void GrindingScreenChart::update_current_weight(float weight) {
         } else {
             lv_span_set_text(separator_span, target_text);
         }
+        lv_spangroup_refresh(weight_spangroup);
+    }
+}
+
+void GrindingScreenChart::update_center_text(const char* text) {
+    lv_span_t* current_span = lv_spangroup_get_child(weight_spangroup, 0);
+    if (current_span) {
+        lv_span_set_text(current_span, text);
+        lv_spangroup_refresh(weight_spangroup);
+    }
+}
+
+void GrindingScreenChart::update_time_weight(float weight) {
+    lv_span_t* separator_span = lv_spangroup_get_child(weight_spangroup, 1);
+    if (separator_span) {
+        char line[48];
+        snprintf(line, sizeof(line), "\nTime: %.1fs | " SYS_WEIGHT_DISPLAY_FORMAT, target_time_seconds, weight);
+        lv_span_set_text(separator_span, line);
         lv_spangroup_refresh(weight_spangroup);
     }
 }

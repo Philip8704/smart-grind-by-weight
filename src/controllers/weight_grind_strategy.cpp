@@ -59,23 +59,20 @@ float WeightGrindStrategy::get_clamped_pulse_flow_rate(const GrindController& co
     return flow_rate;
 }
 
-float WeightGrindStrategy::calculate_pulse_duration_ms(const GrindController& controller,
-                                                       float error_grams) const {
+float WeightGrindStrategy::calculate_productive_pulse_ms(const GrindController& controller,
+                                                         float error_grams) const {
     float clamped_flow_rate = get_clamped_pulse_flow_rate(controller);
 
-    // Calculate the productive grinding time needed (excludes startup latency)
+    // Grinding time needed to close the error, excluding startup latency
     float productive_duration_ms = (error_grams / clamped_flow_rate) * 1000.0f;
 
-    // Motor latency is the base time needed to start the system
-    float motor_latency_ms = controller.get_motor_response_latency();
+    return max(0.0f, min(productive_duration_ms, GRIND_MOTOR_MAX_PULSE_DURATION_MS));
+}
 
-    // Clamp productive duration to valid range (0 to max additional time)
-    float clamped_productive_ms = max(0.0f, min(productive_duration_ms, GRIND_MOTOR_MAX_PULSE_DURATION_MS));
-
-    // Total pulse = latency (startup) + productive grinding time
-    float final_duration = motor_latency_ms + clamped_productive_ms;
-
-    return final_duration;
+float WeightGrindStrategy::calculate_pulse_duration_ms(const GrindController& controller,
+                                                       float error_grams) const {
+    // Total pulse = latency (startup, delivers nothing) + productive grinding time
+    return controller.get_motor_response_latency() + calculate_productive_pulse_ms(controller, error_grams);
 }
 
 void WeightGrindStrategy::run_predictive_phase(GrindController& controller,
@@ -85,8 +82,7 @@ void WeightGrindStrategy::run_predictive_phase(GrindController& controller,
     }
 
     if (!controller.flow_start_confirmed) {
-        const uint32_t flow_detection_window_ms = 500;
-        float current_flow_rate = controller.weight_sensor->get_flow_rate(flow_detection_window_ms);
+        float current_flow_rate = controller.weight_sensor->get_flow_rate(GRIND_FLOW_DETECTION_WINDOW_MS);
 
         if (current_flow_rate >= GRIND_FLOW_DETECTION_THRESHOLD_GPS) {
             controller.grind_latency_ms = loop_data.now - controller.phase_start_time;
@@ -97,13 +93,20 @@ void WeightGrindStrategy::run_predictive_phase(GrindController& controller,
     }
 
     if (controller.flow_start_confirmed) {
-        const uint32_t flow_rate_calc_window_ms = 1500;
-        if (loop_data.now > (controller.phase_start_time + controller.grind_latency_ms + flow_rate_calc_window_ms)) {
-            float current_flow_rate = controller.weight_sensor->get_flow_rate(flow_rate_calc_window_ms);
+        if (loop_data.now > (controller.phase_start_time + controller.grind_latency_ms + GRIND_FLOW_RATE_CALC_WINDOW_MS)) {
+            float current_flow_rate = controller.weight_sensor->get_flow_rate(GRIND_FLOW_RATE_CALC_WINDOW_MS);
 
             if (current_flow_rate > GRIND_FLOW_DETECTION_THRESHOLD_GPS) {
-                controller.motor_stop_target_weight = ((controller.grind_latency_ms * GRIND_LATENCY_TO_COAST_RATIO) /
-                                                       (float)SYS_MS_PER_SECOND) * current_flow_rate;
+                // Coffee still in flight when the motor stops = coast time x flow rate.
+                // Coast time comes from previous grinds on this profile; only the very
+                // first grind falls back to guessing it from the spin-up latency, which
+                // measures chute fill rather than burr spin-down and is only a seed.
+                float coast_time_s = controller.get_learned_coast_time_s();
+                if (coast_time_s <= 0.0f) {
+                    coast_time_s = (controller.grind_latency_ms * GRIND_LATENCY_TO_COAST_RATIO) /
+                                   (float)SYS_MS_PER_SECOND;
+                }
+                controller.motor_stop_target_weight = coast_time_s * current_flow_rate;
             }
         }
     }
@@ -113,7 +116,7 @@ void WeightGrindStrategy::run_predictive_phase(GrindController& controller,
         loop_data.current_weight >= (controller.target_weight - controller.motor_stop_target_weight)) {
         controller.grinder->stop();
         controller.predictive_end_weight = loop_data.current_weight;
-        controller.pulse_flow_rate = controller.weight_sensor->get_flow_rate_95th_percentile(2500);
+        controller.pulse_flow_rate = controller.weight_sensor->get_flow_rate_95th_percentile(GRIND_PULSE_FLOW_RATE_WINDOW_MS);
         controller.switch_phase(GrindPhase::PULSE_SETTLING, loop_data);
     }
 }
@@ -129,13 +132,25 @@ void WeightGrindStrategy::run_pulse_decision_phase(GrindController& controller,
         return;
     }
 
+    // The first settle after the predictive stop is the only clean look at coast:
+    // everything delivered between motor-off and this reading was already in flight.
+    // Later settles follow pulses, which have their own latency and are not coast.
+    if (controller.pulse_attempts == 0) {
+        controller.observe_coast(settled_weight - controller.predictive_end_weight);
+    }
+
     float conservative_target = controller.target_weight - GRIND_ACCURACY_TOLERANCE_G;
     float error = conservative_target - settled_weight;
+    float productive_ms = calculate_productive_pulse_ms(controller, error);
 
     // coast_time_ms removed - was only used for logging pulse history
 
+    // Stop pulsing when the remaining error is smaller than one usable pulse. Firing
+    // anyway would either waste an attempt on pure motor latency that delivers nothing,
+    // or - if padded up to a minimum duration - overshoot a target we cannot undo.
     if (controller.target_weight - settled_weight < GRIND_ACCURACY_TOLERANCE_G ||
-        controller.pulse_attempts >= GRIND_MAX_PULSE_ATTEMPTS) {
+        controller.pulse_attempts >= GRIND_MAX_PULSE_ATTEMPTS ||
+        productive_ms < GRIND_MOTOR_MIN_PULSE_DURATION_MS) {
         controller.switch_phase(GrindPhase::FINAL_SETTLING, loop_data);
         return;
     }

@@ -150,5 +150,9 @@ private:
         bool auto_return_enabled = false;
         uint32_t last_auto_start_ms = 0;
         uint32_t last_auto_return_ms = 0;
+        int min_start_weight_g = USER_AUTO_GRIND_MIN_WEIGHT_DEFAULT_G;  // Portafilter gate, 0 = off
+        bool start_armed = true;         // Cleared after firing; re-armed once the scale is unloaded again
+        uint32_t settled_since_ms = 0;   // When the reading last became settled (0 = currently unsettled)
+        uint32_t unloaded_since_ms = 0;  // When the weight last dropped below the re-arm level (0 = still loaded)
     } auto_actions_;
 };

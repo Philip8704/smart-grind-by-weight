@@ -1,5 +1,6 @@
 #include "grinding_screen.h"
 #include <Preferences.h>
+#include <cstdio>
 
 GrindingScreen::GrindingScreen() : current_layout(GrindScreenLayout::MINIMAL_ARC), preferences(nullptr), current_mode(GrindMode::WEIGHT) {
     // Layout will be loaded in init() when preferences are available
@@ -96,6 +97,23 @@ void GrindingScreen::update_target_time(float seconds) {
 void GrindingScreen::update_current_weight(float weight) {
     arc_screen.update_current_weight(weight);
     chart_screen.update_current_weight(weight);
+}
+
+void GrindingScreen::update_time_remaining(float seconds) {
+    if (seconds < 0.0f) seconds = 0.0f;
+    char time_text[16];
+    snprintf(time_text, sizeof(time_text), "%.1fs", seconds);
+    update_center_text(time_text);
+}
+
+void GrindingScreen::update_center_text(const char* text) {
+    arc_screen.update_center_text(text);
+    chart_screen.update_center_text(text);
+}
+
+void GrindingScreen::update_time_weight(float weight) {
+    arc_screen.update_time_weight(weight);
+    chart_screen.update_time_weight(weight);
 }
 
 void GrindingScreen::update_tare_display() {

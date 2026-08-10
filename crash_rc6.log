@@ -1,0 +1,309 @@
+[20:01:20.422] === MONITOR STARTED - waiting for device ===
+[20:01:20.442] === CONNECTED on COM5 ===
+[20:01:22.451] [16336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 714/10s | Avg: 0ms (0-1ms) | Weight: 1897.847g | Raw: 8203907 | SPS: 11.5 | Samples: 112 | Build: #1
+[20:01:26.484] [20001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 4ms (4-5ms) | Build: #1
+[20:01:26.484] [20016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:01:27.874] [22076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.146g | Build: #1
+[20:01:27.875] [22119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:01:28.879] [22133ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:01:29.228] E (23462) i2c.master: I2C transaction unexpected nack detected
+[20:01:29.228] E (23462) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:01:29.228] E (23464) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:01:30.233] [ 23478][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:01:30.233] [ 23499][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:01:32.262] [26336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.517g | Raw: 8206806 | SPS: 11.5 | Samples: 224 | Build: #1
+[20:01:36.308] [30001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-42ms) | Build: #1
+[20:01:36.308] [30016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:01:37.880] [32076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.894g | Build: #1
+[20:01:37.880] [32119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-64ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:01:38.895] [32139ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:01:42.763] [36336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.885g | Raw: 8204187 | SPS: 11.5 | Samples: 336 | Build: #1
+[20:01:42.763] E (37014) i2c.master: I2C transaction unexpected nack detected
+[20:01:42.792] E (37014) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:01:42.792] E (37016) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:01:42.792] [ 37030][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:01:43.797] [ 37051][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:01:45.827] [40001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-42ms) | Build: #1
+[20:01:45.827] [40016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:01:47.846] [42076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.948g | Build: #1
+[20:01:48.847] [42119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:01:48.847] [42139ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:01:52.879] [46336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.197g | Raw: 8205109 | SPS: 11.5 | Samples: 448 | Build: #1
+[20:01:55.909] [50001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (5-5ms) | Build: #1
+[20:01:56.306] E (50550) i2c.master: I2C transaction unexpected nack detected
+[20:01:56.306] [50016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:01:56.306] E (50550) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:01:57.311] E (50552) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:01:57.312] [ 50566][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:01:57.312] [ 50587][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:01:57.886] [52076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.573g | Build: #1
+[20:01:57.886] [52119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:01:58.894] [52145ms MAIN_LOOP_HEARTBEAT] Cycles: 935/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:02:02.937] [56336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.539g | Raw: 8206860 | SPS: 11.5 | Samples: 560 | Build: #1
+[20:02:05.961] [60001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:02:05.961] [60016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:02:07.890] [62076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.544g | Build: #1
+[20:02:07.890] [62119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-6ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:02:08.889] [62149ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:02:09.868] E (64102) i2c.master: I2C transaction unexpected nack detected
+[20:02:09.869] E (64102) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:02:09.869] E (64104) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:02:10.857] [ 64118][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:02:10.857] [ 64139][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:02:12.888] [66336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.539g | Raw: 8206911 | SPS: 11.5 | Samples: 672 | Build: #1
+[20:02:15.920] [70001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-42ms) | Build: #1
+[20:02:15.920] [70016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:02:17.890] [72076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.813g | Build: #1
+[20:02:17.890] [72119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:02:18.887] [72149ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:02:22.923] [76336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.864g | Raw: 8203853 | SPS: 11.5 | Samples: 784 | Build: #1
+[20:02:23.404] E (77638) i2c.master: I2C transaction unexpected nack detected
+[20:02:23.404] E (77638) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:02:23.405] E (77640) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:02:24.408] [ 77654][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:02:24.408] [ 77675][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:02:26.420] [80001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-42ms) | Build: #1
+[20:02:26.420] [80016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:02:27.896] [82076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.968g | Build: #1
+[20:02:27.897] [82119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:02:28.905] [82155ms MAIN_LOOP_HEARTBEAT] Cycles: 935/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:02:32.952] [86336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.926g | Raw: 8204196 | SPS: 11.5 | Samples: 896 | Build: #1
+[20:02:35.967] [90001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (5-5ms) | Build: #1
+[20:02:35.967] [90016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:02:36.957] E (91190) i2c.master: I2C transaction unexpected nack detected
+[20:02:36.957] E (91190) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:02:36.957] E (91192) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:02:37.817] [ 91206][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:02:37.817] [ 91227][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:02:37.896] [92076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.854g | Build: #1
+[20:02:37.896] [92119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:02:38.889] [92155ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:02:42.921] [96336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.566g | Raw: 8206975 | SPS: 11.5 | Samples: 1008 | Build: #1
+[20:02:45.956] [100001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:02:45.956] [100016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:02:47.901] [102076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.531g | Build: #1
+[20:02:47.901] [102119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:02:48.903] [102161ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:02:50.493] E (104726) i2c.master: I2C transaction unexpected nack detected
+[20:02:50.493] E (104726) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:02:50.493] E (104728) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:02:51.502] [104742][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:02:51.503] [104764][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:02:52.506] [106336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.533g | Raw: 8206926 | SPS: 11.5 | Samples: 1024 | Build: #1
+[20:02:56.535] [110001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:02:56.535] [110016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:02:57.906] [112076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.513g | Build: #1
+[20:02:57.907] [112119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:02:58.904] [112165ms MAIN_LOOP_HEARTBEAT] Cycles: 935/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:03:02.935] [116336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.529g | Raw: 8206909 | SPS: 11.5 | Samples: 1024 | Build: #1
+[20:03:04.029] E (118262) i2c.master: I2C transaction unexpected nack detected
+[20:03:04.029] E (118262) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:03:04.029] E (118264) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:03:05.036] [118278][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:03:05.036] [118300][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:03:06.048] [120001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:03:06.048] [120016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:03:07.912] [122076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.764g | Build: #1
+[20:03:07.912] [122119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:03:08.913] [122171ms MAIN_LOOP_HEARTBEAT] Cycles: 935/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:03:15.965] [126336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.865g | Raw: 8204119 | SPS: 11.5 | Samples: 1024 | Build: #1
+[20:03:15.965] [130001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (5-5ms) | Build: #1
+[20:03:15.965] [130016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:03:17.581] E (131814) i2c.master: I2C transaction unexpected nack detected
+[20:03:17.581] E (131814) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:03:17.581] E (131816) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:03:17.817] [131830][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:03:17.817] [131852][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:03:17.912] [132076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.795g | Build: #1
+[20:03:17.912] [132119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:03:18.915] [132171ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:03:22.942] [136336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.942g | Raw: 8204321 | SPS: 11.5 | Samples: 1024 | Build: #1
+[20:03:25.962] [140001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:03:25.962] [140016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:03:27.917] [142076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.897g | Build: #1
+[20:03:27.918] [142119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:03:28.931] [142177ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:03:31.117] E (145350) i2c.master: I2C transaction unexpected nack detected
+[20:03:31.117] E (145350) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:03:31.117] E (145352) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:03:32.077] [145366][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:03:32.077] [145388][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:03:33.083] [146336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.850g | Raw: 8203915 | SPS: 11.5 | Samples: 1024 | Build: #1
+[20:03:36.099] [150001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:03:36.099] [150016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:03:37.922] [152076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.878g | Build: #1
+[20:03:37.922] [152119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:03:38.927] [152181ms MAIN_LOOP_HEARTBEAT] Cycles: 935/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:03:44.658] [156336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.922g | Raw: 8204233 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:03:44.659] E (158902) i2c.master: I2C transaction unexpected nack detected
+[20:03:44.659] E (158902) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:03:45.660] E (158904) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:03:45.661] [158918][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:03:45.661] [158940][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:03:46.670] [160001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:03:46.670] [160016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:03:47.923] [162076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.930g | Build: #1
+[20:03:47.923] [162119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:03:48.926] [162181ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:03:52.942] [166336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.899g | Raw: 8204132 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:03:55.961] [170001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (5-5ms) | Build: #1
+[20:03:55.961] [170016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:03:57.928] [172076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.906g | Build: #1
+[20:03:57.928] [172119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:03:58.203] [172187ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:03:58.203] E (172454) i2c.master: I2C transaction unexpected nack detected
+[20:03:58.232] E (172454) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:03:58.233] E (172456) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:03:58.233] [172470][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:03:59.235] [172492][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:04:02.259] [176336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.902g | Raw: 8204144 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:04:06.278] [180001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:04:06.278] [180016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:04:07.928] [182076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.899g | Build: #1
+[20:04:07.928] [182119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:04:08.928] [182187ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:04:11.773] E (186006) i2c.master: I2C transaction unexpected nack detected
+[20:04:11.773] E (186006) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:04:11.773] E (186008) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:04:12.077] [186022][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:04:12.077] [186044][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:04:16.108] [186336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.917g | Raw: 8204212 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:04:16.108] [190001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:04:16.108] [190016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:04:17.928] [192076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.859g | Build: #1
+[20:04:17.928] [192119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:04:18.938] [192187ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:04:22.970] [196336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.920g | Raw: 8204224 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:04:25.309] E (199542) i2c.master: I2C transaction unexpected nack detected
+[20:04:25.309] E (199542) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:04:25.309] E (199544) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:04:25.742] [199558][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:04:25.742] [199580][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:04:26.741] [200001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:04:26.741] [200016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:04:27.934] [202076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.856g | Build: #1
+[20:04:27.934] [202119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:04:28.942] [202193ms MAIN_LOOP_HEARTBEAT] Cycles: 935/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:04:32.991] [206336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.873g | Raw: 8204022 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:04:36.007] [210001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (5-5ms) | Build: #1
+[20:04:36.008] [210016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:04:37.938] [212076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.954g | Build: #1
+[20:04:37.938] [212119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-10ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:04:38.827] [212197ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:04:38.828] E (213078) i2c.master: I2C transaction unexpected nack detected
+[20:04:38.856] E (213078) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:04:38.857] E (213080) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:04:38.857] [213094][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:04:39.850] [213116][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:04:42.868] [216336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.947g | Raw: 8204338 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:04:45.902] [220001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:04:45.902] [220016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:04:47.919] [222076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.980g | Build: #1
+[20:04:47.919] [222119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:04:48.932] [222203ms MAIN_LOOP_HEARTBEAT] Cycles: 935/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:04:52.363] [226336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.873g | Raw: 8204020 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:04:52.364] E (226614) i2c.master: I2C transaction unexpected nack detected
+[20:04:52.392] E (226614) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:04:52.393] E (226616) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:04:52.393] [226630][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:04:53.400] [226652][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:04:56.436] [230001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:04:56.436] [230016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:04:57.950] [232076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.871g | Build: #1
+[20:04:57.950] [232119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:04:58.949] [232209ms MAIN_LOOP_HEARTBEAT] Cycles: 935/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:05:02.987] [236336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.010g | Raw: 8204612 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:05:05.900] [240001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (5-5ms) | Build: #1
+[20:05:05.900] [240016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:05:05.900] E (240150) i2c.master: I2C transaction unexpected nack detected
+[20:05:05.917] E (240150) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:05:05.917] E (240152) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:05:06.919] [240166][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:05:06.919] [240188][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:05:07.926] [242076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.869g | Build: #1
+[20:05:07.926] [242119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-70ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:05:08.934] [242213ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:05:12.965] [246336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.907g | Raw: 8204166 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:05:15.979] [250001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:05:15.979] [250016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:05:17.960] [252076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.847g | Build: #1
+[20:05:17.960] [252119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:05:18.964] [252219ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:05:19.437] E (253670) i2c.master: I2C transaction unexpected nack detected
+[20:05:19.437] E (253670) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:05:19.437] E (253672) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:05:20.448] [253686][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:05:20.449] [253708][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:05:25.757] [256336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.935g | Raw: 8204288 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:05:25.758] [260001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:05:26.759] [260016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:05:27.960] [262076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.877g | Build: #1
+[20:05:27.960] [262119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:05:28.966] [262219ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:05:32.939] [266336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.812g | Raw: 8203757 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:05:32.940] E (267190) i2c.master: I2C transaction unexpected nack detected
+[20:05:32.969] E (267190) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:05:32.969] E (267192) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:05:32.969] [267206][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:05:33.975] [267228][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:05:35.980] [270001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:05:35.981] [270016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:05:37.961] [272076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.764g | Build: #1
+[20:05:37.961] [272119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-6ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:05:38.965] [272219ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:05:42.997] [276336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.848g | Raw: 8203910 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:05:46.028] [280001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (5-5ms) | Build: #1
+[20:05:46.028] [280016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:05:46.477] E (280710) i2c.master: I2C transaction unexpected nack detected
+[20:05:46.477] E (280710) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:05:46.477] E (280712) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:05:47.479] [280726][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:05:47.479] [280748][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:05:47.960] [282076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.896g | Build: #1
+[20:05:47.960] [282119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:05:48.966] [282219ms MAIN_LOOP_HEARTBEAT] Cycles: 934/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:05:52.995] [286336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.530g | Raw: 8206862 | SPS: 11.0 | Samples: 1024 | Build: #1
+[20:05:56.013] [290001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:05:56.013] [290016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:05:57.966] [292076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.136g | Build: #1
+[20:05:57.967] [292119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:05:58.979] [292225ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 40KB | Build: #1
+[20:05:59.982] E (294230) i2c.master: I2C transaction unexpected nack detected
+[20:05:59.983] E (294230) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:06:00.009] E (294232) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:06:00.009] [294246][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:06:01.012] [294268][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:06:03.028] [296336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.868g | Raw: 8204000 | SPS: 11.5 | Samples: 1024 | Build: #1
+[20:06:06.048] [300001ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (0-43ms) | Build: #1
+[20:06:06.049] [300016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:06:06.930] Bluetooth: Timeout reached (5 minutes disconnected), disabling BLE
+[20:06:06.931] Bluetooth: Disabling BLE and restoring normal power...
+[20:06:06.931] Bluetooth: Deinitializing BLE stack...
+[20:06:06.931] OTA Power: Restoring CPU to 240MHz
+[20:06:06.931] OTA Power: Normal power mode restored
+[20:06:07.943] Bluetooth: Disable complete
+[20:06:07.943] [302076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.779g | Build: #1
+[20:06:07.943] [302119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:06:08.944] [302230ms MAIN_LOOP_HEARTBEAT] Cycles: 941/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 105KB | Build: #1
+[20:06:12.985] [306336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1897.913g | Raw: 8204193 | SPS: 11.5 | Samples: 1024 | Build: #1
+[20:06:13.517] E (307749) i2c.master: I2C transaction unexpected nack detected
+[20:06:13.517] E (307750) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:06:13.517] E (307752) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:06:14.522] [307766][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:06:14.523] [307787][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:06:16.540] [310012ms TASK_HEARTBEAT_UIRender] Cycles: 626/10s | Avg: 0ms (0-38ms) | Build: #1
+[20:06:16.540] [310016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-153ms) | Build: #1
+[20:06:17.976] [312076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1897.840g | Build: #1
+[20:06:17.977] [312119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:06:18.988] [312235ms MAIN_LOOP_HEARTBEAT] Cycles: 997/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 105KB | Build: #1
+[20:06:23.024] [316336ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1898.560g | Raw: 8206991 | SPS: 11.5 | Samples: 1024 | Build: #1
+[20:06:26.045] [320012ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 0ms (0-1ms) | Build: #1
+[20:06:26.046] [320016ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #1
+[20:06:27.037] E (321269) i2c.master: I2C transaction unexpected nack detected
+[20:06:27.037] E (321270) i2c.master: s_i2c_synchronous_transaction(945): I2C transaction failed
+[20:06:27.037] E (321272) i2c.master: i2c_master_transmit_receive(1248): I2C transaction failed
+[20:06:27.817] [321286][E][esp32-hal-i2c-ng.c:366] i2cWriteReadNonStop(): i2c_master_transmit_receive failed: [259] ESP_ERR_INVALID_STATE
+[20:06:27.818] [321307][E][Wire.cpp:520] requestFrom(): i2cWriteReadNonStop returned Error 259
+[20:06:27.976] [322076ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1898.479g | Build: #1
+[20:06:27.977] [322119ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #1
+[20:06:28.979] [322235ms MAIN_LOOP_HEARTBEAT] Cycles: 997/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 105KB | Build: #1

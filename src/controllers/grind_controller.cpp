@@ -47,6 +47,8 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     // Initialize grind freshness tracking
     grinder_purged_since_boot = false;
     last_purge_runtime_ms = 0;
+    learned_coast_time_s = 0.0f;
+    coast_time_dirty_ = false;
     if (preferences) {
         last_purge_runtime_ms = preferences->getULong64(PREF_KEY_LAST_GRIND_RUNTIME, 0);
     }
@@ -115,6 +117,12 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     LOG_BLE("[%lums CONTROLLER] start_grind() called with target=%.1fg, time=%lums, mode=%s\n",
             millis(), target, (unsigned long)time_ms, grind_mode == GrindMode::TIME ? "TIME" : "WEIGHT");
     if (!grinder) return;
+
+    bool time_use_scale = false;
+    if (mode == GrindMode::TIME && preferences) {
+        time_use_scale = preferences->getBool(PREF_KEY_TIME_USE_SCALE, true);
+    }
+
     if (mode == GrindMode::WEIGHT) {
         if (!weight_sensor) return;
         if (weight_sensor->has_hardware_fault()) {
@@ -149,6 +157,7 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     motor_stop_target_weight = GRIND_UNDERSHOOT_TARGET_G; // Start with a safe default
 
     time_grind_start_ms = 0;
+    time_grind_elapsed_at_pause_ms = 0;
 
     flow_start_confirmed = false;
 
@@ -170,12 +179,32 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     session_end_flash_queued = false;
 
     last_error_message[0] = '\0';
+    last_notice_message[0] = '\0';
+    notice_pending_ = false;
+
+    // The scale is display-only in time mode. If it is unusable, drop to a
+    // countdown-only grind and tell the user instead of refusing to start.
+    if (time_use_scale && (!weight_sensor || weight_sensor->has_hardware_fault())) {
+        LOG_BLE("[%lums CONTROLLER] Load cell unavailable - running time grind without weight display\n",
+                millis());
+        time_use_scale = false;
+        set_notice_message("No scale");
+    }
 
     session_descriptor.mode = mode;
     session_descriptor.target_weight = target_weight;
     session_descriptor.target_time_ms = target_time_ms;
     session_descriptor.tolerance = tolerance;
     session_descriptor.profile_id = current_profile_id;
+    session_descriptor.time_use_scale = time_use_scale;
+
+    // Only weight grinds use, or can measure, the coast model
+    if (mode == GrindMode::WEIGHT) {
+        load_coast_time(current_profile_id);
+    } else {
+        learned_coast_time_s = 0.0f;
+        coast_time_dirty_ = false;
+    }
 
     // Initialize pulse tracking
     additional_pulse_count = 0;
@@ -245,6 +274,7 @@ void GrindController::stop_grind() {
     LOG_BLE("--- GRIND STOPPED BY USER ---\n");
 
     time_grind_start_ms = 0;
+    time_grind_elapsed_at_pause_ms = 0;
     target_time_ms = 0;
     grinder_purge_mode_for_session = static_cast<GrinderPurgeMode>(GRIND_PURGE_MODE_DEFAULT);
     grinder_purge_amount_g_for_session = GRIND_PURGE_AMOUNT_DEFAULT_G;
@@ -283,6 +313,69 @@ void GrindController::continue_from_purge() {
     switch_phase(GrindPhase::PREDICTIVE);  // No loop_data needed for phase transition
 }
 
+void GrindController::pause_time_grind() {
+    if (!can_pause_time_grind() || !grinder) {
+        return;
+    }
+
+    grinder->stop();
+
+    unsigned long now = millis();
+    time_grind_elapsed_at_pause_ms = (time_grind_start_ms > 0) ? (now - time_grind_start_ms) : 0;
+    timeout_pause_start = now;  // Track pause start so paused time is excluded from timeout
+
+    queue_log_message("[%lums CONTROLLER] Time grind paused at %lums of %lums\n",
+                      now, time_grind_elapsed_at_pause_ms, (unsigned long)target_time_ms);
+
+    switch_phase(GrindPhase::TIME_PAUSED);
+}
+
+void GrindController::resume_time_grind() {
+    if (phase != GrindPhase::TIME_PAUSED || !grinder) {
+        return;
+    }
+
+    unsigned long now = millis();
+    if (timeout_pause_start > 0) {
+        timeout_offset_ms += now - timeout_pause_start;
+        timeout_pause_start = 0;
+    }
+
+    // Rebase the start timestamp so already-elapsed grind time is preserved
+    time_grind_start_ms = now - time_grind_elapsed_at_pause_ms;
+
+    queue_log_message("[%lums CONTROLLER] Time grind resumed, %lums remaining\n",
+                      now, (unsigned long)get_time_remaining_ms());
+
+    grinder->start();
+    switch_phase(GrindPhase::TIME_GRINDING);
+}
+
+bool GrindController::can_pause_time_grind() const {
+    return mode == GrindMode::TIME && phase == GrindPhase::TIME_GRINDING;
+}
+
+uint32_t GrindController::get_time_remaining_ms() const {
+    if (mode != GrindMode::TIME || target_time_ms == 0) {
+        return 0;
+    }
+    if (phase == GrindPhase::COMPLETED || phase == GrindPhase::TIMEOUT ||
+        phase == GrindPhase::IDLE) {
+        return 0;
+    }
+
+    unsigned long elapsed;
+    if (phase == GrindPhase::TIME_PAUSED) {
+        elapsed = time_grind_elapsed_at_pause_ms;
+    } else if (time_grind_start_ms > 0) {
+        elapsed = millis() - time_grind_start_ms;
+    } else {
+        elapsed = 0;  // Not started grinding yet - full time remaining
+    }
+
+    return (elapsed >= target_time_ms) ? 0 : (uint32_t)(target_time_ms - elapsed);
+}
+
 void GrindController::update() {
     if (!is_active()) return;
     
@@ -293,6 +386,7 @@ void GrindController::update() {
     loop_data.now = now;
     loop_data.timestamp_ms = now - start_time;  // Relative to session start
     loop_data.current_weight = weight_sensor ? weight_sensor->get_weight_low_latency() : 0.0f;
+    loop_data.instant_weight = weight_sensor ? weight_sensor->get_instant_weight() : 0.0f;
     loop_data.display_weight = weight_sensor ? weight_sensor->get_display_weight() : 0.0f;
     loop_data.motor_is_on = grinder ? (grinder->is_grinding() ? 1 : 0) : 0;
     loop_data.phase_id = get_current_phase_id();
@@ -325,41 +419,55 @@ void GrindController::update() {
         case GrindPhase::SETUP: {
             float pre_tare_weight = weight_sensor ? weight_sensor->get_weight_low_latency() : 0.0f;
             grind_logger.start_grind_session(session_descriptor, pre_tare_weight);
-            if (mode == GrindMode::TIME) {
+            if (mode == GrindMode::TIME && !session_descriptor.time_use_scale) {
+                // Sensor-free time mode: skip taring, start motor immediately
                 if (!grinder->is_grinding()) grinder->start();
                 time_grind_start_ms = loop_data.now;
                 switch_phase(GrindPhase::TIME_GRINDING, loop_data);
             } else {
+                // Weight mode and scale-assisted time mode tare first
                 switch_phase(GrindPhase::TARING, loop_data);
             }
             break;
         }
             
         case GrindPhase::TARING:
-            if (weight_sensor->start_nonblocking_tare()) {
+            if (weight_sensor && weight_sensor->start_nonblocking_tare()) {
                 LOG_LOADCELL_DEBUG("Non-blocking tare started\n");
                 switch_phase(GrindPhase::TARE_CONFIRM, loop_data);
             }
             break;
-            
-        case GrindPhase::TARE_CONFIRM:
-            // Check if tare is complete
-            if (!weight_sensor->is_tare_in_progress()) {
-                // Double confirm weights are settled
-                if (weight_sensor->is_settled()) {
-                    if (!grinder->is_grinding()) {
-                        grinder->start();  // Ensure motor is running
-                    }
-                    time_grind_start_ms = loop_data.now;
-                    if (mode == GrindMode::TIME) {
-                        switch_phase(GrindPhase::TIME_GRINDING, loop_data);
-                    } else {
-                        // Always run chute operation for weight mode
-                        switch_phase(GrindPhase::PRIME, loop_data);
-                    }
+
+        case GrindPhase::TARE_CONFIRM: {
+            // Tare is complete once the sampling finished and the reading settled
+            bool tare_complete = weight_sensor &&
+                                 !weight_sensor->is_tare_in_progress() &&
+                                 weight_sensor->is_settled();
+
+            // Time mode only tares for the display, so a failed tare must not
+            // block the grind - warn the user and start grinding anyway
+            if (!tare_complete && mode == GrindMode::TIME &&
+                (loop_data.now - phase_start_time) >= GRIND_TIME_TARE_TIMEOUT_MS) {
+                queue_log_message("[%lums CONTROLLER] Tare failed after %lums - grinding on time only\n",
+                                  loop_data.now, (unsigned long)GRIND_TIME_TARE_TIMEOUT_MS);
+                set_notice_message("Tare failed");
+                tare_complete = true;
+            }
+
+            if (tare_complete) {
+                if (!grinder->is_grinding()) {
+                    grinder->start();  // Ensure motor is running
+                }
+                time_grind_start_ms = loop_data.now;
+                if (mode == GrindMode::TIME) {
+                    switch_phase(GrindPhase::TIME_GRINDING, loop_data);
+                } else {
+                    // Always run chute operation for weight mode
+                    switch_phase(GrindPhase::PRIME, loop_data);
                 }
             }
             break;
+        }
 
         case GrindPhase::PRIME: {
             if (!grinder->is_grinding()) {
@@ -459,12 +567,22 @@ void GrindController::update() {
             }
             break;
 
-        case GrindPhase::FINAL_SETTLING:
-            // Wait for weight to settle with precision settling window
-            if (weight_sensor->check_settling_complete(GRIND_SCALE_PRECISION_SETTLING_TIME_MS)) {
+        case GrindPhase::FINAL_SETTLING: {
+            bool settled = weight_sensor &&
+                           weight_sensor->check_settling_complete(GRIND_SCALE_PRECISION_SETTLING_TIME_MS);
+
+            // Time mode reports whatever the scale happens to show; it never waits
+            // on a scale that is absent, disabled or refusing to settle
+            if (!settled && mode == GrindMode::TIME) {
+                settled = !session_descriptor.time_use_scale ||
+                          (loop_data.now - phase_start_time) >= GRIND_TIME_SETTLING_TIMEOUT_MS;
+            }
+
+            if (settled) {
                 final_measurement(loop_data);
             }
             break;
+        }
             
         case GrindPhase::TIME_ADDITIONAL_PULSE:
             // Check for additional pulse completion
@@ -546,14 +664,16 @@ void GrindController::update() {
     emit_progress_update(loop_data);
 
     // Check for negative weight failsafe after TARE_CONFIRM phase during active grinding
-    // Only check after motor has settled to avoid false positives from startup transients
+    // Only check after motor has settled to avoid false positives from startup transients.
+    // Weight mode only - time mode is driven purely by the clock, so a drifting or
+    // untared scale must never abort the grind.
     if (mode == GrindMode::WEIGHT &&
         phase != GrindPhase::COMPLETED && phase != GrindPhase::TIMEOUT &&
         phase != GrindPhase::IDLE && phase != GrindPhase::INITIALIZING &&
         phase != GrindPhase::SETUP && phase != GrindPhase::TARING &&
-        phase != GrindPhase::TARE_CONFIRM &&
+        phase != GrindPhase::TARE_CONFIRM && phase != GrindPhase::TIME_PAUSED &&
         grinder->is_motor_settled() &&
-        loop_data.current_weight < -1.0f) {
+        loop_data.current_weight < GRIND_NEGATIVE_WEIGHT_FAILSAFE_G) {
         timeout_phase = phase;
         grinder->stop();
         last_session_result_ = GrindSessionResult::ERROR;
@@ -563,8 +683,9 @@ void GrindController::update() {
         set_error_message("Err: neg wt");
         switch_phase(GrindPhase::TIMEOUT, loop_data);
     }
-    // Only check timeout during active grinding phases, not during completion states or user confirmation
-    else if (phase != GrindPhase::COMPLETED && phase != GrindPhase::TIMEOUT && phase != GrindPhase::PURGE_CONFIRM && check_timeout()) {
+    // Only check timeout during active grinding phases, not during completion states, user confirmation, or pause
+    else if (phase != GrindPhase::COMPLETED && phase != GrindPhase::TIMEOUT && phase != GrindPhase::PURGE_CONFIRM &&
+             phase != GrindPhase::TIME_PAUSED && check_timeout()) {
         timeout_phase = phase;
         grinder->stop();
         last_session_result_ = GrindSessionResult::TIMEOUT;
@@ -602,13 +723,16 @@ void GrindController::monitor_mechanical_instability(const GrindLoopData& loop_d
         return;
     }
 
+    // Deliberately uses the unsmoothed reading. This looks for a sudden drop, and the
+    // regression filter behind current_weight spreads any step across its whole window -
+    // a 0.4g slip would arrive as ~0.027g per control cycle and never trip the threshold.
     if (!mechanical_monitor_initialized_) {
-        last_mechanical_weight_ = loop_data.current_weight;
+        last_mechanical_weight_ = loop_data.instant_weight;
         mechanical_monitor_initialized_ = true;
         return;
     }
 
-    float delta = loop_data.current_weight - last_mechanical_weight_;
+    float delta = loop_data.instant_weight - last_mechanical_weight_;
     if (delta <= -GRIND_MECHANICAL_DROP_THRESHOLD_G) {
         if (loop_data.now - last_mechanical_event_ms_ >= GRIND_MECHANICAL_EVENT_COOLDOWN_MS) {
             mechanical_anomaly_count_++;
@@ -616,13 +740,14 @@ void GrindController::monitor_mechanical_instability(const GrindLoopData& loop_d
         }
     }
 
-    last_mechanical_weight_ = loop_data.current_weight;
+    last_mechanical_weight_ = loop_data.instant_weight;
 }
 
 void GrindController::final_measurement(const GrindLoopData& loop_data) {
-    final_weight = weight_sensor->get_weight_high_latency();
+    final_weight = weight_sensor ? weight_sensor->get_weight_high_latency() : 0.0f;
 
-    if (mode == GrindMode::WEIGHT && target_weight >= 1.0f && final_weight < NO_WEIGHT_DELIVERED_THRESHOLD_G) {
+    if (mode == GrindMode::WEIGHT && target_weight >= GRIND_MIN_TARGET_FOR_DELIVERY_CHECK_G &&
+        final_weight < NO_WEIGHT_DELIVERED_THRESHOLD_G) {
         timeout_phase = GrindPhase::FINAL_SETTLING;
         set_error_message("Err: no wt");
         last_session_result_ = GrindSessionResult::ERROR;
@@ -686,7 +811,7 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
     
     // Update phase state
     phase = new_phase;
-    control_loop_paused_ = (phase == GrindPhase::PURGE_CONFIRM);
+    control_loop_paused_ = (phase == GrindPhase::PURGE_CONFIRM || phase == GrindPhase::TIME_PAUSED);
     phase_start_time = now;
     
     // Reset loop counter for new phase
@@ -737,7 +862,10 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
     event_data.progress_percent = get_progress_percent();
     event_data.phase_display_text = get_phase_name(new_phase);
     event_data.show_taring_text = show_taring_text();
-    
+    event_data.time_remaining_ms = get_time_remaining_ms();
+    event_data.time_show_weight = (session_descriptor.mode == GrindMode::TIME && session_descriptor.time_use_scale);
+    event_data.notice_message = take_pending_notice();
+
     // Special handling for completion and timeout events
     if (new_phase == GrindPhase::COMPLETED) {
         float error = final_weight - target_weight;
@@ -761,6 +889,10 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
         if (preferences) {
             preferences->putULong64(PREF_KEY_LAST_GRIND_RUNTIME, last_purge_runtime_ms);
         }
+
+        // Persist the coast model here rather than when it is observed, so the NVS
+        // write lands after grinding instead of inside the control loop
+        save_coast_time();
 
         event_data.event = UIGrindEvent::COMPLETED;
         // Use final_weight if available (from final_measurement), otherwise use high latency weight
@@ -843,6 +975,7 @@ const char* GrindController::get_phase_name(GrindPhase p) const {
         case GrindPhase::PULSE_SETTLING: return "PULSE_SETTLING";
         case GrindPhase::FINAL_SETTLING: return "FINAL_SETTLING";
         case GrindPhase::TIME_GRINDING: return "TIME";
+        case GrindPhase::TIME_PAUSED: return "PAUSED";
         case GrindPhase::TIME_ADDITIONAL_PULSE: return "PULSE";
         case GrindPhase::COMPLETED: return "COMPLETED";
         case GrindPhase::TIMEOUT: return "TIMEOUT";
@@ -921,6 +1054,9 @@ void GrindController::emit_progress_update(const GrindLoopData& loop_data) {
     progress_event.phase_display_text = get_phase_name();
     progress_event.show_taring_text = show_taring_text();
     progress_event.flow_rate = loop_data.flow_rate;
+    progress_event.time_remaining_ms = get_time_remaining_ms();
+    progress_event.time_show_weight = (session_descriptor.mode == GrindMode::TIME && session_descriptor.time_use_scale);
+    progress_event.notice_message = take_pending_notice();
     emit_ui_event(progress_event);
 }
 
@@ -935,7 +1071,8 @@ bool GrindController::should_log_measurements() const {
         && phase != GrindPhase::SETUP
         && phase != GrindPhase::COMPLETED
         && phase != GrindPhase::TIMEOUT
-        && phase != GrindPhase::PURGE_CONFIRM;  // Don't log while waiting for user to confirm purge
+        && phase != GrindPhase::PURGE_CONFIRM   // Don't log while waiting for user to confirm purge
+        && phase != GrindPhase::TIME_PAUSED;    // Don't log while time grind is paused
 }
 
 void GrindController::process_queued_ui_events() {
@@ -1034,6 +1171,85 @@ void GrindController::set_error_message(const char* message) {
     }
     strncpy(last_error_message, message, sizeof(last_error_message) - 1);
     last_error_message[sizeof(last_error_message) - 1] = '\0';
+}
+
+void GrindController::load_coast_time(uint8_t profile_id) {
+    learned_coast_time_s = 0.0f;
+    coast_time_dirty_ = false;
+
+    if (!preferences) {
+        return;
+    }
+
+    char key[16];
+    snprintf(key, sizeof(key), "%s%u", PREF_KEY_COAST_TIME_PREFIX, (unsigned)profile_id);
+    float stored = preferences->getFloat(key, 0.0f);
+
+    // Guard against a corrupted or out-of-range value putting the predictive
+    // stop somewhere absurd - fall back to seeding from latency instead
+    if (!isfinite(stored) || stored < GRIND_COAST_TIME_MIN_S || stored > GRIND_COAST_TIME_MAX_S) {
+        return;
+    }
+
+    learned_coast_time_s = stored;
+    LOG_BLE("[CONTROLLER] Profile %u learned coast time: %.3fs\n", (unsigned)profile_id, stored);
+}
+
+void GrindController::observe_coast(float coast_weight_g) {
+    // Convert the observed coast weight into a time using the flow rate that was
+    // running when the motor stopped, so the value transfers across dose sizes
+    float flow_rate = pulse_flow_rate;
+    if (!isfinite(coast_weight_g) || flow_rate < GRIND_FLOW_RATE_MIN_SANE_GPS) {
+        return;
+    }
+
+    float observed_s = coast_weight_g / flow_rate;
+    if (observed_s < GRIND_COAST_TIME_MIN_S || observed_s > GRIND_COAST_TIME_MAX_S) {
+        queue_log_message("[COAST] Rejected observation %.3fs (%.2fg at %.2fg/s)\n",
+                          observed_s, coast_weight_g, flow_rate);
+        return;
+    }
+
+    if (learned_coast_time_s <= 0.0f) {
+        learned_coast_time_s = observed_s;  // First grind on this profile seeds the average
+    } else {
+        learned_coast_time_s = GRIND_COAST_LEARNING_ALPHA * observed_s +
+                               (1.0f - GRIND_COAST_LEARNING_ALPHA) * learned_coast_time_s;
+    }
+    coast_time_dirty_ = true;
+
+    queue_log_message("[COAST] Observed %.3fs (%.2fg at %.2fg/s), learned now %.3fs\n",
+                      observed_s, coast_weight_g, flow_rate, learned_coast_time_s);
+}
+
+void GrindController::save_coast_time() {
+    if (!coast_time_dirty_ || !preferences) {
+        return;
+    }
+
+    char key[16];
+    snprintf(key, sizeof(key), "%s%u", PREF_KEY_COAST_TIME_PREFIX, (unsigned)session_descriptor.profile_id);
+    preferences->putFloat(key, learned_coast_time_s);
+    coast_time_dirty_ = false;
+}
+
+void GrindController::set_notice_message(const char* message) {
+    if (!message || !message[0]) {
+        last_notice_message[0] = '\0';
+        notice_pending_ = false;
+        return;
+    }
+    strncpy(last_notice_message, message, sizeof(last_notice_message) - 1);
+    last_notice_message[sizeof(last_notice_message) - 1] = '\0';
+    notice_pending_ = true;
+}
+
+const char* GrindController::take_pending_notice() {
+    if (!notice_pending_) {
+        return nullptr;
+    }
+    notice_pending_ = false;
+    return last_notice_message;
 }
 
 void GrindController::start_additional_pulse() {

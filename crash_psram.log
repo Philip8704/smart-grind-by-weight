@@ -1,0 +1,856 @@
+[20:51:29.750] === MONITOR STARTED - waiting for device ===
+[20:51:29.772] === CONNECTED on COM5 ===
+[20:51:35.136] [26899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.247g | Raw: 8166732 | SPS: 11.5 | Samples: 224 | Build: #6
+[20:51:35.137] [30001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:51:36.144] [30006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:51:37.845] [32640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.249g | Build: #6
+[20:51:37.845] [32705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:51:38.844] [32715ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:51:42.880] [36899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.238g | Raw: 8166694 | SPS: 11.5 | Samples: 336 | Build: #6
+[20:51:45.910] [40001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:51:45.910] [40006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:51:47.845] [42640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.216g | Build: #6
+[20:51:47.845] [42705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:51:48.849] [42715ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:51:55.136] [46899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.234g | Raw: 8166655 | SPS: 11.5 | Samples: 448 | Build: #6
+[20:51:55.136] [50001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:51:56.139] [50006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:51:57.844] [52640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.967g | Build: #6
+[20:51:57.845] [52705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:51:58.846] [52715ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:52:02.894] [56899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.938g | Raw: 8165386 | SPS: 11.5 | Samples: 560 | Build: #6
+[20:52:05.925] [60001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:52:05.925] [60006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:52:07.856] [62640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.951g | Build: #6
+[20:52:07.856] [62705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-81ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:52:08.858] [62721ms MAIN_LOOP_HEARTBEAT] Cycles: 936/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:52:12.903] [66899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.785g | Raw: 8164741 | SPS: 11.5 | Samples: 672 | Build: #6
+[20:52:15.911] [70001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:52:15.911] [70006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:52:17.856] [72640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.922g | Build: #6
+[20:52:17.856] [72705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:52:18.861] [72726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:52:22.886] [76899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.022g | Raw: 8165459 | SPS: 11.5 | Samples: 784 | Build: #6
+[20:52:25.916] [80001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:52:25.916] [80006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:52:27.856] [82640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.305g | Build: #6
+[20:52:27.856] [82705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:52:28.854] [82726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:52:32.889] [86899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.199g | Raw: 8166792 | SPS: 11.5 | Samples: 896 | Build: #6
+[20:52:35.904] [90001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:52:35.905] [90006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:52:37.856] [92640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.977g | Build: #6
+[20:52:37.856] [92705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:52:38.854] [92726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:52:42.899] [96899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.311g | Raw: 8167009 | SPS: 11.0 | Samples: 1007 | Build: #6
+[20:52:45.917] [100001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:52:45.917] [100006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:52:47.856] [102640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.989g | Build: #6
+[20:52:47.856] [102705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:52:48.866] [102726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:52:52.901] [106899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.031g | Raw: 8165797 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:52:55.914] [110001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:52:55.915] [110006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:52:57.856] [112640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.350g | Build: #6
+[20:52:57.856] [112705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:52:58.867] [112726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:53:02.901] [116899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.327g | Raw: 8167078 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:53:05.936] [120001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:53:05.936] [120006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:53:07.950] [122640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.316g | Build: #6
+[20:53:07.950] [122705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:53:12.029] [122726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:53:13.034] [126899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.323g | Raw: 8167060 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:53:16.068] [130001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:53:16.068] [130006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:53:17.856] [132640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.314g | Build: #6
+[20:53:17.856] [132705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:53:18.862] [132726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:53:22.902] [136899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.291g | Raw: 8166921 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:53:25.934] [140001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:53:25.934] [140006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:53:27.856] [142640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.285g | Build: #6
+[20:53:27.856] [142705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:53:28.863] [142726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-1ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:53:32.883] [146899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.313g | Raw: 8167017 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:53:35.913] [150001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:53:35.913] [150006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:53:37.927] [152640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.313g | Build: #6
+[20:53:37.927] [152705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:53:42.029] [152726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:53:43.032] [156899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.312g | Raw: 8167012 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:53:46.073] [160001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:53:46.073] [160006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:53:48.080] [162640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.307g | Build: #6
+[20:53:48.080] [162705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:53:52.029] [162726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:53:53.031] [166899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.327g | Raw: 8167077 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:53:56.044] [170001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:53:56.044] [170006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:53:57.856] [172640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.334g | Build: #6
+[20:53:57.856] [172705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:53:58.857] [172726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:54:02.890] [176899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.307g | Raw: 8166994 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:54:05.925] [180001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:54:05.925] [180006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:54:07.856] [182640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.332g | Build: #6
+[20:54:07.856] [182705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:54:08.861] [182726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:54:12.895] [186899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.358g | Raw: 8167220 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:54:15.927] [190001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:54:15.927] [190006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:54:17.856] [192640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.350g | Build: #6
+[20:54:17.857] [192705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:54:18.854] [192726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:54:25.136] [196899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.357g | Raw: 8167197 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:54:25.136] [200001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:54:26.141] [200006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:54:28.159] [202640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.010g | Build: #6
+[20:54:28.159] [202705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:54:32.030] [202726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:54:33.035] [206899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.011g | Raw: 8165724 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:54:36.053] [210001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:54:36.054] [210006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:54:37.856] [212640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.064g | Build: #6
+[20:54:37.856] [212705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:54:38.859] [212726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:54:42.902] [216899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.062g | Raw: 8165949 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:54:45.911] [220001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:54:45.911] [220006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:54:47.856] [222640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.126g | Build: #6
+[20:54:47.857] [222705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:54:48.860] [222726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:54:55.136] [226899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.081g | Raw: 8166016 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:54:55.136] [230001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:54:56.143] [230006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:54:57.856] [232640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.288g | Build: #6
+[20:54:57.857] [232705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:54:58.867] [232726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:55:02.872] [236899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.495g | Raw: 8167802 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:55:05.889] [240001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:55:05.889] [240006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 6ms (1-7ms) | Build: #6
+[20:55:07.857] [242640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.459g | Build: #6
+[20:55:07.857] [242705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:55:08.860] [242726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:55:12.890] [246899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.455g | Raw: 8167633 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:55:15.904] [250001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:55:15.904] [250006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:55:17.856] [252640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.431g | Build: #6
+[20:55:17.856] [252705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:55:18.858] [252726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:55:22.887] [256899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.463g | Raw: 8167664 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:55:25.903] [260001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:55:25.903] [260006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:55:27.856] [262640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.458g | Build: #6
+[20:55:27.857] [262705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:55:28.864] [262726ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:55:32.884] [266899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.457g | Raw: 8167640 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:55:35.898] [270001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:55:35.898] [270006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:55:37.861] [272640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.455g | Build: #6
+[20:55:37.861] [272705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-81ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:55:38.864] [272731ms MAIN_LOOP_HEARTBEAT] Cycles: 936/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:55:42.908] [276899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.465g | Raw: 8167675 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:55:45.931] [280001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:55:45.931] [280006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:55:47.873] [282640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.449g | Build: #6
+[20:55:47.873] [282705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-1ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:55:48.875] [282737ms MAIN_LOOP_HEARTBEAT] Cycles: 938/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:55:52.899] [286899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.466g | Raw: 8167691 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:55:55.928] [290001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:55:55.928] [290006ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:55:57.873] [292640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.074g | Build: #6
+[20:55:57.873] [292705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:55:58.879] [292737ms MAIN_LOOP_HEARTBEAT] Cycles: 937/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: ADV | Grinder: IDLE | Mem: 126KB | Build: #6
+[20:56:02.894] [296899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.190g | Raw: 8166490 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:56:05.908] [300001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:56:05.909] [300007ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 5ms (1-7ms) | Build: #6
+[20:56:06.864] Bluetooth: Timeout reached (5 minutes disconnected), disabling BLE
+[20:56:06.864] Bluetooth: Disabling BLE and restoring normal power...
+[20:56:06.864] Bluetooth: Deinitializing BLE stack...
+[20:56:06.864] OTA Power: Restoring CPU to 240MHz
+[20:56:06.864] OTA Power: Normal power mode restored
+[20:56:07.869] Bluetooth: Disable complete
+[20:56:07.870] [302640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.128g | Build: #6
+[20:56:07.870] [302705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:56:08.867] [302739ms MAIN_LOOP_HEARTBEAT] Cycles: 943/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:56:12.884] [306899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.207g | Raw: 8166578 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:56:15.901] [310001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-153ms) | Build: #6
+[20:56:15.901] [310017ms TASK_HEARTBEAT_UIRender] Cycles: 626/10s | Avg: 2ms (1-8ms) | Build: #6
+[20:56:17.917] [312640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.211g | Build: #6
+[20:56:17.917] [312705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:56:22.030] [312739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:56:23.031] [316899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.196g | Raw: 8166510 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:56:26.041] [320001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:56:26.041] [320017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:56:27.869] [322640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.354g | Build: #6
+[20:56:27.870] [322705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:56:28.877] [322739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:56:32.914] [326899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.145g | Raw: 8166291 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:56:35.941] [330001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:56:35.941] [330017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:56:37.870] [332640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.111g | Build: #6
+[20:56:37.870] [332705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:56:38.858] [332739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:56:42.907] [336899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.147g | Raw: 8166301 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:56:45.921] [340001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:56:45.921] [340017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:56:47.869] [342640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.090g | Build: #6
+[20:56:47.870] [342705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:56:48.866] [342739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:56:52.873] [346899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.090g | Raw: 8166052 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:56:55.904] [350001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:56:55.904] [350017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:56:57.869] [352640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.539g | Build: #6
+[20:56:57.869] [352705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:56:58.871] [352739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:57:02.930] [356899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.514g | Raw: 8167888 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:57:05.951] [360001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:57:05.951] [360017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:57:07.869] [362640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.537g | Build: #6
+[20:57:07.870] [362705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:57:08.875] [362739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:57:12.895] [366899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.504g | Raw: 8167842 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:57:15.897] [370001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:57:15.897] [370017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:57:17.870] [372640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.517g | Build: #6
+[20:57:17.870] [372705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:57:18.883] [372739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:57:22.910] [376899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.504g | Raw: 8167842 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:57:25.944] [380001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:57:25.944] [380017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:57:27.869] [382640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.505g | Build: #6
+[20:57:27.870] [382705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:57:28.862] [382739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:57:32.877] [386899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.510g | Raw: 8167868 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:57:35.896] [390001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:57:35.896] [390017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:57:37.869] [392640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.484g | Build: #6
+[20:57:37.870] [392705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-9ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:57:38.878] [392739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:57:42.915] [396899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.488g | Raw: 8167759 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:57:45.944] [400001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:57:45.944] [400017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:57:47.870] [402640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.502g | Build: #6
+[20:57:47.870] [402705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:57:48.874] [402739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:57:52.908] [406899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.474g | Raw: 8167705 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:57:55.930] [410001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:57:55.930] [410017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:57:57.870] [412640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.479g | Build: #6
+[20:57:57.870] [412705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:57:58.877] [412739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:58:02.910] [416899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.081g | Raw: 8165992 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:58:05.928] [420001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:58:05.928] [420017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:58:07.870] [422640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.145g | Build: #6
+[20:58:07.870] [422705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-9ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:58:08.869] [422739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:58:12.900] [426899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.154g | Raw: 8166390 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:58:15.917] [430001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:58:15.917] [430017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:58:17.870] [432640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.960g | Build: #6
+[20:58:17.870] [432705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:58:18.870] [432739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:58:22.877] [436899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.177g | Raw: 8166438 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:58:25.898] [440001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:58:25.898] [440017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:58:27.870] [442640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.216g | Build: #6
+[20:58:27.870] [442705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:58:28.872] [442739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:58:32.900] [446899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.227g | Raw: 8166647 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:58:35.918] [450001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:58:35.918] [450017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:58:37.870] [452640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.198g | Build: #6
+[20:58:37.870] [452705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-10ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:58:38.880] [452739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:58:42.911] [456899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.245g | Raw: 8166724 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:58:45.923] [460001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:58:45.923] [460017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:58:47.870] [462640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.224g | Build: #6
+[20:58:47.870] [462705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:58:48.874] [462739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:58:52.896] [466899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.253g | Raw: 8166758 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:58:55.907] [470001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:58:55.907] [470017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:58:57.870] [472640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.137g | Build: #6
+[20:58:57.870] [472705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:58:58.867] [472739ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:59:02.906] [476899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.577g | Raw: 8168158 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:59:05.937] [480001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:59:05.937] [480017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:59:07.872] [482640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.520g | Build: #6
+[20:59:07.872] [482705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-61ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:59:08.880] [482741ms MAIN_LOOP_HEARTBEAT] Cycles: 999/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:59:12.898] [486899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.504g | Raw: 8167845 | SPS: 11.0 | Samples: 1024 | Build: #6
+[20:59:15.913] [490001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:59:15.913] [490017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 0ms (0-1ms) | Build: #6
+[20:59:17.872] [492640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.504g | Build: #6
+[20:59:17.872] [492705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:59:18.877] [492741ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:59:22.911] [496899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.473g | Raw: 8167709 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:59:25.923] [500001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:59:25.923] [500017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:59:27.872] [502640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.464g | Build: #6
+[20:59:27.872] [502705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:59:28.877] [502741ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:59:32.896] [506899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.997g | Raw: 8165652 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:59:35.928] [510001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:59:35.928] [510017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:59:37.872] [512640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.034g | Build: #6
+[20:59:37.872] [512705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-6ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:59:38.879] [512741ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:59:42.917] [516899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.174g | Raw: 8166417 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:59:45.947] [520001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:59:45.947] [520017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:59:47.872] [522640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.512g | Build: #6
+[20:59:47.872] [522705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:59:48.880] [522741ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[20:59:52.927] [526899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.478g | Raw: 8167773 | SPS: 11.5 | Samples: 1024 | Build: #6
+[20:59:55.955] [530001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[20:59:55.955] [530017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[20:59:57.872] [532640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.450g | Build: #6
+[20:59:57.872] [532705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[20:59:58.877] [532741ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:00:02.903] [536899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.464g | Raw: 8167626 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:00:05.911] [540001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:00:05.911] [540017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:00:07.872] [542640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.445g | Build: #6
+[21:00:07.872] [542705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:00:08.877] [542741ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:00:12.896] [546899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.417g | Raw: 8167449 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:00:15.928] [550001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:00:15.928] [550017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:00:17.872] [552640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.426g | Build: #6
+[21:00:17.872] [552705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:00:18.879] [552741ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:00:22.926] [556899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.424g | Raw: 8167496 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:00:25.955] [560001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:00:25.955] [560017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:00:27.872] [562640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.407g | Build: #6
+[21:00:27.872] [562705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:00:28.873] [562741ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:00:32.890] [566899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.399g | Raw: 8167391 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:00:35.905] [570001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:00:35.905] [570017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:00:37.874] [572640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.417g | Build: #6
+[21:00:37.875] [572705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:00:38.887] [572743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:00:42.906] [576899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.422g | Raw: 8167487 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:00:45.940] [580001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:00:45.940] [580017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:00:47.874] [582640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.411g | Build: #6
+[21:00:47.874] [582705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:00:48.878] [582743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:00:52.910] [586899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.427g | Raw: 8167509 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:00:55.924] [590001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:00:55.924] [590017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:00:57.874] [592640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.412g | Build: #6
+[21:00:57.874] [592705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:00:58.886] [592743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:01:02.905] [596899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.417g | Raw: 8167465 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:01:05.935] [600001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:01:05.935] [600017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:01:07.874] [602640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.417g | Build: #6
+[21:01:07.874] [602705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:01:08.887] [602743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:01:12.932] [606899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.979g | Raw: 8165573 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:01:15.949] [610001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:01:15.950] [610017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:01:17.874] [612640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.172g | Build: #6
+[21:01:17.874] [612705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:01:18.881] [612743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:01:22.902] [616899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.069g | Raw: 8165961 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:01:25.918] [620001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:01:25.918] [620017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:01:27.874] [622640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.168g | Build: #6
+[21:01:27.874] [622705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:01:28.883] [622743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:01:32.914] [626899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.197g | Raw: 8166619 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:01:35.930] [630001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:01:35.930] [630017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:01:37.874] [632640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.154g | Build: #6
+[21:01:37.874] [632705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-9ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:01:38.877] [632743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:01:42.911] [636899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.048g | Raw: 8165814 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:01:45.931] [640001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:01:45.932] [640017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:01:47.874] [642640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.115g | Build: #6
+[21:01:47.874] [642705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:01:48.877] [642743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:01:52.898] [646899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.079g | Raw: 8166067 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:01:55.922] [650001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:01:55.923] [650017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:01:57.874] [652640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.187g | Build: #6
+[21:01:57.874] [652705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:01:58.874] [652743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:02:02.912] [656899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.045g | Raw: 8165861 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:02:05.938] [660001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:02:05.938] [660017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:02:07.874] [662640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.427g | Build: #6
+[21:02:07.874] [662705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-9ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:02:08.874] [662743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:02:12.911] [666899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.012g | Raw: 8165715 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:02:15.937] [670001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:02:15.937] [670017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:02:17.874] [672640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.033g | Build: #6
+[21:02:17.875] [672705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:02:18.877] [672743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:02:22.907] [676899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.078g | Raw: 8166003 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:02:25.925] [680001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:02:25.925] [680017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:02:27.874] [682640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.053g | Build: #6
+[21:02:27.874] [682705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:02:28.875] [682743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:02:32.901] [686899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.131g | Raw: 8166232 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:02:35.925] [690001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:02:35.925] [690017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:02:37.874] [692640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.448g | Build: #6
+[21:02:37.874] [692705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-11ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:02:38.874] [692743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:02:42.916] [696899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.437g | Raw: 8167552 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:02:45.939] [700001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:02:45.939] [700017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:02:47.874] [702640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.962g | Build: #6
+[21:02:47.874] [702705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:02:48.880] [702743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:02:52.901] [706899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.986g | Raw: 8165606 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:02:55.912] [710001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:02:55.912] [710017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:02:57.875] [712640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.021g | Build: #6
+[21:02:57.875] [712705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:02:58.884] [712743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:03:02.908] [716899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.167g | Raw: 8166350 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:03:05.919] [720001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:03:05.919] [720017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:03:07.874] [722640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.419g | Build: #6
+[21:03:07.874] [722705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-59ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:03:08.885] [722743ms MAIN_LOOP_HEARTBEAT] Cycles: 999/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:03:12.915] [726899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.407g | Raw: 8167454 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:03:15.940] [730001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:03:15.941] [730017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 0ms (0-1ms) | Build: #6
+[21:03:17.874] [732640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.401g | Build: #6
+[21:03:17.875] [732705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:03:18.872] [732743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:03:22.902] [736899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.385g | Raw: 8167340 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:03:25.913] [740001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:03:25.914] [740017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:03:27.875] [742640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.359g | Build: #6
+[21:03:27.875] [742705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:03:28.877] [742743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:03:32.911] [746899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.357g | Raw: 8167200 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:03:35.932] [750001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:03:35.932] [750017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:03:37.874] [752640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.355g | Build: #6
+[21:03:37.875] [752705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:03:38.882] [752743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:03:42.932] [756899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.333g | Raw: 8167139 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:03:45.954] [760001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:03:45.954] [760017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:03:47.874] [762640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.325g | Build: #6
+[21:03:47.875] [762705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:03:48.876] [762743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:03:52.908] [766899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.333g | Raw: 8167106 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:03:55.932] [770001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:03:55.932] [770017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:03:57.875] [772640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.314g | Build: #6
+[21:03:57.875] [772705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:03:58.880] [772743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:04:02.913] [776899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.320g | Raw: 8167050 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:04:05.929] [780001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:04:05.929] [780017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:04:07.874] [782640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.326g | Build: #6
+[21:04:07.874] [782705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:04:08.884] [782743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:04:12.923] [786899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.307g | Raw: 8166994 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:04:15.938] [790001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:04:15.939] [790017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:04:17.874] [792640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.311g | Build: #6
+[21:04:17.874] [792705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:04:18.875] [792743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:04:22.911] [796899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.298g | Raw: 8166953 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:04:25.928] [800001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:04:25.929] [800017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:04:27.875] [802640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.314g | Build: #6
+[21:04:27.875] [802705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:04:28.888] [802743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:04:32.916] [806899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.317g | Raw: 8167035 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:04:35.933] [810001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:04:35.933] [810017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:04:37.875] [812640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.308g | Build: #6
+[21:04:37.875] [812705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:04:38.883] [812743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:04:42.905] [816899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.322g | Raw: 8167055 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:04:45.930] [820001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:04:45.930] [820017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:04:47.875] [822640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.289g | Build: #6
+[21:04:47.875] [822705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:04:48.884] [822743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:04:52.919] [826899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.341g | Raw: 8167140 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:04:55.940] [830001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:04:55.940] [830017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:04:57.875] [832640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.324g | Build: #6
+[21:04:57.875] [832705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:04:58.881] [832743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:05:05.148] [836899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.763g | Raw: 8164605 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:05:05.148] [840001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:05:06.150] [840017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:05:07.875] [842640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.815g | Build: #6
+[21:05:07.875] [842705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-9ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:05:08.883] [842743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:05:12.921] [846899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.890g | Raw: 8165227 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:05:15.946] [850001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:05:15.946] [850017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:05:17.875] [852640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.002g | Build: #6
+[21:05:17.875] [852705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:05:18.871] [852743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:05:22.892] [856899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.749g | Raw: 8164500 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:05:25.913] [860001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:05:25.914] [860017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:05:27.875] [862640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.959g | Build: #6
+[21:05:27.875] [862705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:05:28.877] [862743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:05:32.903] [866899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.399g | Raw: 8167354 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:05:35.929] [870001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:05:35.929] [870017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:05:37.875] [872640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.064g | Build: #6
+[21:05:37.875] [872705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-9ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:05:38.879] [872743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:05:42.917] [876899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.038g | Raw: 8165829 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:05:45.939] [880001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:05:45.939] [880017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:05:47.875] [882640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.054g | Build: #6
+[21:05:47.875] [882705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:05:48.876] [882743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:05:52.908] [886899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.987g | Raw: 8165607 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:05:55.921] [890001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:05:55.922] [890017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:05:57.875] [892640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.997g | Build: #6
+[21:05:57.875] [892705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:05:58.883] [892743ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:06:02.906] [896899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.098g | Raw: 8166087 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:06:05.923] [900001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:06:05.923] [900017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:06:07.882] [902640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.990g | Build: #6
+[21:06:07.883] [902705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-11ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:06:12.926] [902751ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-8ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:06:12.926] [906899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.995g | Raw: 8165641 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:06:15.945] [910001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:06:15.945] [910017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 0ms (0-1ms) | Build: #6
+[21:06:17.883] [912640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.388g | Build: #6
+[21:06:17.883] [912705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:06:18.877] [912751ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:06:22.903] [916899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.385g | Raw: 8167327 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:06:25.920] [920001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:06:25.920] [920017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:06:27.883] [922640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.897g | Build: #6
+[21:06:27.883] [922705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:06:28.888] [922751ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:06:32.913] [926899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.903g | Raw: 8165246 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:06:35.938] [930001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:06:35.938] [930017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:06:37.947] [932640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.152g | Build: #6
+[21:06:37.947] [932705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-58ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:06:42.031] [932753ms MAIN_LOOP_HEARTBEAT] Cycles: 999/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:06:43.527] [936899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.979g | Raw: 8165558 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:06:45.541] [940001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:06:45.541] [940017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 0ms (0-1ms) | Build: #6
+[21:06:47.885] [942640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.935g | Build: #6
+[21:06:47.885] [942705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:06:48.891] [942753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:06:52.912] [946899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.962g | Raw: 8165544 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:06:55.938] [950001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:06:55.938] [950017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:06:57.885] [952640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.957g | Build: #6
+[21:06:57.885] [952705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:06:58.888] [952753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:07:02.918] [956899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.936g | Raw: 8165315 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:07:05.941] [960001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:07:05.941] [960017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:07:07.885] [962640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.216g | Build: #6
+[21:07:07.885] [962705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-6ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:07:08.888] [962753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:07:12.919] [966899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.787g | Raw: 8164733 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:07:15.945] [970001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:07:15.945] [970017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:07:17.885] [972640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.821g | Build: #6
+[21:07:17.885] [972705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:07:18.893] [972753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:07:22.933] [976899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.186g | Raw: 8166467 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:07:25.957] [980001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:07:25.957] [980017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:07:27.884] [982640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.308g | Build: #6
+[21:07:27.885] [982705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:07:28.886] [982753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:07:32.919] [986899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.265g | Raw: 8166811 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:07:35.949] [990001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:07:35.949] [990017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:07:37.885] [992640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.260g | Build: #6
+[21:07:37.885] [992705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:07:38.886] [992753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:07:42.922] [996899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.245g | Raw: 8166725 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:07:45.953] [1000001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:07:45.953] [1000017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 0ms (0-1ms) | Build: #6
+[21:07:47.977] [1002640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.230g | Build: #6
+[21:07:47.977] [1002705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:07:52.031] [1002753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:07:53.037] [1006899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.790g | Raw: 8164756 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:07:56.053] [1010001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:07:56.053] [1010017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:07:57.885] [1012640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.683g | Build: #6
+[21:07:57.885] [1012705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:07:58.889] [1012753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:08:02.919] [1016899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.038g | Raw: 8165827 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:08:05.938] [1020001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:08:05.938] [1020017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:08:07.885] [1022640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.712g | Build: #6
+[21:08:07.885] [1022705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:08:08.898] [1022753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:08:12.932] [1026899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.870g | Raw: 8165104 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:08:15.969] [1030001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:08:15.969] [1030017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:08:17.885] [1032640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.800g | Build: #6
+[21:08:17.885] [1032705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:08:18.877] [1032753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:08:22.909] [1036899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.241g | Raw: 8166705 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:08:25.941] [1040001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:08:25.942] [1040017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:08:27.885] [1042640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.242g | Build: #6
+[21:08:27.885] [1042705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:08:28.898] [1042753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:08:32.928] [1046899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.223g | Raw: 8166629 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:08:35.950] [1050001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:08:35.950] [1050017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:08:37.885] [1052640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.203g | Build: #6
+[21:08:37.885] [1052705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:08:38.887] [1052753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:08:42.911] [1056899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.206g | Raw: 8166557 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:08:45.948] [1060001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:08:45.948] [1060017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:08:47.885] [1062640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.171g | Build: #6
+[21:08:47.885] [1062705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:08:48.887] [1062753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:08:52.918] [1066899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.047g | Raw: 8165866 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:08:55.933] [1070001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:08:55.933] [1070017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:08:57.885] [1072640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.608g | Build: #6
+[21:08:57.885] [1072705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:08:58.886] [1072753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:09:02.922] [1076899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.733g | Raw: 8164442 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:09:05.939] [1080001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:09:05.940] [1080017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:09:07.885] [1082640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.083g | Build: #6
+[21:09:07.885] [1082705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-9ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:09:08.891] [1082753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:09:12.924] [1086899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.731g | Raw: 8164322 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:09:15.940] [1090001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:09:15.941] [1090017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:09:17.885] [1092640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.621g | Build: #6
+[21:09:17.885] [1092705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:09:18.886] [1092753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:09:22.911] [1096899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.072g | Raw: 8165980 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:09:25.939] [1100001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:09:25.940] [1100017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:09:27.885] [1102640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.611g | Build: #6
+[21:09:27.885] [1102705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:09:28.897] [1102753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:09:32.929] [1106899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.648g | Raw: 8164139 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:09:35.952] [1110001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:09:35.952] [1110017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:09:37.885] [1112640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.708g | Build: #6
+[21:09:37.885] [1112705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-10ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:09:38.895] [1112753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:09:42.917] [1116899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.711g | Raw: 8164440 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:09:45.946] [1120001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:09:45.946] [1120017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:09:47.885] [1122640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.921g | Build: #6
+[21:09:47.885] [1122705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:09:48.890] [1122753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:09:52.924] [1126899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.672g | Raw: 8164287 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:09:55.953] [1130001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:09:55.953] [1130017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:09:57.885] [1132640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.737g | Build: #6
+[21:09:57.885] [1132705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:09:58.889] [1132753ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:10:02.930] [1136899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.168g | Raw: 8166390 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:10:05.952] [1140001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:10:07.837] [1140017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:10:07.837] [1142640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.155g | Build: #6
+[21:10:08.836] [1142705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-62ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:10:08.837] [1142759ms MAIN_LOOP_HEARTBEAT] Cycles: 999/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:10:12.879] [1146899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.140g | Raw: 8166269 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:10:15.896] [1150001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:10:15.896] [1150017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 0ms (0-1ms) | Build: #6
+[21:10:17.891] [1152640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.124g | Build: #6
+[21:10:17.891] [1152705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:10:18.881] [1152759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:10:22.906] [1156899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.102g | Raw: 8166104 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:10:25.923] [1160001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:10:25.923] [1160017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:10:27.891] [1162640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.115g | Build: #6
+[21:10:27.892] [1162705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:10:28.894] [1162759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:10:32.914] [1166899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.092g | Raw: 8166063 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:10:35.937] [1170001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:10:35.937] [1170017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:10:37.891] [1172640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.101g | Build: #6
+[21:10:37.891] [1172705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-6ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:10:38.901] [1172759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:10:42.927] [1176899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.098g | Raw: 8166090 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:10:45.937] [1180001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:10:45.937] [1180017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:10:47.892] [1182640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.086g | Build: #6
+[21:10:47.892] [1182705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:10:48.901] [1182759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:10:52.054] [1186899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.105g | Raw: 8166119 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:10:56.075] [1190001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:10:56.075] [1190017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:10:57.892] [1192640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.091g | Build: #6
+[21:10:57.892] [1192705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:10:58.902] [1192759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:11:02.924] [1196899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.063g | Raw: 8165939 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:11:05.948] [1200001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:11:05.949] [1200017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:11:07.892] [1202640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.084g | Build: #6
+[21:11:07.892] [1202705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:11:08.891] [1202759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:11:12.915] [1206899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.078g | Raw: 8166000 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:11:15.939] [1210001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:11:15.939] [1210017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:11:17.892] [1212640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.071g | Build: #6
+[21:11:17.892] [1212705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:11:18.890] [1212759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:11:22.929] [1216899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.062g | Raw: 8165934 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:11:25.945] [1220001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:11:25.945] [1220017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:11:27.891] [1222640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.080g | Build: #6
+[21:11:27.891] [1222705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:11:28.888] [1222759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:11:32.924] [1226899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.071g | Raw: 8166007 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:11:35.943] [1230001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:11:35.943] [1230017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:11:37.891] [1232640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.106g | Build: #6
+[21:11:37.892] [1232705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:11:38.899] [1232759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:11:42.932] [1236899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.073g | Raw: 8165970 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:11:45.964] [1240001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:11:45.964] [1240017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:11:47.892] [1242640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.616g | Build: #6
+[21:11:47.892] [1242705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:11:48.896] [1242759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:11:52.914] [1246899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.600g | Raw: 8163997 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:11:55.944] [1250001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:11:55.944] [1250017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:11:57.891] [1252640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.635g | Build: #6
+[21:11:57.892] [1252705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:11:58.892] [1252759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:12:02.919] [1256899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.582g | Raw: 8163864 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:12:05.928] [1260001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:12:05.928] [1260017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:12:07.892] [1262640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.654g | Build: #6
+[21:12:07.892] [1262705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-8ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:12:08.891] [1262759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:12:12.917] [1266899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.998g | Raw: 8165219 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:12:15.933] [1270001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:12:15.933] [1270017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:12:17.892] [1272640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.652g | Build: #6
+[21:12:17.892] [1272705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:12:18.899] [1272759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:12:22.925] [1276899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.728g | Raw: 8164490 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:12:25.947] [1280001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:12:25.948] [1280017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:12:27.891] [1282640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.754g | Build: #6
+[21:12:27.892] [1282705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:12:28.900] [1282759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:12:32.927] [1286899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.629g | Raw: 8164060 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:12:35.942] [1290001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:12:35.942] [1290017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:12:37.892] [1292640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.697g | Build: #6
+[21:12:37.892] [1292705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-9ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:12:38.900] [1292759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:12:42.918] [1296899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.810g | Raw: 8164842 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:12:45.932] [1300001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:12:45.932] [1300017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:12:47.892] [1302640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.704g | Build: #6
+[21:12:47.892] [1302705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:12:48.901] [1302759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:12:52.920] [1306899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.713g | Raw: 8164423 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:12:55.938] [1310001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:12:55.938] [1310017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:12:57.892] [1312640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.185g | Build: #6
+[21:12:57.892] [1312705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:12:58.892] [1312759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:13:02.912] [1316899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.168g | Raw: 8166389 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:13:05.929] [1320001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:13:05.929] [1320017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:13:07.955] [1322640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.139g | Build: #6
+[21:13:07.955] [1322705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-9ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:13:12.032] [1322759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:13:13.038] [1326899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.120g | Raw: 8166185 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:13:16.075] [1330001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:13:16.075] [1330017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:13:17.892] [1332640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.113g | Build: #6
+[21:13:17.892] [1332705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:13:18.897] [1332759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:13:22.924] [1336899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.068g | Raw: 8165960 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:13:25.948] [1340001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:13:25.948] [1340017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:13:27.892] [1342640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.064g | Build: #6
+[21:13:27.892] [1342705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:13:28.904] [1342759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:13:32.925] [1346899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.068g | Raw: 8165958 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:13:35.940] [1350001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:13:35.940] [1350017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:13:37.891] [1352640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.069g | Build: #6
+[21:13:37.892] [1352705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-10ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:13:38.899] [1352759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:13:42.918] [1356899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.073g | Raw: 8166012 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:13:45.938] [1360001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:13:45.938] [1360017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:13:47.892] [1362640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.082g | Build: #6
+[21:13:47.892] [1362705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:13:48.903] [1362759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:13:52.919] [1366899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.062g | Raw: 8165921 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:13:55.933] [1370001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:13:55.933] [1370017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:13:57.936] [1372640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.066g | Build: #6
+[21:13:57.936] [1372705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:14:02.032] [1372759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:14:03.035] [1376899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.027g | Raw: 8165811 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:14:06.071] [1380001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:14:06.072] [1380017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:14:07.892] [1382640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.054g | Build: #6
+[21:14:07.892] [1382705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-58ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:14:08.894] [1382759ms MAIN_LOOP_HEARTBEAT] Cycles: 999/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:14:12.912] [1386899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.041g | Raw: 8165841 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:14:15.931] [1390001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:14:15.931] [1390017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 0ms (0-1ms) | Build: #6
+[21:14:17.892] [1392640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.029g | Build: #6
+[21:14:17.892] [1392705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:14:18.897] [1392759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:14:22.934] [1396899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1889.018g | Raw: 8165743 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:14:25.951] [1400001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:14:25.951] [1400017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:14:27.892] [1402640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1889.031g | Build: #6
+[21:14:27.892] [1402705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:14:28.900] [1402759ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:14:32.925] [1406899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.486g | Raw: 8163444 | SPS: 11.0 | Samples: 1024 | Build: #6
+[21:14:35.490] [1409888][E][Preferences.cpp:526] getBytesLength(): nvs_get_blob len fail: normal NOT_FOUND
+[21:14:35.490] [1410001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:14:36.493] [1410017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-10ms) | Build: #6
+[21:14:37.900] [1412640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.737g | Build: #6
+[21:14:37.900] [1412705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-7ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:14:39.150] [1412767ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:14:42.174] [1416899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.604g | Raw: 8163955 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:14:45.491] [1420001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:14:45.492] [1420017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (0-2ms) | Build: #6
+[21:14:47.900] [1422640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.618g | Build: #6
+[21:14:47.900] [1422705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:14:48.906] [1422767ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:14:53.233] [1426899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.746g | Raw: 8164566 | SPS: 11.5 | Samples: 1024 | Build: #6
+[21:14:55.250] [1430001ms TASK_HEARTBEAT_FileIO] Cycles: 500/10s | Avg: 0ms (0-0ms) | Build: #6
+[21:14:55.250] [1430017ms TASK_HEARTBEAT_UIRender] Cycles: 625/10s | Avg: 1ms (1-1ms) | Build: #6
+[21:14:57.900] [1432640ms GRIND_CONTROL_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Status: IDLE | Target: 0.0g | Current: 1888.897g | Build: #6
+[21:14:57.900] [1432705ms FILE_IO_HEARTBEAT] Cycles: 100/10s | Avg: 0ms (0-0ms) | FS: OK | Ops: 0 | Failed: 0 | Build: #6
+[21:14:58.908] [1432767ms MAIN_LOOP_HEARTBEAT] Cycles: 1000/10s | Avg: 0ms (0-0ms) | Tasks: HEALTHY | BLE: OFF | Grinder: IDLE | Mem: 191KB | Build: #6
+[21:15:02.935] [1436899ms WEIGHT_SAMPLING_HEARTBEAT] Cycles: 500/10s | Avg: 0ms (0-0ms) | Weight: 1888.487g | Raw: 8163447 | SPS: 11.5 | Samples: 1024 | Build: #6

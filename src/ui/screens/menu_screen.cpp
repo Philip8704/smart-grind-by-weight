@@ -42,6 +42,8 @@ void MenuScreen::create(BluetoothManager* bluetooth, GrindController* grind_ctrl
     scale_tare_button = nullptr;
     scale_item = nullptr;
     grinder_purge_mode_radio_group = nullptr;
+    time_scale_toggle = nullptr;
+    auto_start_min_weight_dropdown = nullptr;
     grinder_purge_amount_slider = nullptr;
     grinder_purge_amount_label = nullptr;
     grind_freshness_hours_slider = nullptr;
@@ -358,6 +360,10 @@ void MenuScreen::create_grind_mode_page(lv_obj_t* parent) {
         this
     );
 
+    // Time mode scale usage: display only - the grind is always driven by the clock
+    create_description_label(parent, "Time mode: tare on start and show live weight. The grind always runs on time only, so a failed tare or broken load cell never stops it.");
+    create_toggle_row(parent, "Scale", &time_scale_toggle);
+
     // Descriptive label for swipe functionality
     lv_obj_t* swipe_desc_label = lv_label_create(parent);
     lv_label_set_text(swipe_desc_label, "Enable swiping vertically to switch between Weight/Time modes");
@@ -372,8 +378,10 @@ void MenuScreen::create_grind_mode_page(lv_obj_t* parent) {
 
     // Automatic actions section
     create_separator(parent, "Automation");
-    create_description_label(parent, "Start the selected profile as soon as the cup lands on the scale.");
+    create_description_label(parent, "Start the selected profile once the portafilter is resting on the scale.");
     create_toggle_row(parent, "Start", &auto_start_toggle);
+    create_description_label(parent, "Grinding starts when the scale settles above this weight. Pick the step just below your portafilter. Off means the screen button only.");
+    create_dropdown_row(parent, "Min. weight", auto_start_min_weight_options(), &auto_start_min_weight_dropdown);
     create_description_label(parent, "Exit the completion screen once that cup weight drops away.");
     create_toggle_row(parent, "Return", &auto_return_toggle);
 
@@ -414,9 +422,17 @@ void MenuScreen::create_grind_mode_page(lv_obj_t* parent) {
         lv_obj_add_event_cb(grind_mode_swipe_toggle, EventBridgeLVGL::dispatch_event, LV_EVENT_VALUE_CHANGED,
                            reinterpret_cast<void*>(static_cast<intptr_t>(ET::GRIND_MODE_SWIPE_TOGGLE)));
     }
+    if (time_scale_toggle) {
+        lv_obj_add_event_cb(time_scale_toggle, EventBridgeLVGL::dispatch_event, LV_EVENT_VALUE_CHANGED,
+                           reinterpret_cast<void*>(static_cast<intptr_t>(ET::TIME_SCALE_TOGGLE)));
+    }
     if (auto_start_toggle) {
         lv_obj_add_event_cb(auto_start_toggle, EventBridgeLVGL::dispatch_event, LV_EVENT_VALUE_CHANGED,
                            reinterpret_cast<void*>(static_cast<intptr_t>(ET::AUTO_START_TOGGLE)));
+    }
+    if (auto_start_min_weight_dropdown) {
+        lv_obj_add_event_cb(auto_start_min_weight_dropdown, EventBridgeLVGL::dispatch_event, LV_EVENT_VALUE_CHANGED,
+                           reinterpret_cast<void*>(static_cast<intptr_t>(ET::AUTO_START_MIN_WEIGHT_DROPDOWN)));
     }
     if (auto_return_toggle) {
         lv_obj_add_event_cb(auto_return_toggle, EventBridgeLVGL::dispatch_event, LV_EVENT_VALUE_CHANGED,
@@ -1029,6 +1045,53 @@ lv_obj_t* MenuScreen::create_toggle_row(lv_obj_t* parent, const char* text, lv_o
 }
 
 
+const char* MenuScreen::auto_start_min_weight_options() {
+    // Built once and kept alive for the lifetime of the dropdown: "Off\n100g\n200g\n..."
+    static char options[128];
+    if (options[0] == '\0') {
+        int written = snprintf(options, sizeof(options), "Off");
+        for (int grams = USER_AUTO_GRIND_MIN_WEIGHT_STEP_G;
+             grams <= USER_AUTO_GRIND_MIN_WEIGHT_MAX_G && written > 0 && written < (int)sizeof(options);
+             grams += USER_AUTO_GRIND_MIN_WEIGHT_STEP_G) {
+            written += snprintf(options + written, sizeof(options) - written, "\n%dg", grams);
+        }
+    }
+    return options;
+}
+
+lv_obj_t* MenuScreen::create_dropdown_row(lv_obj_t* parent, const char* text, const char* options,
+                                          lv_obj_t** out_dropdown) {
+    lv_obj_t* row_container = lv_obj_create(parent);
+    style_as_button(row_container, 260, LV_SIZE_CONTENT);
+    lv_obj_set_style_margin_bottom(row_container, 10, 0);
+
+    lv_obj_set_layout(row_container, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(row_container, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(row_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_gap(row_container, 14, 0);
+    lv_obj_set_style_pad_all(row_container, 20, 0);
+
+    lv_obj_t* label = lv_label_create(row_container);
+    lv_label_set_text(label, text);
+
+    *out_dropdown = lv_dropdown_create(row_container);
+    lv_dropdown_set_options(*out_dropdown, options);
+    lv_obj_set_width(*out_dropdown, 220);
+    lv_obj_set_ext_click_area(*out_dropdown, 10);
+    lv_obj_set_style_bg_color(*out_dropdown, lv_color_hex(THEME_COLOR_BACKGROUND), 0);
+    lv_obj_set_style_text_color(*out_dropdown, lv_color_hex(THEME_COLOR_TEXT_PRIMARY), 0);
+
+    // The list is a separate top-level object, so it needs styling of its own
+    lv_obj_t* list = lv_dropdown_get_list(*out_dropdown);
+    if (list) {
+        lv_obj_set_style_bg_color(list, lv_color_hex(THEME_COLOR_BACKGROUND), 0);
+        lv_obj_set_style_text_color(list, lv_color_hex(THEME_COLOR_TEXT_PRIMARY), 0);
+        lv_obj_set_style_bg_color(list, lv_color_hex(THEME_COLOR_ACCENT), LV_PART_SELECTED | LV_STATE_CHECKED);
+    }
+
+    return row_container;
+}
+
 lv_obj_t* MenuScreen::create_slider_row(lv_obj_t* parent, const char* text, lv_obj_t** label, lv_obj_t** slider, lv_color_t slider_color, uint32_t min, uint32_t max) {
     lv_obj_t* row_container = lv_obj_create(parent);
     style_as_button(row_container, 260, LV_SIZE_CONTENT);
@@ -1115,6 +1178,7 @@ void MenuScreen::update_grind_mode_toggles() {
     int mode_index = 0; // Default to Weight (index 0)
     int grinder_purge_mode_index = GRIND_PURGE_MODE_DEFAULT;  // Default to Purge
     float grinder_purge_amount_g = GRIND_PURGE_AMOUNT_DEFAULT_G;  // Default to 1.0g
+    bool time_use_scale = true;  // Default to standard (scale-assisted) time mode
     if (hardware_manager) {
         Preferences* main_prefs = hardware_manager->get_preferences();
         if (main_prefs) {
@@ -1122,6 +1186,15 @@ void MenuScreen::update_grind_mode_toggles() {
             mode_index = (stored_mode == static_cast<int>(GrindMode::TIME)) ? 1 : 0;
             grinder_purge_mode_index = main_prefs->getInt(GrindController::PREF_KEY_GRINDER_MODE, GRIND_PURGE_MODE_DEFAULT);
             grinder_purge_amount_g = main_prefs->getFloat(GrindController::PREF_KEY_GRINDER_AMOUNT_G, GRIND_PURGE_AMOUNT_DEFAULT_G);
+            time_use_scale = main_prefs->getBool(GrindController::PREF_KEY_TIME_USE_SCALE, true);
+        }
+    }
+
+    if (time_scale_toggle) {
+        if (time_use_scale) {
+            lv_obj_add_state(time_scale_toggle, LV_STATE_CHECKED);
+        } else {
+            lv_obj_clear_state(time_scale_toggle, LV_STATE_CHECKED);
         }
     }
 
@@ -1142,7 +1215,18 @@ void MenuScreen::update_grind_mode_toggles() {
     auto_prefs.begin("autogrind", true);
     bool auto_start_enabled = auto_prefs.getBool("auto_start", false);
     bool auto_return_enabled = auto_prefs.getBool("auto_return", false);
+    int auto_min_weight_g = auto_prefs.getInt("min_weight_g", USER_AUTO_GRIND_MIN_WEIGHT_DEFAULT_G);
     auto_prefs.end();
+
+    if (auto_start_min_weight_dropdown) {
+        // Index 0 is "Off", index n is n * step grams
+        int index = auto_min_weight_g / USER_AUTO_GRIND_MIN_WEIGHT_STEP_G;
+        int max_index = USER_AUTO_GRIND_MIN_WEIGHT_MAX_G / USER_AUTO_GRIND_MIN_WEIGHT_STEP_G;
+        if (index < 0 || index > max_index) {
+            index = 0;
+        }
+        lv_dropdown_set_selected(auto_start_min_weight_dropdown, index);
+    }
 
     if (auto_start_toggle) {
         if (auto_start_enabled) {

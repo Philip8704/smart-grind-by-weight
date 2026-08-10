@@ -33,9 +33,9 @@ python3 tools/grinder.py analyze
 
 **Key Components:**
 - **HardwareManager**: Central hardware coordinator
-- **GrindController**: 9-phase state machine with predictive flow control, 10 pulse corrections, mechanical instability detection, and time mode additional pulses
-- **LoadCell (HX711)**: Multi-mode precision weight measurement (instant, smoothed, filtered), calibration flag, noise diagnostics
-- **DiagnosticsController**: System health monitoring (calibration status, sustained noise, mechanical instability), state persistence, hysteresis, priority-based warnings
+- **GrindController**: 9-phase state machine with predictive flow control, 10 pulse corrections, mechanical instability detection, and time mode additional pulses. Predictive stop uses a per-profile **learned coast time** (NVS keys `coast0..2`, EWMA alpha 0.25, clamped 0.05-1.5s) measured from the first settle after motor stop; pulse correction converges instead of firing when the productive pulse would fall below `GRIND_MOTOR_MIN_PULSE_DURATION_MS`
+- **LoadCell (HX711)**: Multi-mode precision weight measurement (instant, smoothed, filtered), calibration flag, noise diagnostics. The control-path reading (`get_weight_low_latency`) uses a **least-squares fit** over `SYS_CONTROL_FIT_WINDOW_MS` evaluated at the newest sample - noise reduction without the lag of a moving average. A 100ms window at 10 SPS held a single unfiltered sample. Sudden-event detection must keep using `get_instant_weight()`; smoothing spreads a step below the detection threshold
+- **DiagnosticsController**: System health monitoring (calibration status, sustained noise, mechanical instability, low memory), state persistence, hysteresis, priority-based warnings. `LOW_MEMORY` samples internal DRAM free size and largest free block every 5s - internal heap is what actually exhausts, since `ESP.getFreeHeap()` includes PSRAM and stays healthy until an allocation fails
 - **UIManager**: 7 screens with LVGL integration; menu page surfaces quick Tools (Scale view, Calibrate, Tune Pulses, Motor Test) followed by Settings (Bluetooth, Display, Grind Settings) and Info sections (Diagnostics, System Info, Logs & Data, Lifetime Stats), warning icon indicator, split-button layout for time mode pulses
 - **StateMachine**: Central state coordination (READY → GRINDING → GRIND_COMPLETE)
 
@@ -45,7 +45,7 @@ python3 tools/grinder.py analyze
 - Standard phases: IDLE, INITIALIZING, SETUP, TARING, TARE_CONFIRM, PRIME, PRIME_SETTLING, PREDICTIVE, PULSE_DECISION, PULSE_EXECUTE, PULSE_SETTLING, FINAL_SETTLING, TIME_GRINDING, COMPLETED, TIMEOUT
 - `TIME_ADDITIONAL_PULSE` - Dedicated phase for post-completion additional grinding pulses in time mode
 - `PURGE_CONFIRM` - Pauses after chute operation (in Purge mode) to allow user to discard grinds before continuing to main grind
-- **Timeout**: 30-second maximum from grind start (includes taring), auto-stops and requires user acknowledgment
+- **Timeout**: 60-second maximum from grind start (includes taring), auto-stops and requires user acknowledgment
 
 **Grinder Purge/Prime:**
 - **Always runs** before weight-mode grinding to saturate the grinder for accurate latency detection
@@ -61,9 +61,9 @@ python3 tools/grinder.py analyze
 **Grind Settings:** Configurable through Menu → Grind Settings page
 - **Mode Selection**: Radio buttons for Weight/Time mode selection
 - **Swipe Gestures Toggle**: Enable/disable vertical swipe gestures for mode switching (default: disabled)
-- **Automation**: Start on Cup and Return on Removal toggles
+- **Automation**: Start on Cup and Return on Removal toggles, plus a **Min. weight** dropdown (100g steps) that is the auto-start trigger itself - the grind begins when the scale settles above it. 0/Off disables auto-start entirely. Re-arms only after the weight drops 100g below the threshold and stays there 2s
 - **Purging**: Radio buttons (Prime/Purge) and Amount slider (0.1g-5.0g)
-- **Preferences**: `swipe.enabled` (boolean), `grind_mode` (0=Weight, 1=Time), `chute_mode` (0=Prime, 1=Purge), `chute_amount_g` (float)
+- **Preferences**: `swipe.enabled` (boolean), `grind_mode` (0=Weight, 1=Time), `chute_mode` (0=Prime, 1=Purge), `chute_amount_g` (float), `time_use_scale` (boolean, time-mode display only), `autogrind.min_weight_g` (int, 0=auto-start disabled)
 - **Behavior**: Swipe gestures only work when enabled; direct mode selection always works
 
 **Color Scheme (RGB565):**

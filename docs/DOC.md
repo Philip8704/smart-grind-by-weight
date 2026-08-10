@@ -313,7 +313,9 @@ All profiles are fully customizable. Default grind-by-weight targets (fallback t
 Access **Menu → Grind Settings** to configure:
 - **Swipe Gestures**: Enable/disable vertical swipe gestures for mode switching (default: disabled)
 - **Time Mode**: Directly toggle between Weight and Time modes regardless of swipe setting
-- **Start on Cup**: Start the active profile automatically when the scale gains ≈50 g within ~2 s (after a short post-boot warmup)
+- **Scale** *(time mode)*: Tare on start and show the live weight under the countdown. The grind is always driven by the clock — this only controls the display, so a failed tare or a broken load cell never stops a time grind
+- **Start on Cup**: Master enable for auto-start
+- **Min. weight**: The auto-start trigger itself, in 100 g steps up to 1000 g. Grinding begins once the scale comes to rest above this weight, so you can seat the portafilter and work the slider at your own pace. Set it just below your portafilter weight and nothing lighter — a dosing funnel, a cup, a hand on the scale — can start a grind. **Off means auto-start does nothing at all; only the on-screen button starts a grind.**
 - **Return on Removal**: Leave the completion screen as soon as that cup weight drops back off the scale
 - **Purging** *(Advanced)*: Control how the grinder saturates itself before weight-mode grinding
   - **Prime mode**: Keeps the coffee used to saturate the grinder, continues immediately
@@ -321,7 +323,7 @@ Access **Menu → Grind Settings** to configure:
   - **Amount slider**: Configure purge/prime amount (0.1g-5.0g, default 1.0g). Amount is a minimum target; actual output will be slightly higher.
   - **"Keep purge grinds from now on" checkbox**: Appears during purge confirmation - switches to Prime mode when checked
 
-  *Explanation:* The time between motor start and grinds hitting the cup (grind latency) is used to predict the coast time (how long grinds will keep coming after the motor is disengaged). Purging clears stale coffee and saturates the grinder with fresh grounds, ensuring accurate latency detection. If you prefer to keep all coffee without manual intervention, select Prime mode.
+  *Explanation:* Purging clears stale coffee and saturates the grinder with fresh grounds so the flow rate measured during the grind reflects the real machine. If you prefer to keep all coffee without manual intervention, select Prime mode.
 
 ### Basic Operation
 These steps describe the default grind-by-weight workflow:
@@ -332,7 +334,7 @@ These steps describe the default grind-by-weight workflow:
 5. The system grinds to the precise target weight using the predictive algorithm
 6. GRIND COMPLETE shows the final settled weight in grams (with statistics)
 
-> Optional automation (Menu → Grind Settings): enable the new auto-start toggle to begin grinding as soon as the scale sees ~50 g arrive (no tare needed); the system waits for the load cell to gather enough quiet samples before arming itself, then auto-return jumps back to Ready whenever that cup is lifted off again.
+> Optional automation (Menu → Grind Settings): set **Min. weight** to just below your portafilter and the grind starts on its own once the scale settles above it — seat the portafilter, work the slider, and it fires when everything stops moving. **Return on Removal** then jumps back to Ready when you lift it off.
 
 Need the stock timed run? Enable swipe gestures in **Menu → Grind Settings**, then swipe up or down on the ready screen before you start; the GRIND button background turns blue to confirm time mode is active (red = weight). Alternatively, use the direct **Time Mode** toggle in the menu.
 
@@ -435,10 +437,12 @@ During Grinding:
 
 Want the scale to run itself? Enable the automation toggles in **Menu → Grind Settings**:
 
-- **Start on Cup**: As soon as a recognized cup or portafilter lands on the load cell (≈50 g delta inside a 2 s window), the active profile tars and begins grinding automatically. Ideal when dosing cups dock directly under the chute.
+- **Start on Cup** + **Min. weight**: The grind starts once the scale comes to rest above the chosen threshold and stays quiet for a second. There is no sudden-placement requirement, so seating the portafilter slowly or nudging the slider afterwards is fine.
 - **Return on Removal**: When the cup weight drops away after completion, the grinder exits the results screen and returns to Ready. Useful for keeping the workflow hands-free between shots.
 
-Both automation settings rely on the same smoothed weight deltas used for flow detection, so no extra calibration is required. Leave them disabled if you prefer manual control or experience false triggers with lighter accessories.
+**How re-arming works.** After a grind the portafilter is still sitting there, settled and above the threshold, so auto-start disarms itself the moment it fires. It re-arms only once the weight drops 100 g below the threshold *and stays there for 2 s* — briefly lifting the portafilter or knocking the scale is not enough. It also starts disarmed after any settings change or calibration, so adjusting the dropdown with a portafilter in place cannot kick off a grind.
+
+Leave **Min. weight** on *Off* if you want the on-screen button to be the only way to start.
 
 ---
 
@@ -546,22 +550,34 @@ The system uses a **zero-shot learning algorithm** requiring no prior knowledge 
    - Logging and chart updates disabled during purge confirmation
 
 3. **Predictive Phase**
-   - Learns flow rate and motor-to-cup latency (relay + motor inertia + burr spin-up)
-   - Predicts when to stop motor based on measured flow and coast characteristics
+   - Measures the live flow rate with a least-squares fit across the sample window
+   - Stops the motor early by exactly the coffee still in flight: `stop early by = learned coast time x current flow rate`
+   - Coast time is **learned per profile** from previous grinds, not assumed (see below)
    - Target: barely undershoot target weight (overshoot is unrecoverable)
    - Uses runtime-configurable motor response latency (30-200ms, default 50ms)
 
 4. **Pulse Correction Phase**
    - Conservative pulse duration calculation using 95th percentile flow rate
    - Bounded pulses respect hardware-specific motor response latency
-   - Pulses range from motor latency minimum to latency + 225ms maximum
+   - Pulses range from motor latency minimum to latency + 250ms maximum
+   - **Converges when a pulse would be too small to matter.** Every pulse begins with ~50ms of dead time while the motor spins up. If the remaining error needs less than 20ms of actual grinding, the grind is declared finished rather than firing a pulse that delivers nothing (or, if padded to a minimum, overshoots a target that cannot be undone)
    - Mechanical instability detection (3+ sudden weight drops triggers diagnostic)
-   - Repeats until target ± tolerance reached
+   - Repeats until target ± tolerance reached, or 10 pulses
 
 5. **Time Mode Additional Pulses**
    - Dedicated `TIME_ADDITIONAL_PULSE` phase for post-completion grinding
    - 100ms fixed pulse duration
    - Split-button UI: OK + PULSE buttons on completion screen
+
+**Learned Coast Model:**
+
+Coffee keeps falling after the motor stops. The firmware stops early by that amount, and it *measures* how much rather than guessing:
+
+- On the first settle after the predictive stop, the extra weight that arrived is the coast. Divided by the flow rate at motor stop, that gives a coast **time**
+- Stored per profile as an exponentially weighted average — each grind counts 25%, so the model adapts over ~4 grinds and one bad grind cannot wreck it
+- Observations outside 0.05-1.5s are discarded as measurement errors
+- Storing a *time* rather than a weight is what makes it transferable: change dose or grind setting and the coast time barely moves, while the coast weight changes a lot. The model multiplies by whatever flow rate it sees today
+- Only the very first grind on a profile falls back to seeding the coast from the spin-up latency
 
 **Motor Response Latency Model:**
 
@@ -572,12 +588,16 @@ The motor response latency represents the physical system lag between relay acti
 
 The latency value is automatically calibrated via **Auto-Tune Motor Response** (Menu → Tune Pulses) using binary search with statistical verification, or uses a safe 50ms default. This enables universal grinder compatibility without firmware modifications.
 
+Note that spin-up latency and spin-down coast are *different* physical quantities — the coast model above measures the latter directly rather than inferring it from the former.
+
 **Key Features:**
-- Noise-resistant through multi-modal load cell measurement (instant, smoothed, filtered)
+- Least-squares estimator on the control path: fits a line across the sample window and reports its value at the newest sample, giving roughly 3x less noise than a single reading with none of the lag a moving average would add
+- Sudden-event detection (mechanical instability) deliberately reads the *unsmoothed* sample, since smoothing would spread a real slip below the detection threshold
 - Hardware-adaptive pulse control via runtime motor latency
 - Conservative approach: undershoots target, then corrects with bounded pulses
 - Mechanical instability detection with hysteresis and persistence
-- 30-second grind timeout protection with user acknowledgment requirement
+- Memory health monitoring: internal heap free size and largest free block sampled every 5s, warning icon below 40KB / 16KB
+- 60-second grind timeout protection with user acknowledgment requirement
 
 ---
 

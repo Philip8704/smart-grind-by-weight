@@ -41,7 +41,8 @@ struct LogMessage {
 
 // Calculated values for a single update cycle - passed to methods to avoid redundant calculations
 struct GrindLoopData {
-    float current_weight;       // For control logic (low_latency)
+    float current_weight;       // For control logic (low_latency, regression-smoothed)
+    float instant_weight;       // Newest raw sample, unsmoothed - for detecting sudden mechanical events
     float display_weight;       // For UI display (always calculated)
     uint32_t timestamp_ms;
     float weight_delta;
@@ -69,7 +70,8 @@ enum class GrindPhase {
     TIMEOUT,            // Grind timed out
     PRIME,              // Optional chute priming/purging grind
     PRIME_SETTLING,     // Settling after priming grind
-    PURGE_CONFIRM       // Waiting for user to confirm purge completion
+    PURGE_CONFIRM,      // Waiting for user to confirm purge completion
+    TIME_PAUSED         // Time-mode grind paused by user, remaining time preserved
 };
 
 
@@ -96,6 +98,7 @@ private:
     unsigned long start_time;
     unsigned long phase_start_time;
     unsigned long time_grind_start_ms;
+    unsigned long time_grind_elapsed_at_pause_ms;
     
     float tolerance;
     GrindMode mode;
@@ -160,6 +163,11 @@ private:
     bool session_end_flash_queued = false;
     char last_error_message[32];
 
+    // Non-fatal notice shown briefly on the grinding screen (e.g. failed tare).
+    // Unlike an error it never stops the grind; delivered once with the next UI event.
+    char last_notice_message[32];
+    bool notice_pending_ = false;
+
     GrindSessionDescriptor session_descriptor;
     GrindStrategyContext strategy_context;
     IGrindStrategy* active_strategy = nullptr;
@@ -181,6 +189,10 @@ private:
     bool grinder_purged_since_boot;      // Tracks if grinder has been used since boot (RAM only)
     uint64_t last_purge_runtime_ms;      // Runtime when last grind completed (persisted)
 
+    // Learned coast model - see GRIND_COAST_* in grind_control.h
+    float learned_coast_time_s;          // Coast time for the profile of the running session (0 = never learned)
+    bool coast_time_dirty_;              // A new observation is waiting to be written to NVS at session end
+
 public:
     enum class GrindSessionResult {
         UNKNOWN,
@@ -201,6 +213,13 @@ public:
     void return_to_idle(); // Called by UI to acknowledge completion/timeout
     void stop_grind();
     void continue_from_purge(); // Called by UI to continue from PURGE_CONFIRM to PREDICTIVE
+
+    // Time mode pause/resume - motor stops, remaining grind time is preserved
+    void pause_time_grind();
+    void resume_time_grind();
+    bool can_pause_time_grind() const;
+    bool is_time_paused() const { return phase == GrindPhase::TIME_PAUSED; }
+    uint32_t get_time_remaining_ms() const;
     void update(); // Core 0 main control method - runs at fixed RTOS interval
     
     // Time mode pulse functionality
@@ -228,10 +247,12 @@ public:
     float get_target_weight() const { return target_weight; }
     uint32_t get_target_time_ms() const { return target_time_ms; }
     static constexpr const char* PREF_KEY_PRIME_ENABLED = "prime_enabled";
+    static constexpr const char* PREF_KEY_TIME_USE_SCALE = "time_use_scale";
     static constexpr const char* PREF_KEY_GRINDER_MODE = "grinder_mode";
     static constexpr const char* PREF_KEY_GRINDER_AMOUNT_G = "grinder_amount_g";
     static constexpr const char* PREF_KEY_GRIND_FRESHNESS_HOURS = "freshness_hrs";
     static constexpr const char* PREF_KEY_LAST_GRIND_RUNTIME = "last_grind_ms";
+    static constexpr const char* PREF_KEY_COAST_TIME_PREFIX = "coast";  // Suffixed with the profile id, e.g. "coast1"
     GrindMode get_mode() const { return mode; }
     const GrindSessionDescriptor& get_session_descriptor() const { return session_descriptor; }
     
@@ -262,6 +283,13 @@ public:
     // Grind freshness accessors
     bool get_grinder_purged_since_boot() const { return grinder_purged_since_boot; }
     uint64_t get_last_purge_runtime_ms() const { return last_purge_runtime_ms; }
+
+    // Learned coast model. Coast is stored as a time so it stays valid across dose
+    // sizes and grind settings - the weight it predicts scales with the live flow rate.
+    float get_learned_coast_time_s() const { return learned_coast_time_s; }
+    void observe_coast(float coast_weight_g);   // Fold one grind's measured coast into the average
+    void load_coast_time(uint8_t profile_id);   // Read the profile's learned value from NVS
+    void save_coast_time();                     // Persist it (called once per session, off the control path)
     
     // Removed - predictive logic now inline in update_realtime()
     
@@ -292,4 +320,6 @@ private:
     const char* get_phase_name(GrindPhase p = static_cast<GrindPhase>(-1)) const;
 
     void set_error_message(const char* message);
+    void set_notice_message(const char* message);
+    const char* take_pending_notice(); // Returns the notice once, then nullptr until a new one is set
 };

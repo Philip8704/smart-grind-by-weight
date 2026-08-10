@@ -30,6 +30,9 @@ public:
     void update_target_weight_text(const char* text) override;
     void update_target_time(float seconds);
     void update_current_weight(float weight) override;
+    void update_time_remaining(float seconds);
+    void update_time_weight(float weight);
+    void update_center_text(const char* text);
     void update_tare_display() override;
     void update_progress(int percent) override;
     bool is_visible() const override;

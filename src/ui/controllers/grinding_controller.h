@@ -42,8 +42,14 @@ private:
     void start_grind_timeout_timer();
     void cancel_timers();
 
+    // Briefly replaces the target label with a non-fatal warning, then restores it.
+    // The grind keeps running - notices never interrupt it.
+    void show_notice(const char* message);
+    void cancel_notice();
+
     static void grind_complete_timer_cb(lv_timer_t* timer);
     static void grind_timeout_timer_cb(lv_timer_t* timer);
+    static void notice_timer_cb(lv_timer_t* timer);
 
     static GrindingUIController* instance_;
 
@@ -54,6 +60,7 @@ private:
     lv_obj_t* pulse_icon_ = nullptr;
     lv_timer_t* grind_complete_timer_ = nullptr;
     lv_timer_t* grind_timeout_timer_ = nullptr;
+    lv_timer_t* notice_timer_ = nullptr;
     bool chart_updates_enabled_ = false;
     float final_grind_weight_ = 0.0f;
     int final_grind_progress_ = 0;

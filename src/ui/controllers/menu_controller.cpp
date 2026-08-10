@@ -46,8 +46,10 @@ void MenuUIController::register_events() {
     EventBridgeLVGL::register_handler(ET::LOGGING_TOGGLE, [this](lv_event_t*) { handle_logging_toggle(); });
 
     EventBridgeLVGL::register_handler(ET::GRIND_MODE_SWIPE_TOGGLE, [this](lv_event_t*) { handle_grind_mode_swipe_toggle(); });
+    EventBridgeLVGL::register_handler(ET::TIME_SCALE_TOGGLE, [this](lv_event_t*) { handle_time_scale_toggle(); });
     EventBridgeLVGL::register_handler(ET::GRIND_MODE_RADIO_BUTTON, [this](lv_event_t*) { handle_grind_mode_radio_button(); });
     EventBridgeLVGL::register_handler(ET::AUTO_START_TOGGLE, [this](lv_event_t*) { handle_auto_start_toggle(); });
+    EventBridgeLVGL::register_handler(ET::AUTO_START_MIN_WEIGHT_DROPDOWN, [this](lv_event_t*) { handle_auto_start_min_weight_dropdown(); });
     EventBridgeLVGL::register_handler(ET::AUTO_RETURN_TOGGLE, [this](lv_event_t*) { handle_auto_return_toggle(); });
     EventBridgeLVGL::register_handler(ET::GRINDER_PURGE_MODE_RADIO_BUTTON, [this](lv_event_t*) { handle_grinder_purge_mode_radio_button(); });
     EventBridgeLVGL::register_handler(ET::GRINDER_PURGE_AMOUNT_SLIDER, [this](lv_event_t*) { handle_grinder_purge_amount_slider(); });
@@ -318,6 +320,24 @@ void MenuUIController::handle_grind_mode_swipe_toggle() {
     LOG_DEBUG_PRINTLN(swipe_enabled ? "Grind mode swipe gestures enabled" : "Grind mode swipe gestures disabled");
 }
 
+void MenuUIController::handle_time_scale_toggle() {
+    if (!ui_manager_) return;
+
+    auto* toggle = ui_manager_->menu_screen.get_time_scale_toggle();
+    if (!toggle) return;
+
+    bool use_scale = lv_obj_has_state(toggle, LV_STATE_CHECKED);
+
+    auto* hardware = ui_manager_->get_hardware_manager();
+    Preferences* prefs = hardware ? hardware->get_preferences() : nullptr;
+    if (prefs) {
+        prefs->putBool(GrindController::PREF_KEY_TIME_USE_SCALE, use_scale);
+    }
+
+    LOG_DEBUG_PRINTLN(use_scale ? "Time mode: tare + live weight display (grind still time-driven)"
+                                : "Time mode: countdown only (no taring, no weight display)");
+}
+
 void MenuUIController::handle_grind_mode_radio_button() {
     if (!ui_manager_ || !ui_manager_->profile_controller) return;
 
@@ -361,6 +381,26 @@ void MenuUIController::handle_auto_start_toggle() {
     }
 
     LOG_DEBUG_PRINTLN(enabled ? "Auto-start on cup enabled" : "Auto-start on cup disabled");
+}
+
+void MenuUIController::handle_auto_start_min_weight_dropdown() {
+    if (!ui_manager_) return;
+
+    auto* dropdown = ui_manager_->menu_screen.get_auto_start_min_weight_dropdown();
+    if (!dropdown) return;
+
+    // Index 0 is "Off", index n is n * step grams
+    int selected = static_cast<int>(lv_dropdown_get_selected(dropdown));
+    int min_weight_g = selected * USER_AUTO_GRIND_MIN_WEIGHT_STEP_G;
+
+    Preferences prefs;
+    prefs.begin("autogrind", false);
+    prefs.putInt("min_weight_g", min_weight_g);
+    prefs.end();
+
+    ui_manager_->refresh_auto_action_settings();
+
+    LOG_DEBUG_PRINTF("Auto-start minimum weight set to %dg\n", min_weight_g);
 }
 
 void MenuUIController::handle_auto_return_toggle() {

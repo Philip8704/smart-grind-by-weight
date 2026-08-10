@@ -50,6 +50,7 @@ private:
     // For asymmetric display filtering (fast up, slow down) on raw values
     int32_t display_filtered_raw;
     bool display_filter_initialized;
+    uint32_t display_filter_last_sample_ms;  // Newest sample already folded into the filter
     
     // Flow rate stability tracking (raw units per second)
     mutable uint32_t flow_stable_since_ms;  // When flow rate first became stable
@@ -60,6 +61,11 @@ private:
     int32_t apply_outlier_rejection(const int32_t* samples, int count) const;
     float calculate_standard_deviation(const int32_t* samples, int count) const;
     int32_t get_latest_sample() const;
+    uint32_t newest_sample_timestamp_ms() const;
+    int get_samples_with_time_in_window(uint32_t window_ms, int max_samples,
+                                        int32_t* values_out, uint32_t* times_out) const;
+
+    static const int MIN_SAMPLES_FOR_FIT = 3;  // Below this a least-squares fit is not meaningful
     int calculate_max_samples_for_window(uint32_t window_ms) const;
     
 public:
@@ -70,11 +76,20 @@ public:
     
     // Unified smoothing method on raw data
     int32_t get_smoothed_raw(uint32_t window_ms) const;
+
+    // Least-squares fit of raw value against time over the window. Returns the slope
+    // (raw units per ms) and the fitted value at the newest sample - a de-noised
+    // reading that, unlike a moving average, carries no lag while the weight ramps.
+    // False when the window holds fewer than MIN_SAMPLES_FOR_FIT samples.
+    bool get_linear_fit(uint32_t window_ms, float* slope_raw_per_ms,
+                        float* value_at_newest_raw, int* samples_used) const;
     
     // Specialized raw readings with different time windows
     int32_t get_instant_raw() const;           // Latest single sample
     int32_t get_raw_low_latency() const;       // 50ms window - for real-time control  
-    int32_t get_display_raw();                 // 250ms window + asymmetric filter - for UI
+    // 300ms window + asymmetric filter - for UI. Deadband is supplied in raw ADC
+    // units by the caller, which is the only place that knows the calibration factor.
+    int32_t get_display_raw(int32_t raw_deadband);
     int32_t get_raw_high_latency() const;      // 250ms window - for final measurements
     bool get_window_delta(uint32_t window_ms, int32_t* delta_out,
                           uint32_t* span_ms_out = nullptr, int* samples_out = nullptr) const;

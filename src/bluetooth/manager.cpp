@@ -919,7 +919,12 @@ void BluetoothManager::update_system_info() {
     size_t heap_used = heap_total - heap_free;
     uint32_t flash_size = ESP.getFlashChipSize();
     float heap_usage_percent = (float(heap_used) / float(heap_total)) * 100.0f;
-    
+
+    // Internal DRAM is the heap that actually runs out - ESP.getFreeHeap() includes
+    // PSRAM and so looks healthy right up until the moment an allocation fails.
+    // The low-water mark shows how close this boot has come to the edge.
+    DiagnosticsController::MemorySnapshot memory = DiagnosticsController::sample_memory();
+
     snprintf(buffer, sizeof(buffer),
         "{"
         "\"version\":\"%s\","
@@ -930,6 +935,11 @@ void BluetoothManager::update_system_info() {
         "\"heap_free\":%u,"
         "\"heap_total\":%u,"
         "\"heap_used_pct\":%.1f,"
+        "\"int_free\":%u,"
+        "\"int_block\":%u,"
+        "\"int_min_ever\":%u,"
+        "\"lvgl_free\":%u,"
+        "\"lvgl_frag\":%u,"
         "\"flash_size\":%u,"
         "\"cpu_freq\":%u"
         "}",
@@ -941,6 +951,11 @@ void BluetoothManager::update_system_info() {
         (unsigned int)heap_free,
         (unsigned int)heap_total,
         heap_usage_percent,
+        (unsigned int)memory.internal_free_bytes,
+        (unsigned int)memory.internal_largest_block_bytes,
+        (unsigned int)memory.internal_min_free_ever_bytes,
+        (unsigned int)memory.lvgl_pool_free_bytes,
+        (unsigned int)memory.lvgl_pool_frag_pct,
         (unsigned int)flash_size,
         (unsigned int)ESP.getCpuFreqMHz()
     );
@@ -1230,19 +1245,19 @@ void BluetoothManager::generate_diagnostic_report() {
         "  USER_SCREEN_BRIGHTNESS_NORMAL: %.2f\n"
         "  USER_SCREEN_BRIGHTNESS_DIMMED: %.2f\n"
         "  USER_WEIGHT_ACTIVITY_THRESHOLD_G: %.1f\n"
-        "  USER_AUTO_GRIND_TRIGGER_DELTA_G: %.1f\n"
-        "  USER_AUTO_GRIND_TRIGGER_WINDOW_MS: %lu\n"
         "  USER_AUTO_GRIND_TRIGGER_SETTLING_MS: %lu\n"
         "  USER_AUTO_GRIND_REARM_DELAY_MS: %lu\n"
+        "  USER_AUTO_GRIND_REARM_DROP_G: %.1f\n"
+        "  USER_AUTO_GRIND_REARM_DWELL_MS: %lu\n"
         "\n",
         (unsigned long)USER_SCREEN_AUTO_DIM_TIMEOUT_MS,
         USER_SCREEN_BRIGHTNESS_NORMAL,
         USER_SCREEN_BRIGHTNESS_DIMMED,
         USER_WEIGHT_ACTIVITY_THRESHOLD_G,
-        USER_AUTO_GRIND_TRIGGER_DELTA_G,
-        (unsigned long)USER_AUTO_GRIND_TRIGGER_WINDOW_MS,
         (unsigned long)USER_AUTO_GRIND_TRIGGER_SETTLING_MS,
-        (unsigned long)USER_AUTO_GRIND_REARM_DELAY_MS
+        (unsigned long)USER_AUTO_GRIND_REARM_DELAY_MS,
+        USER_AUTO_GRIND_REARM_DROP_G,
+        (unsigned long)USER_AUTO_GRIND_REARM_DWELL_MS
     );
     send_chunk(buf);
 

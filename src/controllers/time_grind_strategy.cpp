@@ -57,11 +57,14 @@ int TimeGrindStrategy::progress_percent(const GrindSessionDescriptor& session,
         return 0;
     }
 
-    if (controller.time_grind_start_ms == 0) {
+    unsigned long elapsed;
+    if (controller.phase == GrindPhase::TIME_PAUSED) {
+        elapsed = controller.time_grind_elapsed_at_pause_ms;
+    } else if (controller.time_grind_start_ms != 0) {
+        elapsed = millis() - controller.time_grind_start_ms;
+    } else {
         return 0;
     }
-
-    unsigned long elapsed = millis() - controller.time_grind_start_ms;
     if (elapsed >= session.target_time_ms) {
         return 100;
     }

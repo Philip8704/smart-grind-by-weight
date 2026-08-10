@@ -414,7 +414,9 @@ float WeightSensor::get_weight_low_latency() const {
 }
 
 float WeightSensor::get_display_weight() {
-    float weight = raw_to_weight(raw_filter.get_display_raw());
+    // Derive the deadband from the live calibration factor so it stays the same
+    // number of grams on every load cell instead of a fixed count of ADC units
+    float weight = raw_to_weight(raw_filter.get_display_raw(weight_to_raw_threshold(SYS_DISPLAY_DEADBAND_G)));
     // Clamp tiny values around zero to prevent -0.0g display
     if (weight > -0.05f && weight < 0.05f) {
         weight = 0.0f;

@@ -141,37 +141,67 @@ int CircularBufferMath::calculate_max_samples_for_window(uint32_t window_ms) con
 }
 
 int32_t CircularBufferMath::get_raw_low_latency() const {
-    return get_smoothed_raw(100); // 100ms window for real-time control
+    // This is the reading the grind controller stops the motor on, so it has to be
+    // both quiet and current. A 100ms window at 10 SPS holds a single sample, which
+    // means no averaging and no outlier rejection at all - one noisy conversion could
+    // stop the motor early or late. The regression uses a wider window for noise
+    // reduction but reports the value at the newest sample, so it costs no latency.
+    float fitted_value = 0.0f;
+    if (get_linear_fit(SYS_CONTROL_FIT_WINDOW_MS, nullptr, &fitted_value, nullptr)) {
+        return (int32_t)fitted_value;
+    }
+
+    return get_smoothed_raw(100); // Too few samples to fit (startup, or after a buffer clear)
 }
 
-int32_t CircularBufferMath::get_display_raw() {
+int32_t CircularBufferMath::get_display_raw(int32_t raw_deadband) {
     // Asymmetric display filter on raw values (fast up, slow down)
     int32_t current_raw = get_smoothed_raw(300); // 300ms base window
-    
+
     if (!display_filter_initialized) {
         display_filtered_raw = current_raw;
         display_filter_initialized = true;
+        display_filter_last_sample_ms = newest_sample_timestamp_ms();
         return display_filtered_raw;
     }
-    
-    // Apply asymmetric filter (fast up, slow down) - adapted for raw values
-    // Use deadband equivalent to ~0.01g in raw units (approximate)
-    int32_t raw_deadband = 100; // This should be configurable based on calibration
-    
+
+    // Only advance the filter when the load cell has actually produced a new
+    // sample. The UI and the control loop both read this at ~50Hz while the
+    // HX711 delivers ~10 samples/s, so stepping the IIR per call would make the
+    // decay rate depend on how often someone happens to look at the weight.
+    uint32_t newest_sample_ms = newest_sample_timestamp_ms();
+    if (newest_sample_ms == display_filter_last_sample_ms) {
+        return display_filtered_raw;
+    }
+    display_filter_last_sample_ms = newest_sample_ms;
+
+    if (raw_deadband < 0) {
+        raw_deadband = 0;
+    }
+
     if (abs(current_raw - display_filtered_raw) < raw_deadband) {
         return display_filtered_raw; // No change within deadband
     }
-    
+
     if (current_raw > display_filtered_raw) {
-        // Fast response for increases
+        // Fast response for increases - coffee arriving should show up immediately
         display_filtered_raw = current_raw;
     } else {
-        // Slow response for decreases
+        // Slow response for decreases, so a dip in the reading does not make the
+        // displayed weight jump back and forth
         float alpha = SYS_DISPLAY_FILTER_ALPHA_DOWN; // From constants.h
         display_filtered_raw = (int32_t)(alpha * current_raw + (1.0f - alpha) * display_filtered_raw);
     }
-    
+
     return display_filtered_raw;
+}
+
+uint32_t CircularBufferMath::newest_sample_timestamp_ms() const {
+    if (samples_count == 0) {
+        return 0;
+    }
+    uint16_t newest_index = (write_index - 1 + MAX_BUFFER_SIZE) % MAX_BUFFER_SIZE;
+    return circular_buffer[newest_index].timestamp_ms;
 }
 
 int32_t CircularBufferMath::get_raw_high_latency() const {
@@ -337,41 +367,96 @@ float CircularBufferMath::calculate_standard_deviation(const int32_t* samples, i
     return sqrt(variance);
 }
 
-float CircularBufferMath::get_raw_flow_rate(uint32_t window_ms) const {
-    // Calculate max samples needed
-    int max_samples = calculate_max_samples_for_window(window_ms);
-    if (max_samples < 2) return 0.0f;
-    
-    // Allocate temporary arrays
-    int32_t* samples = (int32_t*)alloca(max_samples * sizeof(int32_t));
-    uint32_t* timestamps = (uint32_t*)alloca(max_samples * sizeof(uint32_t));
-    
-    // Get samples and timestamps within window
+int CircularBufferMath::get_samples_with_time_in_window(uint32_t window_ms, int max_samples,
+                                                        int32_t* values_out, uint32_t* times_out) const {
+    if (samples_count == 0) return 0;
+
+    uint32_t window_start = millis() - window_ms;
     int collected = 0;
-    uint32_t current_time = millis();
-    uint32_t window_start = current_time - window_ms;
-    
+
+    // Walk backwards from most recent, so index 0 is always the newest sample
     for (int i = 0; i < (int)samples_count && collected < max_samples; i++) {
         uint16_t index = (write_index - 1 - i + MAX_BUFFER_SIZE) % MAX_BUFFER_SIZE;
-        
+
         if (circular_buffer[index].timestamp_ms >= window_start) {
-            samples[collected] = circular_buffer[index].raw_value;
-            timestamps[collected] = circular_buffer[index].timestamp_ms;
+            values_out[collected] = circular_buffer[index].raw_value;
+            times_out[collected] = circular_buffer[index].timestamp_ms;
             collected++;
         } else {
-            break;
+            break; // Samples are time-ordered
         }
     }
-    
+
+    return collected;
+}
+
+bool CircularBufferMath::get_linear_fit(uint32_t window_ms, float* slope_raw_per_ms,
+                                        float* value_at_newest_raw, int* samples_used) const {
+    // Least-squares fit of raw value against time across the whole window.
+    //
+    // Two properties matter here. Using every sample instead of just the endpoints
+    // drops the noise on both outputs by roughly sqrt(n). And because coffee arrives
+    // at a near-constant rate, a straight line is the right model - so evaluating the
+    // fit at the newest sample gives a de-noised reading with no lag, where a plain
+    // moving average would sit half a window behind the truth while grinding.
+    if (samples_used) *samples_used = 0;
+
+    int max_samples = calculate_max_samples_for_window(window_ms);
+    if (max_samples < MIN_SAMPLES_FOR_FIT) return false;
+
+    int32_t* values = (int32_t*)alloca(max_samples * sizeof(int32_t));
+    uint32_t* times = (uint32_t*)alloca(max_samples * sizeof(uint32_t));
+
+    int n = get_samples_with_time_in_window(window_ms, max_samples, values, times);
+    if (n < MIN_SAMPLES_FOR_FIT) return false;
+
+    // Express time relative to the newest sample so x = 0 is "now" and the
+    // magnitudes stay small enough for single precision
+    float sum_x = 0.0f, sum_y = 0.0f, sum_xx = 0.0f, sum_xy = 0.0f;
+    for (int i = 0; i < n; i++) {
+        float x = (float)((int32_t)(times[i] - times[0]));  // <= 0
+        float y = (float)values[i];
+        sum_x += x;
+        sum_y += y;
+        sum_xx += x * x;
+        sum_xy += x * y;
+    }
+
+    float denominator = (float)n * sum_xx - sum_x * sum_x;
+    if (fabsf(denominator) < 1e-6f) return false;  // All samples share one timestamp
+
+    float slope = ((float)n * sum_xy - sum_x * sum_y) / denominator;
+    float intercept = (sum_y - slope * sum_x) / (float)n;  // Value at x = 0, the newest sample
+
+    if (!isfinite(slope) || !isfinite(intercept)) return false;
+
+    if (slope_raw_per_ms) *slope_raw_per_ms = slope;
+    if (value_at_newest_raw) *value_at_newest_raw = intercept;
+    if (samples_used) *samples_used = n;
+    return true;
+}
+
+float CircularBufferMath::get_raw_flow_rate(uint32_t window_ms) const {
+    float slope_per_ms = 0.0f;
+    if (get_linear_fit(window_ms, &slope_per_ms, nullptr, nullptr)) {
+        return slope_per_ms * 1000.0f;  // Raw units per second
+    }
+
+    // Not enough samples to fit - fall back to the endpoint difference
+    int max_samples = calculate_max_samples_for_window(window_ms);
+    if (max_samples < 2) return 0.0f;
+
+    int32_t* samples = (int32_t*)alloca(max_samples * sizeof(int32_t));
+    uint32_t* timestamps = (uint32_t*)alloca(max_samples * sizeof(uint32_t));
+
+    int collected = get_samples_with_time_in_window(window_ms, max_samples, samples, timestamps);
     if (collected < 2) return 0.0f;
-    
-    // Simple linear regression for flow rate
+
     int32_t raw_change = samples[0] - samples[collected - 1]; // Most recent - oldest
     uint32_t time_change = timestamps[0] - timestamps[collected - 1];
-    
+
     if (time_change == 0) return 0.0f;
-    
-    // Return raw units per second
+
     return (float)raw_change * 1000.0f / time_change;
 }
 
@@ -514,6 +599,7 @@ int32_t CircularBufferMath::get_max_raw(uint32_t window_ms) const {
 void CircularBufferMath::reset_display_filter() {
     display_filter_initialized = false;
     display_filtered_raw = 0;
+    display_filter_last_sample_ms = 0;
 }
 
 void CircularBufferMath::clear_all_samples() {
