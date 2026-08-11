@@ -480,6 +480,15 @@ void AutoTuneController::update_verification_phase() {
 //==============================================================================
 
 void AutoTuneController::start_pulse(float pulse_duration_ms) {
+    // Auto-tune is driven from the UI task, so this drives the motor from Core 1 while
+    // the control loop may do the same from Core 0. Both delete and recreate the same
+    // RMT encoder. Auto-tune is only reachable from the menu, where no grind can be
+    // running, but nothing enforces that - so check rather than assume.
+    if (grind_controller && grind_controller->is_active()) {
+        LOG_BLE("AutoTune: Pulse skipped - a grind is in progress\n");
+        return;
+    }
+
     LOG_BLE("AutoTune: Starting pulse %.1fms\n", pulse_duration_ms);
 
     active_pulse_ms = pulse_duration_ms;
