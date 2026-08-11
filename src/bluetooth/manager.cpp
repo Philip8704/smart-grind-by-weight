@@ -943,6 +943,11 @@ void BluetoothManager::update_system_info() {
     // learning if every grind is rejected - a value stuck at 0 explains why accuracy
     // never improves, and there is nowhere else to see it.
     float coast[3] = {0.0f, 0.0f, 0.0f};
+    // Empty-cradle reference from calibration. Reported because the only other sign it
+    // exists is a serial line printed during boot, long before a phone can connect -
+    // and without it auto-start silently falls back to the old tare-relative gate.
+    int32_t empty_ref = 0;
+    bool has_empty_ref = false;
     {
         Preferences coast_prefs;
         if (coast_prefs.begin("grinder", true)) {
@@ -951,6 +956,8 @@ void BluetoothManager::update_system_info() {
                 snprintf(key, sizeof(key), "%s%d", GrindController::PREF_KEY_COAST_TIME_PREFIX, i);
                 coast[i] = coast_prefs.getFloat(key, 0.0f);
             }
+            has_empty_ref = coast_prefs.isKey("hx_empty");
+            empty_ref = has_empty_ref ? coast_prefs.getInt("hx_empty", 0) : 0;
             coast_prefs.end();
         }
     }
@@ -971,6 +978,8 @@ void BluetoothManager::update_system_info() {
         "\"lvgl_free\":%u,"
         "\"lvgl_frag\":%u,"
         "\"coast_s\":[%.3f,%.3f,%.3f],"
+        "\"empty_ref\":%ld,"
+        "\"has_empty_ref\":%d,"
         "\"flash_size\":%u,"
         "\"cpu_freq\":%u"
         "}",
@@ -988,6 +997,8 @@ void BluetoothManager::update_system_info() {
         (unsigned int)memory.lvgl_pool_free_bytes,
         (unsigned int)memory.lvgl_pool_frag_pct,
         coast[0], coast[1], coast[2],
+        (long)empty_ref,
+        has_empty_ref ? 1 : 0,
         (unsigned int)flash_size,
         (unsigned int)ESP.getCpuFreqMHz()
     );
