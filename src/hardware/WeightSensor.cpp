@@ -27,6 +27,8 @@ WeightSensor::WeightSensor() {
     cal_factor = USER_DEFAULT_CALIBRATION_FACTOR;
 #endif
     tare_offset = 0;
+    empty_reference_raw = 0;
+    has_empty_reference_ = false;
     
     // Initialize current readings
     current_weight = 0.0;
@@ -550,7 +552,39 @@ void WeightSensor::save_calibration() {
 #endif
     if (prefs) {
         prefs->putFloat("hx_cal", cal_factor);
+
+        // tare_offset still holds the empty-cradle reading taken at the start of
+        // calibration - the weight only went on afterwards. Persisting it gives an
+        // absolute zero that survives every later tare.
+        prefs->putInt("hx_empty", tare_offset);
+        empty_reference_raw = tare_offset;
+        has_empty_reference_ = true;
+        LOG_BLE("Stored empty-cradle reference: %ld raw\n", (long)tare_offset);
     }
+}
+
+void WeightSensor::load_empty_reference() {
+    has_empty_reference_ = false;
+    empty_reference_raw = 0;
+
+#if DEBUG_ENABLE_LOADCELL_MOCK
+    return;
+#endif
+
+    if (prefs && prefs->isKey("hx_empty")) {
+        empty_reference_raw = prefs->getInt("hx_empty", 0);
+        has_empty_reference_ = true;
+        LOG_BLE("Loaded empty-cradle reference: %ld raw\n", (long)empty_reference_raw);
+    } else {
+        LOG_BLE("No empty-cradle reference stored - re-calibrate to enable absolute weight\n");
+    }
+}
+
+float WeightSensor::get_absolute_weight() const {
+    if (!has_empty_reference_) {
+        return 0.0f;
+    }
+    return (float)(raw_filter.get_raw_low_latency() - empty_reference_raw) / cal_factor;
 }
 
 void WeightSensor::save_calibration_weight(float weight) {
@@ -573,34 +607,6 @@ float WeightSensor::get_saved_calibration_weight() {
     return USER_CALIBRATION_REFERENCE_WEIGHT_G;
 }
 
-void WeightSensor::load_calibration() {
-#if DEBUG_ENABLE_LOADCELL_MOCK
-    cal_factor = DEBUG_MOCK_CAL_FACTOR;
-    LOG_BLE("Mock load cell: using fixed calibration factor: %.2f\n", cal_factor);
-    return;
-#endif
-    if (prefs) {
-        float saved_factor = prefs->getFloat("hx_cal", USER_DEFAULT_CALIBRATION_FACTOR);
-        
-        // Check for corrupted/invalid calibration data
-        // Only exactly-zero used to be caught here, so a near-zero or absurdly large
-        // factor from a bad calibration survived a reboot and left the scale unusable
-        if (!isfinite(saved_factor) ||
-            fabsf(saved_factor) < USER_CALIBRATION_FACTOR_MIN_ABS ||
-            fabsf(saved_factor) > USER_CALIBRATION_FACTOR_MAX_ABS) {
-            LOG_BLE("WARNING: Invalid calibration factor detected, using default\n");
-            saved_factor = USER_DEFAULT_CALIBRATION_FACTOR;
-            // Clear corrupted data and save default
-            prefs->putFloat("hx_cal", saved_factor);
-        }
-        
-        cal_factor = saved_factor;
-        LOG_BLE("Loaded calibration factor: %.2f\n", saved_factor);
-    } else {
-        cal_factor = USER_DEFAULT_CALIBRATION_FACTOR;
-        LOG_BLE("Using default calibration factor: %.2f\n", USER_DEFAULT_CALIBRATION_FACTOR);
-    }
-}
 
 void WeightSensor::clear_calibration_data() {
 #if DEBUG_ENABLE_LOADCELL_MOCK

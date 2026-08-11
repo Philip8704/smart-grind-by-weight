@@ -48,6 +48,13 @@ private:
     // Calibration parameters
     float cal_factor;
     int32_t tare_offset;
+
+    // Raw reading of an empty cradle, captured during calibration's empty step and
+    // persisted. tare_offset moves every time anything tares - including each grind,
+    // which zeroes with the portafilter in place - so it cannot tell you what is
+    // actually sitting on the scale. This reference can.
+    int32_t empty_reference_raw;
+    bool has_empty_reference_;
     
     // Current readings (cached)
     float current_weight;
@@ -182,6 +189,13 @@ public:
     int get_sample_count() const;                            // Returns filter sample count
     float get_calibration_factor();                          
     int32_t get_zero_offset() const { return tare_offset; }
+
+    // True weight on the cradle, measured against the empty reference from calibration
+    // rather than the working tare. Returns false when the device has not been
+    // calibrated with a firmware that stores the reference.
+    bool has_empty_reference() const { return has_empty_reference_; }
+    float get_absolute_weight() const;
+    void load_empty_reference();  // Must be called alongside the calibration factor at startup
     bool is_initialized();                                   
     bool data_ready();
     bool is_data_ready() const;
@@ -190,7 +204,6 @@ public:
     void save_calibration();
     void save_calibration_weight(float weight);
     float get_saved_calibration_weight();
-    void load_calibration();
     void clear_calibration_data();
 
     // Calibration flag (for diagnostics)

@@ -199,6 +199,7 @@ bool WeightSamplingTask::initialize_hx711_hardware() {
     // Apply saved calibration factor
     float saved_cal_factor = weight_sensor->get_saved_calibration_factor();
     weight_sensor->set_calibration_factor(saved_cal_factor);
+    weight_sensor->load_empty_reference();
     
     // Hardware stabilization - wait for hardware to be ready
     LOG_BLE("  Waiting for WeightSensor hardware stabilization...\n");

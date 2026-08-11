@@ -414,7 +414,14 @@ void UIManager::update_auto_actions() {
         // once the scale comes to rest above the threshold. No sudden placement needed,
         // and anything lighter than the portafilter simply never reaches the threshold.
         const float threshold_g = static_cast<float>(auto_actions_.min_start_weight_g);
-        const float resting_weight = sensor->get_weight_low_latency();
+
+        // Measure against the empty-cradle reference captured during calibration, not
+        // the working tare. Every grind tares with the portafilter in place, so the
+        // working zero says nothing about what is actually on the scale - whereas this
+        // reads true weight regardless of what has been tared since.
+        const bool absolute = sensor->has_empty_reference();
+        const float resting_weight = absolute ? sensor->get_absolute_weight()
+                                              : sensor->get_weight_low_latency();
         const bool settled = sensor->is_settled();
 
         if (!settled) {
@@ -431,13 +438,18 @@ void UIManager::update_auto_actions() {
             if (auto_actions_.unloaded_since_ms == 0) {
                 auto_actions_.unloaded_since_ms = now;
             } else if ((now - auto_actions_.unloaded_since_ms) >= USER_AUTO_GRIND_REARM_DWELL_MS) {
-                // A grind tares with the portafilter in place, so an empty cradle now
-                // reads about minus one portafilter and nothing would ever reach the
-                // threshold again. Re-take the zero here - the cradle is empty, has
-                // been for the dwell period, and the reading is settled, which is the
-                // only moment we can be confident what zero actually means.
-                if (!auto_actions_.zero_refreshed && settled &&
-                    resting_weight < -USER_AUTO_GRIND_REZERO_BELOW_G) {
+                // Fallback for a device that has not been calibrated with a firmware
+                // that stores the empty-cradle reference. Without it the only reading
+                // available is relative to the working tare, which a grind leaves
+                // sitting under the portafilter - so the zero has to be re-taken.
+                //
+                // The trigger is deliberately below the arming level rather than a
+                // small fixed offset: a reading of only -80g means something lighter
+                // than the portafilter came off, such as a dosing funnel, and taring
+                // then would zero WITH the portafilter still in the cradle and break
+                // the threshold permanently.
+                if (!absolute && !auto_actions_.zero_refreshed && settled &&
+                    resting_weight < -(threshold_g - USER_AUTO_GRIND_REARM_DROP_G)) {
                     LOG_BLE("[AUTO ACTION] Empty cradle reads %.0fg - re-zeroing so the portafilter can reach %dg\n",
                             static_cast<double>(resting_weight), auto_actions_.min_start_weight_g);
                     sensor->start_nonblocking_tare();
