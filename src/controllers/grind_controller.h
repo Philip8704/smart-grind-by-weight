@@ -10,6 +10,7 @@
 #include "time_grind_strategy.h"
 #include <Preferences.h>
 #include <LittleFS.h>
+#include <atomic>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 
@@ -32,6 +33,14 @@ struct FlashOpRequest {
     float start_weight;      // For START_GRIND_SESSION (pre-tare snapshot)
     float final_weight;      // For END_GRIND_SESSION
     uint8_t pulse_count;     // For END_GRIND_SESSION
+
+    // Settings that need persisting at the end of a session. They ride along here so
+    // the NVS writes happen on the file IO task instead of blocking the control loop.
+    bool persist_last_grind_runtime;
+    uint64_t last_grind_runtime_ms;
+    bool persist_coast_time;
+    uint8_t coast_profile_id;
+    float coast_time_s;
 };
 
 // Log message structure for Core 0 → Core 1 communication
@@ -143,6 +152,20 @@ private:
     QueueHandle_t ui_event_queue;
     
     bool control_loop_paused_;      // Indicates control loop is suspended (e.g., purge confirmation)
+
+    // Raised by the UI task on Core 1, applied by the control loop on Core 0.
+    //
+    // Every phase transition and every motor call has to happen on Core 0. Doing them
+    // from the UI thread races the control loop two ways: a phase that re-asserts the
+    // motor each cycle (PRIME) can switch it back on straight after a stop, and the
+    // RMT motor calls delete and recreate a shared encoder, so two cores calling them
+    // at once double-free it.
+    std::atomic<bool> stop_requested_{false};
+    std::atomic<bool> return_to_idle_requested_{false};
+    std::atomic<bool> purge_continue_requested_{false};
+    std::atomic<bool> pause_requested_{false};
+    std::atomic<bool> resume_requested_{false};
+    std::atomic<bool> pulse_requested_{false};
     
     // Flash operation queue - thread-safe Core 0 → Core 1 communication
     QueueHandle_t flash_op_queue;
@@ -297,12 +320,22 @@ public:
     void commit_coast_observation();            // Accept the candidate if the grind finished cleanly
     void discard_coast_observation(const char* reason);
     void load_coast_time(uint8_t profile_id);   // Read the profile's learned value from NVS
-    void save_coast_time();                     // Persist it (called once per session, off the control path)
     
     // Removed - predictive logic now inline in update_realtime()
     
     
 private:
+    // Core 0 halves of the UI-facing methods above. Each performs the actual work;
+    // the public method only raises a flag. Returns true if a request was applied and
+    // the rest of this control cycle should be skipped.
+    bool process_ui_requests();
+    void execute_stop();
+    void execute_return_to_idle();
+    void execute_continue_from_purge();
+    void execute_pause_time_grind();
+    void execute_resume_time_grind();
+    void execute_additional_pulse();
+
     void switch_phase(GrindPhase new_phase, const GrindLoopData& loop_data = {});
     void final_measurement(const GrindLoopData& loop_data);
     void monitor_mechanical_instability(const GrindLoopData& loop_data);

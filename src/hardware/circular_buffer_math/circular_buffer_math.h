@@ -2,6 +2,8 @@
 
 #include <Arduino.h>
 #include <algorithm>
+#include <atomic>
+#include <freertos/FreeRTOS.h>
 #include "../../config/constants.h"
 
 /**
@@ -51,6 +53,7 @@ private:
     int32_t display_filtered_raw;
     bool display_filter_initialized;
     uint32_t display_filter_last_sample_ms;  // Newest sample already folded into the filter
+    mutable portMUX_TYPE display_filter_mux = portMUX_INITIALIZER_UNLOCKED;
     
     // Flow rate stability tracking (raw units per second)
     mutable uint32_t flow_stable_since_ms;  // When flow rate first became stable

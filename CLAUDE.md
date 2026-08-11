@@ -41,6 +41,11 @@ python3 tools/grinder.py analyze
 
 **Update Intervals:** 20ms grind control, 25ms load cell (active), 50ms UI/hardware
 
+**Threading model (load-bearing):** GrindControl and WeightSampling run on **Core 0**; LVGL/UIRender runs on **Core 1**. Two rules follow:
+- **All phase transitions and all motor calls happen on Core 0 only.** UI-facing methods (`stop_grind`, `return_to_idle`, `continue_from_purge`, `pause_time_grind`, `resume_time_grind`, `start_additional_pulse`) merely set an atomic request; `process_ui_requests()` applies them at the top of `update()`. Doing the work inline from Core 1 races two ways: phases that re-assert the motor each cycle (PRIME) switch it back on right after a stop, and the RMT calls delete/recreate a shared encoder, so concurrent calls double-free it
+- **No blocking flash writes in `update()`.** Session NVS writes ride on `FlashOpRequest` and land in the file IO task
+
+
 **Grind Phases:**
 - Standard phases: IDLE, INITIALIZING, SETUP, TARING, TARE_CONFIRM, PRIME, PRIME_SETTLING, PREDICTIVE, PULSE_DECISION, PULSE_EXECUTE, PULSE_SETTLING, FINAL_SETTLING, TIME_GRINDING, COMPLETED, TIMEOUT
 - `TIME_ADDITIONAL_PULSE` - Dedicated phase for post-completion additional grinding pulses in time mode

@@ -113,6 +113,15 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
 }
 
 void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grind_mode) {
+    // Guard against a second start landing on a live session - a double tap, or the
+    // auto-start trigger firing in the same UI cycle as a button press. Restarting
+    // mid-grind would swap the strategy and reset the phase underneath Core 0.
+    if (is_active()) {
+        LOG_BLE("[%lums CONTROLLER] Ignoring start_grind() - a grind is already running (%s)\n",
+                millis(), get_phase_name());
+        return;
+    }
+
     target_weight = target;
     target_time_ms = time_ms;
     mode = grind_mode;
@@ -200,6 +209,9 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     session_descriptor.profile_id = current_profile_id;
     session_descriptor.time_use_scale = time_use_scale;
 
+    // Drop any stale stop request so it cannot cancel the grind we are starting
+    stop_requested_.store(false, std::memory_order_relaxed);
+
     // Only weight grinds use, or can measure, the coast model
     pending_coast_time_s_ = 0.0f;
     anomaly_count_at_motor_stop_ = 0;
@@ -248,7 +260,7 @@ void GrindController::user_tare_request() {
     // This function is kept for compatibility but does nothing
 }
 
-void GrindController::return_to_idle() {
+void GrindController::execute_return_to_idle() {
     // This is called by the UI to acknowledge a completed or timed-out grind
     // and return the controller to the IDLE state.
     if (phase == GrindPhase::COMPLETED || phase == GrindPhase::TIMEOUT) {
@@ -267,9 +279,71 @@ void GrindController::return_to_idle() {
     // If already IDLE, do nothing. If in another active state, this method shouldn't be called.
 }
 
+//==============================================================================
+// UI-facing entry points (Core 1). These only raise a request; the matching
+// execute_* body runs on Core 0 from process_ui_requests(). Applied within one
+// control cycle (20ms), which is imperceptible on a button press.
+//==============================================================================
+
 void GrindController::stop_grind() {
+    stop_requested_.store(true, std::memory_order_release);
+}
+
+void GrindController::return_to_idle() {
+    return_to_idle_requested_.store(true, std::memory_order_release);
+}
+
+void GrindController::continue_from_purge() {
+    purge_continue_requested_.store(true, std::memory_order_release);
+}
+
+void GrindController::pause_time_grind() {
+    pause_requested_.store(true, std::memory_order_release);
+}
+
+void GrindController::resume_time_grind() {
+    resume_requested_.store(true, std::memory_order_release);
+}
+
+void GrindController::start_additional_pulse() {
+    pulse_requested_.store(true, std::memory_order_release);
+}
+
+bool GrindController::process_ui_requests() {
+    if (stop_requested_.exchange(false, std::memory_order_acquire)) {
+        if (is_active()) {
+            execute_stop();
+        } else if (grinder) {
+            grinder->stop();  // Safety net: never leave the motor on after a stop request
+        }
+        return true;
+    }
+    if (return_to_idle_requested_.exchange(false, std::memory_order_acquire)) {
+        execute_return_to_idle();
+        return true;
+    }
+    if (purge_continue_requested_.exchange(false, std::memory_order_acquire)) {
+        execute_continue_from_purge();
+        return true;
+    }
+    if (pause_requested_.exchange(false, std::memory_order_acquire)) {
+        execute_pause_time_grind();
+        return true;
+    }
+    if (resume_requested_.exchange(false, std::memory_order_acquire)) {
+        execute_resume_time_grind();
+        return true;
+    }
+    if (pulse_requested_.exchange(false, std::memory_order_acquire)) {
+        execute_additional_pulse();
+        return true;
+    }
+    return false;
+}
+
+void GrindController::execute_stop() {
     if (!grinder) return;
-    
+
     grinder->stop();
 
     // Cancelled grinds just discard PSRAM data and go to IDLE
@@ -291,7 +365,7 @@ void GrindController::stop_grind() {
     switch_phase(GrindPhase::IDLE);  // No loop_data needed for IDLE transition
 }
 
-void GrindController::continue_from_purge() {
+void GrindController::execute_continue_from_purge() {
     // Called by UI when user confirms purge completion
     if (phase != GrindPhase::PURGE_CONFIRM) {
         LOG_BLE("[%lums CONTROLLER] Warning: continue_from_purge() called in wrong phase: %s\n",
@@ -318,7 +392,7 @@ void GrindController::continue_from_purge() {
     switch_phase(GrindPhase::PREDICTIVE);  // No loop_data needed for phase transition
 }
 
-void GrindController::pause_time_grind() {
+void GrindController::execute_pause_time_grind() {
     if (!can_pause_time_grind() || !grinder) {
         return;
     }
@@ -335,7 +409,7 @@ void GrindController::pause_time_grind() {
     switch_phase(GrindPhase::TIME_PAUSED);
 }
 
-void GrindController::resume_time_grind() {
+void GrindController::execute_resume_time_grind() {
     if (phase != GrindPhase::TIME_PAUSED || !grinder) {
         return;
     }
@@ -382,8 +456,12 @@ uint32_t GrindController::get_time_remaining_ms() const {
 }
 
 void GrindController::update() {
+    // Apply anything the UI asked for first, on this core, so that a phase which is
+    // mid-cycle cannot re-assert the motor afterwards
+    if (process_ui_requests()) return;
+
     if (!is_active()) return;
-    
+
     unsigned long now = millis();
     
     // Calculate all measurement values once at the start - pass to methods to avoid redundant calculations
@@ -628,6 +706,15 @@ void GrindController::update() {
                 strncpy(request.result_string, result_string, sizeof(request.result_string) - 1);
                 request.final_weight = final_weight;
                 request.pulse_count = pulse_attempts;
+
+                // Piggyback the session's NVS writes so they land off the control loop
+                request.persist_last_grind_runtime = true;
+                request.last_grind_runtime_ms = last_purge_runtime_ms;
+                request.persist_coast_time = coast_time_dirty_;
+                request.coast_profile_id = session_descriptor.profile_id;
+                request.coast_time_s = learned_coast_time_s;
+                coast_time_dirty_ = false;
+
                 queue_flash_operation(request);
                 
                 // Mark flash operation as queued to prevent repeated calls
@@ -888,18 +975,15 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
         }
         last_session_result_ = session_result;
 
-        // Update grind freshness tracking
+        // Update grind freshness tracking. The NVS write itself is deferred to the
+        // file IO task - this runs on the control loop, and a flash write blocks for
+        // tens of milliseconds, long enough to miss several control cycles.
         grinder_purged_since_boot = true;
         last_purge_runtime_ms = esp_timer_get_time() / 1000;
-        if (preferences) {
-            preferences->putULong64(PREF_KEY_LAST_GRIND_RUNTIME, last_purge_runtime_ms);
-        }
 
         // The grind outcome is settled by this point, so the held coast observation
-        // can finally be judged. Persisting here also keeps the NVS write out of the
-        // control loop.
+        // can finally be judged
         commit_coast_observation();
-        save_coast_time();
 
         event_data.event = UIGrindEvent::COMPLETED;
         // Use final_weight if available (from final_measurement), otherwise use high latency weight
@@ -1022,6 +1106,17 @@ void GrindController::emit_ui_event(const GrindEventData& data) {
     if (ui_event_queue) {
         BaseType_t result = xQueueSend(ui_event_queue, &data, 0); // 0 = no wait (non-blocking)
         
+        if (result != pdPASS && data.event != UIGrindEvent::PROGRESS_UPDATED) {
+            // Progress updates are produced every control cycle and are safe to lose,
+            // but a dropped COMPLETED or TIMEOUT strands the UI on the grinding screen
+            // with no way back. Evict the oldest entry - almost always a progress
+            // update that a newer one has already superseded - and retry once.
+            GrindEventData discarded;
+            if (xQueueReceive(ui_event_queue, &discarded, 0) == pdPASS) {
+                result = xQueueSend(ui_event_queue, &data, 0);
+            }
+        }
+
         if (result != pdPASS) {
             // Queue full - drop event to prevent Core 0 blocking
             // Only log dropped significant events, not progress updates
@@ -1130,6 +1225,20 @@ void GrindController::process_queued_flash_operations() {
                 LOG_BLE("[%lums FLASH_OP] Processing END_GRIND_SESSION on Core 1: %s, %.2fg, %d pulses\n", 
                         millis(), request.result_string, request.final_weight, request.pulse_count);
                 grind_logger.end_grind_session(request.result_string, request.final_weight, request.pulse_count);
+
+                // Session settings are persisted here rather than on the control loop,
+                // where a blocking flash write would stall grind timing
+                if (preferences) {
+                    if (request.persist_last_grind_runtime) {
+                        preferences->putULong64(PREF_KEY_LAST_GRIND_RUNTIME, request.last_grind_runtime_ms);
+                    }
+                    if (request.persist_coast_time) {
+                        char key[16];
+                        snprintf(key, sizeof(key), "%s%u", PREF_KEY_COAST_TIME_PREFIX,
+                                 (unsigned)request.coast_profile_id);
+                        preferences->putFloat(key, request.coast_time_s);
+                    }
+                }
                 break;
                 
             default:
@@ -1283,16 +1392,6 @@ void GrindController::commit_coast_observation() {
                       observed_s, error, learned_coast_time_s);
 }
 
-void GrindController::save_coast_time() {
-    if (!coast_time_dirty_ || !preferences) {
-        return;
-    }
-
-    char key[16];
-    snprintf(key, sizeof(key), "%s%u", PREF_KEY_COAST_TIME_PREFIX, (unsigned)session_descriptor.profile_id);
-    preferences->putFloat(key, learned_coast_time_s);
-    coast_time_dirty_ = false;
-}
 
 void GrindController::set_notice_message(const char* message) {
     if (!message || !message[0]) {
@@ -1313,7 +1412,7 @@ const char* GrindController::take_pending_notice() {
     return last_notice_message;
 }
 
-void GrindController::start_additional_pulse() {
+void GrindController::execute_additional_pulse() {
     if (!can_pulse()) {
         return;
     }

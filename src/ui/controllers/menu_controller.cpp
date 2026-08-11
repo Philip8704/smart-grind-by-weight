@@ -650,6 +650,14 @@ void MenuUIController::run_motor_test() {
     auto* grinder = ui_manager_->get_hardware_manager()->get_grinder();
     if (!grinder) return;
 
+    // The menu is not reachable mid-grind today, but this call drives the motor from
+    // the UI core. If a grind were ever running, both cores would be recreating the
+    // same RMT encoder and could free it twice.
+    if (ui_manager_->grind_controller && ui_manager_->grind_controller->is_active()) {
+        LOG_DEBUG_PRINTLN("Motor test ignored - a grind is in progress");
+        return;
+    }
+
     ui_manager_->set_background_active(true);
     grinder->start_pulse_rmt(1000);
 

@@ -2,6 +2,7 @@
 #include "../../config/constants.h"
 #include <math.h>
 #include <algorithm>
+#include <atomic>
 
 CircularBufferMath::CircularBufferMath() {
     write_index = 0;
@@ -25,10 +26,16 @@ void CircularBufferMath::add_sample(int32_t raw_adc_value, uint32_t timestamp_ms
     // Add raw value directly to circular buffer (no IIR filtering)
     circular_buffer[write_index].raw_value = raw_adc_value;
     circular_buffer[write_index].timestamp_ms = timestamp_ms;
-    
+
+    // Publish the sample before the index that exposes it. Readers on the other core
+    // walk backwards from write_index, so without this fence they could observe the
+    // advanced index while the two field stores are still in the store buffer, and
+    // pair a fresh raw value with a stale timestamp.
+    std::atomic_thread_fence(std::memory_order_release);
+
     // Advance write index (circular)
     write_index = (write_index + 1) % MAX_BUFFER_SIZE;
-    
+
     // Track sample count (up to buffer size)
     if (samples_count < MAX_BUFFER_SIZE) {
         samples_count++;
@@ -73,7 +80,11 @@ int32_t CircularBufferMath::get_smoothed_raw(uint32_t window_ms) const {
 
 int CircularBufferMath::get_samples_in_window(uint32_t window_ms, int32_t* samples_out) const {
     if (samples_count == 0) return 0;
-    
+
+    // Pairs with the release fence in add_sample(): everything the producer wrote
+    // before advancing write_index is visible to us from here on
+    std::atomic_thread_fence(std::memory_order_acquire);
+
     uint32_t current_time = millis();
     uint32_t window_start = current_time - window_ms;
     int collected_samples = 0;
@@ -155,45 +166,49 @@ int32_t CircularBufferMath::get_raw_low_latency() const {
 }
 
 int32_t CircularBufferMath::get_display_raw(int32_t raw_deadband) {
-    // Asymmetric display filter on raw values (fast up, slow down)
+    // The smoothing and the newest-sample lookup are pure reads, so they stay outside
+    // the lock - get_smoothed_raw() sorts its window, which is far too long to hold a
+    // critical section for.
     int32_t current_raw = get_smoothed_raw(300); // 300ms base window
-
-    if (!display_filter_initialized) {
-        display_filtered_raw = current_raw;
-        display_filter_initialized = true;
-        display_filter_last_sample_ms = newest_sample_timestamp_ms();
-        return display_filtered_raw;
-    }
-
-    // Only advance the filter when the load cell has actually produced a new
-    // sample. The UI and the control loop both read this at ~50Hz while the
-    // HX711 delivers ~10 samples/s, so stepping the IIR per call would make the
-    // decay rate depend on how often someone happens to look at the weight.
     uint32_t newest_sample_ms = newest_sample_timestamp_ms();
-    if (newest_sample_ms == display_filter_last_sample_ms) {
-        return display_filtered_raw;
-    }
-    display_filter_last_sample_ms = newest_sample_ms;
 
     if (raw_deadband < 0) {
         raw_deadband = 0;
     }
 
-    if (abs(current_raw - display_filtered_raw) < raw_deadband) {
-        return display_filtered_raw; // No change within deadband
-    }
+    // Updating the filter is a read-modify-write, and both the control loop and the UI
+    // task reach it from different cores. Without this lock the two can interleave and
+    // leave display_filtered_raw holding a value neither of them computed.
+    portENTER_CRITICAL(&display_filter_mux);
 
-    if (current_raw > display_filtered_raw) {
-        // Fast response for increases - coffee arriving should show up immediately
+    if (!display_filter_initialized) {
         display_filtered_raw = current_raw;
-    } else {
-        // Slow response for decreases, so a dip in the reading does not make the
-        // displayed weight jump back and forth
-        float alpha = SYS_DISPLAY_FILTER_ALPHA_DOWN; // From constants.h
-        display_filtered_raw = (int32_t)(alpha * current_raw + (1.0f - alpha) * display_filtered_raw);
+        display_filter_initialized = true;
+        display_filter_last_sample_ms = newest_sample_ms;
+    } else if (newest_sample_ms != display_filter_last_sample_ms) {
+        // Only advance the filter when the load cell has actually produced a new
+        // sample. The UI and the control loop both read this at ~50Hz while the
+        // HX711 delivers ~10 samples/s, so stepping the IIR per call would make the
+        // decay rate depend on how often someone happens to look at the weight.
+        display_filter_last_sample_ms = newest_sample_ms;
+
+        if (abs(current_raw - display_filtered_raw) >= raw_deadband) {
+            if (current_raw > display_filtered_raw) {
+                // Fast response for increases - coffee arriving shows up immediately
+                display_filtered_raw = current_raw;
+            } else {
+                // Slow response for decreases, so a dip in the reading does not make
+                // the displayed weight jump back and forth
+                float alpha = SYS_DISPLAY_FILTER_ALPHA_DOWN; // From constants.h
+                display_filtered_raw =
+                    (int32_t)(alpha * current_raw + (1.0f - alpha) * display_filtered_raw);
+            }
+        }
     }
 
-    return display_filtered_raw;
+    int32_t result = display_filtered_raw;
+    portEXIT_CRITICAL(&display_filter_mux);
+    return result;
 }
 
 uint32_t CircularBufferMath::newest_sample_timestamp_ms() const {
@@ -370,6 +385,9 @@ float CircularBufferMath::calculate_standard_deviation(const int32_t* samples, i
 int CircularBufferMath::get_samples_with_time_in_window(uint32_t window_ms, int max_samples,
                                                         int32_t* values_out, uint32_t* times_out) const {
     if (samples_count == 0) return 0;
+
+    // See get_samples_in_window(): pairs with the producer's release fence
+    std::atomic_thread_fence(std::memory_order_acquire);
 
     uint32_t window_start = millis() - window_ms;
     int collected = 0;
@@ -597,9 +615,13 @@ int32_t CircularBufferMath::get_max_raw(uint32_t window_ms) const {
 }
 
 void CircularBufferMath::reset_display_filter() {
+    // Same state get_display_raw() guards - tare and calibration reset it from a
+    // different core than the one that may be updating it
+    portENTER_CRITICAL(&display_filter_mux);
     display_filter_initialized = false;
     display_filtered_raw = 0;
     display_filter_last_sample_ms = 0;
+    portEXIT_CRITICAL(&display_filter_mux);
 }
 
 void CircularBufferMath::clear_all_samples() {
