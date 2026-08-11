@@ -74,3 +74,10 @@
 // large drop and a dwell time stops a lift-and-replace or a knock from re-arming it.
 #define USER_AUTO_GRIND_REARM_DROP_G 100.0f                                     // Weight must fall this far below the threshold
 #define USER_AUTO_GRIND_REARM_DWELL_MS 2000                                     // ...and stay there this long
+
+// Grinding tares with the portafilter already sitting on the cradle, so once it is
+// lifted the empty cradle reads roughly minus one portafilter. Left alone, no
+// portafilter would ever reach the minimum weight again and auto-start would work
+// exactly once. When the empty cradle settles this far below zero the zero point is
+// stale, and it is re-taken while nothing is on the scale.
+#define USER_AUTO_GRIND_REZERO_BELOW_G 50.0f

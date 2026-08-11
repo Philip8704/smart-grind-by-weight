@@ -66,7 +66,7 @@ python3 tools/grinder.py analyze
 **Grind Settings:** Configurable through Menu → Grind Settings page
 - **Mode Selection**: Radio buttons for Weight/Time mode selection
 - **Swipe Gestures Toggle**: Enable/disable vertical swipe gestures for mode switching (default: disabled)
-- **Automation**: Start on Cup and Return on Removal toggles, plus a **Min. weight** dropdown (100g steps) that is the auto-start trigger itself - the grind begins when the scale settles above it. 0/Off disables auto-start entirely. Re-arms only after the weight drops 100g below the threshold and stays there 2s
+- **Automation**: Start on Cup and Return on Removal toggles, plus a **Min. weight** dropdown (100g steps) that is the auto-start trigger itself - the grind begins when the scale settles above it. 0/Off disables auto-start entirely. Re-arms only after the weight drops 100g below the threshold and stays there 2s. Because a grind tares with the portafilter on the cradle, the empty cradle afterwards reads about minus one portafilter - so once unloaded, settled and reading below -50g, the zero is re-taken automatically, otherwise the threshold could never be reached again
 - **Purging**: Radio buttons (Prime/Purge) and Amount slider (0.1g-5.0g)
 - **Preferences**: `swipe.enabled` (boolean), `grind_mode` (0=Weight, 1=Time), `chute_mode` (0=Prime, 1=Purge), `chute_amount_g` (float), `time_use_scale` (boolean, time-mode display only), `autogrind.min_weight_g` (int, 0=auto-start disabled)
 - **Behavior**: Swipe gestures only work when enabled; direct mode selection always works

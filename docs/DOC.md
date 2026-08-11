@@ -440,6 +440,8 @@ Want the scale to run itself? Enable the automation toggles in **Menu → Grind 
 - **Start on Cup** + **Min. weight**: The grind starts once the scale comes to rest above the chosen threshold and stays quiet for a second. There is no sudden-placement requirement, so seating the portafilter slowly or nudging the slider afterwards is fine.
 - **Return on Removal**: When the cup weight drops away after completion, the grinder exits the results screen and returns to Ready. Useful for keeping the workflow hands-free between shots.
 
+**How the zero point is kept honest.** A grind tares with the portafilter already on the cradle, so once you lift it the empty cradle reads roughly minus one portafilter. Left alone that would mean auto-start worked exactly once - no portafilter would ever reach the threshold again. So while the cradle is empty, has been for the dwell period, and the reading is settled, the zero is re-taken automatically. This only happens with a threshold set, and only with nothing on the scale.
+
 **How re-arming works.** After a grind the portafilter is still sitting there, settled and above the threshold, so auto-start disarms itself the moment it fires. It re-arms only once the weight drops 100 g below the threshold *and stays there for 2 s* — briefly lifting the portafilter or knocking the scale is not enough. It also starts disarmed after any settings change or calibration, so adjusting the dropdown with a portafilter in place cannot kick off a grind.
 
 Leave **Min. weight** on *Off* if you want the on-screen button to be the only way to start.

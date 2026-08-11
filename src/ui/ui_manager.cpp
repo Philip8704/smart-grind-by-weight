@@ -377,6 +377,7 @@ void UIManager::refresh_auto_action_settings() {
     auto_actions_.start_armed = false;
     auto_actions_.settled_since_ms = 0;
     auto_actions_.unloaded_since_ms = 0;
+    auto_actions_.zero_refreshed = false;
 
     uint32_t now = millis();
     auto_actions_.last_auto_start_ms = now;
@@ -426,10 +427,23 @@ void UIManager::update_auto_actions() {
             if (auto_actions_.unloaded_since_ms == 0) {
                 auto_actions_.unloaded_since_ms = now;
             } else if ((now - auto_actions_.unloaded_since_ms) >= USER_AUTO_GRIND_REARM_DWELL_MS) {
+                // A grind tares with the portafilter in place, so an empty cradle now
+                // reads about minus one portafilter and nothing would ever reach the
+                // threshold again. Re-take the zero here - the cradle is empty, has
+                // been for the dwell period, and the reading is settled, which is the
+                // only moment we can be confident what zero actually means.
+                if (!auto_actions_.zero_refreshed && settled &&
+                    resting_weight < -USER_AUTO_GRIND_REZERO_BELOW_G) {
+                    LOG_BLE("[AUTO ACTION] Empty cradle reads %.0fg - re-zeroing so the portafilter can reach %dg\n",
+                            static_cast<double>(resting_weight), auto_actions_.min_start_weight_g);
+                    sensor->start_nonblocking_tare();
+                    auto_actions_.zero_refreshed = true;
+                }
                 auto_actions_.start_armed = true;
             }
         } else {
             auto_actions_.unloaded_since_ms = 0;
+            auto_actions_.zero_refreshed = false;
         }
 
         const bool settled_long_enough =

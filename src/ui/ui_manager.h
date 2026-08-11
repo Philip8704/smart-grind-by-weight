@@ -154,5 +154,6 @@ private:
         bool start_armed = true;         // Cleared after firing; re-armed once the scale is unloaded again
         uint32_t settled_since_ms = 0;   // When the reading last became settled (0 = currently unsettled)
         uint32_t unloaded_since_ms = 0;  // When the weight last dropped below the re-arm level (0 = still loaded)
+        bool zero_refreshed = false;     // Stale zero already re-taken for this unload cycle
     } auto_actions_;
 };

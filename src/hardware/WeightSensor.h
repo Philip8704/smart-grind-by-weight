@@ -62,7 +62,8 @@ private:
     
     // Tare implementation (hardware-independent)
     static const uint8_t DATA_SET = 16 + 1 + 1;  // SAMPLES + IGN_HIGH_SAMPLE + IGN_LOW_SAMPLE
-    bool doTare;
+    // Requested from the UI task, carried out by the sampling task on Core 0
+    std::atomic<bool> doTare;
     uint8_t tareTimes;
     bool tareStatus;
     bool tareTimeoutFlag;
