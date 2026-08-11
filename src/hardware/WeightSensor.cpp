@@ -300,8 +300,23 @@ void WeightSensor::calibrate(float known_weight) {
     // Calculate new calibration factor: raw_change / weight_change
     // We know the weight change is known_weight (from 0 after taring)
     float new_cal_factor = (float)(raw_reading - tare_offset) / known_weight;
+
+    // Reject an implausible factor instead of saving it. The common way to get one is
+    // leaving the reference weight on the scale during the empty step: the tare then
+    // already includes it, the raw delta comes out near zero, and every later reading
+    // divides by ~0 and turns into infinity. Keeping the previous factor leaves the
+    // scale usable and the user can simply calibrate again.
+    if (!isfinite(new_cal_factor) ||
+        fabsf(new_cal_factor) < USER_CALIBRATION_FACTOR_MIN_ABS ||
+        fabsf(new_cal_factor) > USER_CALIBRATION_FACTOR_MAX_ABS) {
+        LOG_BLE("ERROR: Calibration produced an implausible factor (%.2f) - keeping %.2f. "
+                "Make sure the scale is empty at the first step and the weight is on at the second.\n",
+                new_cal_factor, cal_factor);
+        return;
+    }
+
     cal_factor = new_cal_factor;
-    
+
     save_calibration();
     save_calibration_weight(known_weight);
     
@@ -568,7 +583,11 @@ void WeightSensor::load_calibration() {
         float saved_factor = prefs->getFloat("hx_cal", USER_DEFAULT_CALIBRATION_FACTOR);
         
         // Check for corrupted/invalid calibration data
-        if (isnan(saved_factor) || !isfinite(saved_factor) || saved_factor == 0.0) {
+        // Only exactly-zero used to be caught here, so a near-zero or absurdly large
+        // factor from a bad calibration survived a reboot and left the scale unusable
+        if (!isfinite(saved_factor) ||
+            fabsf(saved_factor) < USER_CALIBRATION_FACTOR_MIN_ABS ||
+            fabsf(saved_factor) > USER_CALIBRATION_FACTOR_MAX_ABS) {
             LOG_BLE("WARNING: Invalid calibration factor detected, using default\n");
             saved_factor = USER_DEFAULT_CALIBRATION_FACTOR;
             // Clear corrupted data and save default
@@ -765,7 +784,11 @@ float WeightSensor::get_saved_calibration_factor() {
         float saved_factor = prefs->getFloat("hx_cal", USER_DEFAULT_CALIBRATION_FACTOR);
         
         // Validate saved factor
-        if (isnan(saved_factor) || !isfinite(saved_factor) || saved_factor == 0.0) {
+        // Only exactly-zero used to be caught here, so a near-zero or absurdly large
+        // factor from a bad calibration survived a reboot and left the scale unusable
+        if (!isfinite(saved_factor) ||
+            fabsf(saved_factor) < USER_CALIBRATION_FACTOR_MIN_ABS ||
+            fabsf(saved_factor) > USER_CALIBRATION_FACTOR_MAX_ABS) {
             return USER_DEFAULT_CALIBRATION_FACTOR;
         }
         return saved_factor;

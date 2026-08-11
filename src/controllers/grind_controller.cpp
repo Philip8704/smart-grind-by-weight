@@ -133,6 +133,22 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
         return;
     }
 
+    // Refuse a target the control loop could never satisfy, whatever produced it. A
+    // non-finite weight makes `current_weight >= target - coast` false on every cycle,
+    // so the predictive stop never fires and the grind only ends when the timeout
+    // catches it. Better to not start than to run a grind that cannot stop itself.
+    if (grind_mode == GrindMode::WEIGHT &&
+        (!isfinite(target) || target < USER_MIN_TARGET_WEIGHT_G || target > USER_MAX_TARGET_WEIGHT_G)) {
+        LOG_BLE("[%lums CONTROLLER] Refusing start_grind() - target %.2fg outside %.1f-%.1fg\n",
+                millis(), target, USER_MIN_TARGET_WEIGHT_G, USER_MAX_TARGET_WEIGHT_G);
+        return;
+    }
+    if (grind_mode == GrindMode::TIME && (time_ms == 0 || time_ms > (uint32_t)(USER_MAX_TARGET_TIME_S * 1000.0f))) {
+        LOG_BLE("[%lums CONTROLLER] Refusing start_grind() - time %lums outside 1-%.0fms\n",
+                millis(), (unsigned long)time_ms, USER_MAX_TARGET_TIME_S * 1000.0f);
+        return;
+    }
+
     target_weight = target;
     target_time_ms = time_ms;
     mode = grind_mode;

@@ -1,5 +1,6 @@
 #include "profile_controller.h"
 #include <Arduino.h>
+#include <cmath>
 #include <string.h>
 #include <Preferences.h>
 
@@ -35,7 +36,22 @@ void ProfileController::load_profiles() {
     profiles[0].time_seconds = preferences->getFloat("time0", USER_SINGLE_ESPRESSO_TIME_S);
     profiles[1].time_seconds = preferences->getFloat("time1", USER_DOUBLE_ESPRESSO_TIME_S);
     profiles[2].time_seconds = preferences->getFloat("time2", USER_CUSTOM_PROFILE_TIME_S);
-    
+
+    // Values were only ever range-checked while being edited, so anything already in
+    // NVS was trusted on the way back out. A corrupt target matters more than it
+    // looks: a NaN weight makes every comparison against it false, so the predictive
+    // stop never fires and the grind runs until the timeout rescues it.
+    for (int i = 0; i < USER_PROFILE_COUNT; i++) {
+        if (!isfinite(profiles[i].weight)) {
+            profiles[i].weight = USER_DOUBLE_ESPRESSO_WEIGHT_G;
+        }
+        if (!isfinite(profiles[i].time_seconds)) {
+            profiles[i].time_seconds = USER_DOUBLE_ESPRESSO_TIME_S;
+        }
+        profiles[i].weight = clamp_weight(profiles[i].weight);
+        profiles[i].time_seconds = clamp_time(profiles[i].time_seconds);
+    }
+
     // Load grind mode (default to WEIGHT if not set)
     int stored_mode = preferences->getInt("grind_mode", static_cast<int>(GrindMode::WEIGHT));
     current_grind_mode = static_cast<GrindMode>(stored_mode);

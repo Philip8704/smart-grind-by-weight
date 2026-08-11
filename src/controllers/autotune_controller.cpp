@@ -604,6 +604,22 @@ void AutoTuneController::switch_sub_phase(AutoTuneSubPhase new_sub_phase) {
 //==============================================================================
 
 void AutoTuneController::complete_with_success(float final_latency_ms) {
+    if (grinder) {
+        grinder->stop();  // Never leave the motor turning on the way out
+    }
+
+    // A latency outside the search bounds means the procedure did not actually
+    // converge. Saving it would mis-size every correction pulse from then on, so
+    // fall back to the safe default rather than persisting a bad number.
+    if (!isfinite(final_latency_ms) ||
+        final_latency_ms < GRIND_AUTOTUNE_LATENCY_MIN_MS ||
+        final_latency_ms > GRIND_AUTOTUNE_LATENCY_MAX_MS) {
+        LOG_BLE("AutoTune: Result %.1fms is outside %.0f-%.0fms - discarding\n",
+                final_latency_ms, GRIND_AUTOTUNE_LATENCY_MIN_MS, GRIND_AUTOTUNE_LATENCY_MAX_MS);
+        complete_with_failure("Result out of range");
+        return;
+    }
+
     LOG_BLE("=== AutoTune Complete: SUCCESS ===\n");
     LOG_BLE("Final motor latency: %.1fms (previous: %.1fms)\n",
             final_latency_ms, progress.previous_latency_ms);
@@ -633,6 +649,13 @@ void AutoTuneController::complete_with_success(float final_latency_ms) {
 }
 
 void AutoTuneController::complete_with_failure(const char* error_msg) {
+    // Cancelling or failing mid-pulse must not leave the motor turning. The RMT pulse
+    // is hardware-timed and would otherwise run to completion - up to a full second
+    // during priming - after the user has already pressed cancel.
+    if (grinder) {
+        grinder->stop();
+    }
+
     LOG_BLE("=== AutoTune Complete: FAILURE ===\n");
     LOG_BLE("Error: %s\n", error_msg);
     LOG_BLE("Using default latency: %.1fms\n", GRIND_MOTOR_RESPONSE_LATENCY_DEFAULT_MS);
@@ -680,10 +703,11 @@ void AutoTuneController::log_message(const char* format, ...) {
     va_end(args);
     progress.has_new_message = true;
 
-    // Write to log file
+    // Write to log file. Deliberately not flushed per line - this runs on the UI task,
+    // and forcing a filesystem commit on every message stalls rendering for the length
+    // of a flash write. The file is closed on completion, which flushes it.
     if (autotune_log_file) {
         autotune_log_file.println(progress.last_message);
-        autotune_log_file.flush();
     }
 
     // Also log to BLE for debugging

@@ -43,6 +43,14 @@
 #define USER_CALIBRATION_REFERENCE_WEIGHT_G 100.0f                             // Default reference weight for calibration
 #define USER_DEFAULT_CALIBRATION_FACTOR -7050.0f                               // Default load cell calibration factor
 
+// Plausible magnitude for a calibration factor, in ADC counts per gram. The sign
+// depends on how the load cell is wired, so only the magnitude is checked. A factor
+// near zero divides every reading into infinity; one that is wildly large flattens
+// every reading to zero. Either makes the scale unusable, so a computed factor outside
+// this band is rejected rather than saved.
+#define USER_CALIBRATION_FACTOR_MIN_ABS 100.0f
+#define USER_CALIBRATION_FACTOR_MAX_ABS 200000.0f
+
 //------------------------------------------------------------------------------
 // SCREEN AUTO-DIMMING
 //------------------------------------------------------------------------------
