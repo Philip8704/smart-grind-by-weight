@@ -363,7 +363,16 @@ void BluetoothManager::handle() {
         generate_diagnostic_report();
         diagnostic_report_in_progress = false;
     }
-    
+
+    // Same deferral for the data export commands - both block far longer than a BLE
+    // callback may, so they are requested there and carried out here
+    if (file_list_pending.exchange(false)) {
+        send_file_list();
+    }
+    if (file_request_pending.exchange(false)) {
+        send_individual_file(file_request_pending_id.load());
+    }
+
     // Update system info periodically if connected (every 10 seconds)
     static unsigned long last_sysinfo_update = 0;
     if (device_connected && millis() - last_sysinfo_update > 10000) {
@@ -817,16 +826,21 @@ void BluetoothManager::handle_data_control_command(BLECharacteristic* characteri
             break;
             
         case BLE_DATA_CMD_GET_FILE_LIST:
+            // Deferred to the Bluetooth task: this enumerates LittleFS, allocates, and
+            // waits for the notify to drain. Doing that here would block the BLE host
+            // callback for over 100ms.
             log("Bluetooth Data: Getting file list\n");
-            send_file_list();
+            file_list_pending = true;
             break;
-            
+
         case BLE_DATA_CMD_REQUEST_FILE:
             if (data.length() >= 5) {
                 uint32_t session_id = 0;
                 memcpy(&session_id, data.c_str() + 1, 4);
                 log("Bluetooth Data: Requesting file for session %lu\n", session_id);
-                send_individual_file(session_id);
+                // Deferred for the same reason - opening the session file blocks
+                file_request_pending_id = session_id;
+                file_request_pending = true;
             } else {
                 log("Bluetooth Data: Invalid REQUEST_FILE command length\n");
                 set_data_status(BLE_DATA_ERROR);

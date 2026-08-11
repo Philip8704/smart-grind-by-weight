@@ -115,6 +115,13 @@ private:
 
     // Diagnostics report control flags
     std::atomic<bool> diagnostic_report_pending;
+
+    // Data export commands arrive on the BLE host callback but do blocking work
+    // (LittleFS enumeration, allocation, a transmit drain wait), so they are handed
+    // to the Bluetooth task the same way the diagnostic report is
+    std::atomic<bool> file_list_pending{false};
+    std::atomic<bool> file_request_pending{false};
+    std::atomic<uint32_t> file_request_pending_id{0};
     bool diagnostic_report_in_progress;
 
     // Private methods
