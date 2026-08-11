@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -84,9 +85,10 @@ private:
     BLECharacteristic* sysinfo_diagnostics_characteristic;
     
     // Connection state
-    bool device_connected;
+    // Written by the BLE host task, read by the Bluetooth task - see manager.cpp
+    std::atomic<bool> device_connected;
     bool ble_enabled;
-    bool debug_stream_active;
+    std::atomic<bool> debug_stream_active;
     unsigned long enable_time;
     unsigned long timeout_ms;
     unsigned long last_disconnect_time;
@@ -96,7 +98,7 @@ private:
     DataStreamManager data_stream;
     
     // Data export state
-    bool data_export_in_progress;
+    std::atomic<bool> data_export_in_progress;
     BLEDataStatus data_status;
     uint16_t current_chunk;
     unsigned long next_chunk_time;
@@ -112,7 +114,7 @@ private:
     QueueHandle_t ui_status_queue;
 
     // Diagnostics report control flags
-    bool diagnostic_report_pending;
+    std::atomic<bool> diagnostic_report_pending;
     bool diagnostic_report_in_progress;
 
     // Private methods

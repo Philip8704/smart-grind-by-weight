@@ -24,7 +24,8 @@ struct GrindEventData;
 struct FlashOpRequest {
     enum Type {
         START_GRIND_SESSION,
-        END_GRIND_SESSION
+        END_GRIND_SESSION,
+        DISCARD_GRIND_SESSION
     };
     
     Type operation_type;
@@ -204,6 +205,7 @@ private:
     bool mechanical_monitor_initialized_ = false;
 
     DiagnosticsController* diagnostics_controller_ = nullptr;
+    bool (*ota_active_)() = nullptr;  // Optional probe, see set_ota_active_probe()
 
     // Motor response latency - runtime configurable
     float motor_response_latency_ms;
@@ -299,6 +301,10 @@ public:
     void reset_mechanical_anomaly_count();
 
     void set_diagnostics_controller(DiagnosticsController* diagnostics) { diagnostics_controller_ = diagnostics; }
+
+    // Lets the controller refuse to start a grind during a firmware update without
+    // taking a dependency on the Bluetooth layer
+    void set_ota_active_probe(bool (*probe)()) { ota_active_ = probe; }
 
     // Motor response latency accessors
     float get_motor_response_latency() const { return motor_response_latency_ms; }

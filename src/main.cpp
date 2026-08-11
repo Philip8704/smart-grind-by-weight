@@ -94,6 +94,10 @@ void setup() {
         state_machine.init(UIState::READY);
     }
     
+    // Let the grind controller refuse to start while a firmware update is running,
+    // without giving it a compile-time dependency on the Bluetooth layer
+    grind_controller.set_ota_active_probe([]() { return g_bluetooth_manager.is_updating(); });
+
     ui_manager.init(&hardware_manager, &state_machine, &profile_controller, &grind_controller, &bluetooth_manager);
     
     // Store OTA failure info in ui_manager if needed

@@ -122,6 +122,14 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
         return;
     }
 
+    // An OTA suspends the control-loop task outright. Starting a grind into that would
+    // freeze the state machine mid-phase with the motor energised and no loop left to
+    // stop it.
+    if (ota_active_ && ota_active_()) {
+        LOG_BLE("[%lums CONTROLLER] Ignoring start_grind() - firmware update in progress\n", millis());
+        return;
+    }
+
     target_weight = target;
     target_time_ms = time_ms;
     mode = grind_mode;
@@ -346,8 +354,15 @@ void GrindController::execute_stop() {
 
     grinder->stop();
 
-    // Cancelled grinds just discard PSRAM data and go to IDLE
-    grind_logger.discard_current_session();
+    // Cancelled grinds just discard PSRAM data and go to IDLE. The discard is queued
+    // rather than done here: the logger's buffers belong to the file IO task, which
+    // may still be starting this very session.
+    if (grind_logger.is_logging_active()) {
+        FlashOpRequest discard = {};
+        discard.operation_type = FlashOpRequest::DISCARD_GRIND_SESSION;
+        queue_flash_operation(discard);
+        session_end_flash_queued = true;
+    }
     discard_coast_observation("stopped by user");
     
     LOG_BLE("--- GRIND STOPPED BY USER ---\n");
@@ -867,7 +882,10 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
 #endif
     
     // Finalize and log the event for the phase that just ENDED (only when we have loop_data)
-    if (has_loop_data && grind_logger.is_logging_active() && phase != GrindPhase::IDLE) {
+    // Same hand-off rule as should_log_measurements(): the file IO task owns the
+    // logger's buffers once the session end has been queued
+    if (has_loop_data && !session_end_flash_queued && grind_logger.is_logging_active() &&
+        phase != GrindPhase::IDLE) {
         event_in_progress.duration_ms = now - phase_start_time;
         event_in_progress.end_weight = loop_data.current_weight;  // Use pre-calculated weight
         
@@ -1169,7 +1187,12 @@ void GrindController::emit_progress_update(const GrindLoopData& loop_data) {
 
 
 bool GrindController::should_log_measurements() const {
+    // Once the session has been handed to the file IO task, this core must not touch
+    // the logger again - that task clears the shared PSRAM buffers while finishing the
+    // session. COMPLETED and TIMEOUT are excluded below, but TIME_ADDITIONAL_PULSE is
+    // reachable afterwards via the pulse button and would otherwise resume writing.
     return SYS_CONTINUOUS_LOGGING_ENABLED
+        && !session_end_flash_queued
         && phase != GrindPhase::INITIALIZING
         && phase != GrindPhase::SETUP
         && phase != GrindPhase::COMPLETED
@@ -1241,6 +1264,11 @@ void GrindController::process_queued_flash_operations() {
                 }
                 break;
                 
+            case FlashOpRequest::DISCARD_GRIND_SESSION:
+                LOG_BLE("[%lums FLASH_OP] Processing DISCARD_GRIND_SESSION on Core 1\n", millis());
+                grind_logger.discard_current_session();
+                break;
+
             default:
                 LOG_BLE("WARNING: Unknown flash operation type %d\n", request.operation_type);
                 break;
