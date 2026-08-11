@@ -99,9 +99,10 @@ enum class GrinderPurgeMode {
 // Motor response latency - runtime configurable via auto-tune
 #define GRIND_MOTOR_RESPONSE_LATENCY_DEFAULT_MS 50.0f                             // Safe default motor response latency
 #define GRIND_MOTOR_MAX_PULSE_DURATION_MS 250.0f                                  // Maximum pulse duration above latency (latency + GRIND_MOTOR_MAX_PULSE_DURATION_MS)
-#define GRIND_MOTOR_MIN_PULSE_DURATION_MS 20.0f                                   // Smallest productive pulse worth firing. Below this the pulse is mostly motor
-                                                                                  // latency and delivers nothing measurable, so the grind is declared done instead
-                                                                                  // of burning attempts on no-op pulses. 20ms is ~0.03g at the 1.5g/s fallback flow.
+#define GRIND_PULSE_MIN_DELIVERY_G 0.02f                                          // Smallest correction worth firing a pulse for. Below this the pulse is mostly
+                                                                                  // motor latency and delivers nothing measurable, so the grind is declared done
+                                                                                  // instead of burning attempts. Expressed as a weight rather than a duration so
+                                                                                  // the worst-case undershoot stays at tolerance + this, whatever the flow rate.
 
 // Motor timing
 #define GRIND_MOTOR_SETTLING_TIME_MS 200                                          // Motor vibration settling time

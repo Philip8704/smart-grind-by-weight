@@ -142,16 +142,20 @@ void WeightGrindStrategy::run_pulse_decision_phase(GrindController& controller,
 
     float conservative_target = controller.target_weight - GRIND_ACCURACY_TOLERANCE_G;
     float error = conservative_target - settled_weight;
-    float productive_ms = calculate_productive_pulse_ms(controller, error);
 
     // coast_time_ms removed - was only used for logging pulse history
 
-    // Stop pulsing when the remaining error is smaller than one usable pulse. Firing
-    // anyway would either waste an attempt on pure motor latency that delivers nothing,
-    // or - if padded up to a minimum duration - overshoot a target we cannot undo.
+    // Stop pulsing when the remaining error is smaller than the smallest correction
+    // worth making. Firing anyway would waste an attempt on pure motor latency that
+    // delivers nothing measurable.
+    //
+    // The threshold is a weight, not a pulse duration. A fixed minimum duration means
+    // a flow-dependent cutoff - at 3g/s a 20ms floor gives up while 0.06g is still
+    // owed, twice the tolerance - whereas this bounds the worst-case undershoot at
+    // tolerance + GRIND_PULSE_MIN_DELIVERY_G no matter how fast the grinder runs.
     if (controller.target_weight - settled_weight < GRIND_ACCURACY_TOLERANCE_G ||
         controller.pulse_attempts >= GRIND_MAX_PULSE_ATTEMPTS ||
-        productive_ms < GRIND_MOTOR_MIN_PULSE_DURATION_MS) {
+        error < GRIND_PULSE_MIN_DELIVERY_G) {
         controller.switch_phase(GrindPhase::FINAL_SETTLING, loop_data);
         return;
     }
