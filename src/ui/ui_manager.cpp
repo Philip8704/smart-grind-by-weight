@@ -379,7 +379,6 @@ void UIManager::refresh_auto_action_settings() {
     // Require the scale to be unloaded once before the threshold trigger can fire, so
     // changing this setting with a portafilter already in place does not start a grind
     auto_actions_.start_armed = false;
-    auto_actions_.settled_since_ms = 0;
     auto_actions_.unloaded_since_ms = 0;
     auto_actions_.zero_refreshed = false;
 
@@ -422,13 +421,15 @@ void UIManager::update_auto_actions() {
         const bool absolute = sensor->has_empty_reference();
         const float resting_weight = absolute ? sensor->get_absolute_weight()
                                               : sensor->get_weight_low_latency();
-        const bool settled = sensor->is_settled();
+        // Steadiness is judged by how far the reading wanders peak to peak, not by the
+        // grind settling test - that one is tuned for weighing a dose and a portafilter
+        // never holds still enough to satisfy it.
+        const bool stable = !sensor->weight_range_exceeds(USER_AUTO_GRIND_TRIGGER_SETTLING_MS,
+                                                          USER_AUTO_GRIND_STABLE_RANGE_G);
 
-        if (!settled) {
-            auto_actions_.settled_since_ms = 0;
-        } else if (auto_actions_.settled_since_ms == 0) {
-            auto_actions_.settled_since_ms = now;
-        }
+        // The fallback re-zero below still wants the precision test: it is about to
+        // tare, and that genuinely needs the scale quiet.
+        const bool settled = sensor->is_settled();
 
         // Unloading the scale re-arms the trigger, so acknowledging a grind with the
         // portafilter still in place cannot immediately start another one. The drop has
@@ -462,13 +463,10 @@ void UIManager::update_auto_actions() {
             auto_actions_.zero_refreshed = false;
         }
 
-        const bool settled_long_enough =
-            settled && auto_actions_.settled_since_ms != 0 &&
-            (now - auto_actions_.settled_since_ms) >= USER_AUTO_GRIND_TRIGGER_SETTLING_MS;
         const bool rearm_ready =
             (now - auto_actions_.last_auto_start_ms) >= USER_AUTO_GRIND_REARM_DELAY_MS;
 
-        if (auto_actions_.start_armed && settled_long_enough && rearm_ready &&
+        if (auto_actions_.start_armed && stable && rearm_ready &&
             resting_weight >= threshold_g) {
             LOG_BLE("[AUTO ACTION] Scale settled at %.0fg (threshold %dg) - auto-starting grind\n",
                     static_cast<double>(resting_weight), auto_actions_.min_start_weight_g);

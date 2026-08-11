@@ -62,7 +62,16 @@
 //------------------------------------------------------------------------------
 // AUTO ACTIONS
 //------------------------------------------------------------------------------
-#define USER_AUTO_GRIND_TRIGGER_SETTLING_MS 1000                                // Scale must stay settled this long before auto-start fires
+#define USER_AUTO_GRIND_TRIGGER_SETTLING_MS 1000                                // Reading must hold steady this long before auto-start fires
+
+// How far the reading may wander over that window and still count as steady, measured
+// peak to peak. This is deliberately NOT the grind settling tolerance: that one is
+// 0.010g standard deviation, which is right for weighing a dose to a hundredth of a
+// gram but far too tight for a 600g portafilter sitting in a cradle. Grinder hum and
+// bench vibration exceed it constantly, and each brief excursion restarted the timer,
+// so auto-start fired quickly sometimes and took many seconds other times.
+// Lower it for a crisper trigger, raise it if auto-start hesitates on a noisy bench.
+#define USER_AUTO_GRIND_STABLE_RANGE_G 1.0f
 #define USER_AUTO_GRIND_REARM_DELAY_MS 1500                                     // Minimum delay between auto actions (milliseconds)
 
 // Minimum weight that must be sitting on the scale before auto-start will tare and grind.
