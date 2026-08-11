@@ -250,15 +250,19 @@ void UIManager::switch_to_state(UIState new_state) {
                     snprintf(message_buffer, sizeof(message_buffer),
                              "Previous grind time unknown. Remove the purge grinds if desired.");
                 } else {
-                    // Calculate elapsed time
+                    // Both stamps come from this boot's clock; guard the subtraction
+                    // anyway so a bad value cannot print an absurd age
                     uint64_t current_ms = esp_timer_get_time() / 1000;
                     uint64_t last_purge_ms = grind_controller->get_last_purge_runtime_ms();
-                    uint64_t elapsed_ms = current_ms - last_purge_ms;
-                    float elapsed_hours = elapsed_ms / 3600000.0f;
-                    int hours = (int)elapsed_hours;
 
-                    snprintf(message_buffer, sizeof(message_buffer),
-                             "Last grind >%dh ago. Remove the purge grinds if desired.", hours);
+                    if (current_ms < last_purge_ms) {
+                        snprintf(message_buffer, sizeof(message_buffer),
+                                 "Previous grind time unknown. Remove the purge grinds if desired.");
+                    } else {
+                        int hours = (int)((current_ms - last_purge_ms) / 3600000.0f);
+                        snprintf(message_buffer, sizeof(message_buffer),
+                                 "Last grind >%dh ago. Remove the purge grinds if desired.", hours);
+                    }
                 }
             } else {
                 // Fallback message

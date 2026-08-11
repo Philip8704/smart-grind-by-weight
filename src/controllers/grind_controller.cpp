@@ -51,9 +51,12 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     coast_time_dirty_ = false;
     pending_coast_time_s_ = 0.0f;
     anomaly_count_at_motor_stop_ = 0;
-    if (preferences) {
-        last_purge_runtime_ms = preferences->getULong64(PREF_KEY_LAST_GRIND_RUNTIME, 0);
-    }
+    // Deliberately not restored from NVS. It records esp_timer_get_time(), which is
+    // time since boot and restarts at zero on every power-up, so a value saved in an
+    // earlier session says nothing about this one - and being larger than the current
+    // clock it underflowed the elapsed-time subtraction, making every grind look
+    // stale. Freshness is a within-session measure; the first grind after boot is
+    // already treated as stale via grinder_purged_since_boot.
 
     // Set up grinder background indicator callback (if enabled)
     if (grinder) {
@@ -605,12 +608,19 @@ void GrindController::update() {
                     // First grind since boot - grounds are stale
                     should_show_purge_popup = true;
                 } else {
-                    // Check if enough time has elapsed since last grind
+                    // Check if enough time has elapsed since last grind. Both stamps
+                    // come from this boot's clock, so the subtraction cannot go
+                    // backwards - treat it as stale if it ever does rather than
+                    // silently skipping the purge.
                     uint64_t current_ms = esp_timer_get_time() / 1000;
-                    uint64_t elapsed_ms = current_ms - last_purge_runtime_ms;
                     float freshness_hours = preferences ? preferences->getFloat(PREF_KEY_GRIND_FRESHNESS_HOURS, GRIND_FRESHNESS_DEFAULT_HOURS) : GRIND_FRESHNESS_DEFAULT_HOURS;
                     uint64_t threshold_ms = (uint64_t)(freshness_hours * 3600000.0f);
-                    should_show_purge_popup = (elapsed_ms > threshold_ms);
+
+                    if (current_ms < last_purge_runtime_ms) {
+                        should_show_purge_popup = true;
+                    } else {
+                        should_show_purge_popup = ((current_ms - last_purge_runtime_ms) > threshold_ms);
+                    }
                 }
 
                 // Determine next phase based on mode AND staleness
@@ -723,8 +733,6 @@ void GrindController::update() {
                 request.pulse_count = pulse_attempts;
 
                 // Piggyback the session's NVS writes so they land off the control loop
-                request.persist_last_grind_runtime = true;
-                request.last_grind_runtime_ms = last_purge_runtime_ms;
                 request.persist_coast_time = coast_time_dirty_;
                 request.coast_profile_id = session_descriptor.profile_id;
                 request.coast_time_s = learned_coast_time_s;
@@ -993,9 +1001,8 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
         }
         last_session_result_ = session_result;
 
-        // Update grind freshness tracking. The NVS write itself is deferred to the
-        // file IO task - this runs on the control loop, and a flash write blocks for
-        // tens of milliseconds, long enough to miss several control cycles.
+        // Freshness tracking is RAM-only - see the note in init() for why a
+        // since-boot timestamp must not be persisted
         grinder_purged_since_boot = true;
         last_purge_runtime_ms = esp_timer_get_time() / 1000;
 
@@ -1252,9 +1259,6 @@ void GrindController::process_queued_flash_operations() {
                 // Session settings are persisted here rather than on the control loop,
                 // where a blocking flash write would stall grind timing
                 if (preferences) {
-                    if (request.persist_last_grind_runtime) {
-                        preferences->putULong64(PREF_KEY_LAST_GRIND_RUNTIME, request.last_grind_runtime_ms);
-                    }
                     if (request.persist_coast_time) {
                         char key[16];
                         snprintf(key, sizeof(key), "%s%u", PREF_KEY_COAST_TIME_PREFIX,

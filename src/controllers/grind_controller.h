@@ -37,8 +37,6 @@ struct FlashOpRequest {
 
     // Settings that need persisting at the end of a session. They ride along here so
     // the NVS writes happen on the file IO task instead of blocking the control loop.
-    bool persist_last_grind_runtime;
-    uint64_t last_grind_runtime_ms;
     bool persist_coast_time;
     uint8_t coast_profile_id;
     float coast_time_s;
@@ -281,7 +279,6 @@ public:
     static constexpr const char* PREF_KEY_GRINDER_MODE = "grinder_mode";
     static constexpr const char* PREF_KEY_GRINDER_AMOUNT_G = "grinder_amount_g";
     static constexpr const char* PREF_KEY_GRIND_FRESHNESS_HOURS = "freshness_hrs";
-    static constexpr const char* PREF_KEY_LAST_GRIND_RUNTIME = "last_grind_ms";
     static constexpr const char* PREF_KEY_COAST_TIME_PREFIX = "coast";  // Suffixed with the profile id, e.g. "coast1"
     GrindMode get_mode() const { return mode; }
     const GrindSessionDescriptor& get_session_descriptor() const { return session_descriptor; }
