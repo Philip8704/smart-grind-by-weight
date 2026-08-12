@@ -668,9 +668,26 @@ void WeightSensor::set_calibrated(bool calibrated) {
 }
 
 // Non-blocking settling check with window_ms parameter
-bool WeightSensor::check_settling_complete(uint32_t window_ms, float* settled_weight_out) {
+bool WeightSensor::check_settling_complete(uint32_t window_ms, float* settled_weight_out,
+                                           float max_drift_gps) {
     // Check if data has settled based on gram values
     if (is_settled(window_ms)) {
+        // Optional drift gate: low variance is not the same as stopped moving. A slow
+        // trickle passes the variance test while still climbing, so also require the
+        // fitted slope to be small. cal_factor is counts per gram, so slope in raw
+        // units per ms becomes g/s by * 1000 / cal_factor.
+        if (max_drift_gps > 0.0f) {
+            float slope_raw_per_ms = 0.0f;
+            if (raw_filter.get_linear_fit(window_ms, &slope_raw_per_ms, nullptr, nullptr) &&
+                cal_factor != 0.0f) {
+                float drift_gps = fabsf(slope_raw_per_ms * 1000.0f / cal_factor);
+                if (drift_gps > max_drift_gps) {
+                    return false;  // Quiet but still rising - not actually settled
+                }
+            }
+            // Too few samples to fit: fall through on the variance result alone
+        }
+
         if (settled_weight_out) {
             *settled_weight_out = raw_to_weight(raw_filter.get_smoothed_raw(window_ms));
         }

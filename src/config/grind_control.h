@@ -70,6 +70,17 @@ enum class GrinderPurgeMode {
 // Tare and settling behavior  
 #define GRIND_SCALE_SETTLING_TOLERANCE_G 0.010f                           // Maximum standard deviation for settled reading. Used to determine if scale is settled. Increase value if you have a noisy load cell.
 
+// The std-dev test above measures how NOISY the reading is, not whether it has stopped
+// RISING. A slow steady trickle of grounds into the cup has low variance but is still
+// climbing - up to about 0.07 g/s reads as "settled" - so the weight can be measured
+// mid-creep, then finish higher. That either mis-reports the final weight or provokes
+// one extra correction pulse, and shows up as a grind landing 0.1-0.2g heavy at random.
+// The grind measurement paths additionally require the reading to be climbing slower
+// than this, using the least-squares slope. The backstop timeout below stops a grinder
+// that trickles for a long time from stalling the grind.
+#define GRIND_SETTLING_DRIFT_MAX_GPS 0.03f                                // Reading must be changing slower than this to count as settled
+#define GRIND_SETTLING_STABLE_TIMEOUT_MS 3000                             // After this, accept a variance-settled reading even if still drifting
+
 //------------------------------------------------------------------------------
 // TIME MODE PULSE SETTINGS
 //------------------------------------------------------------------------------

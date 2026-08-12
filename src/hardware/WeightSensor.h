@@ -148,7 +148,11 @@ public:
     bool update_async();
     
     // Unified settling methods with window_ms
-    bool check_settling_complete(uint32_t window_ms, float* settled_weight_out = nullptr);
+    // max_drift_gps > 0 additionally requires the reading to be changing slower than
+    // that (via the least-squares slope), which rejects a slow monotonic creep that
+    // the variance test alone treats as settled. 0 keeps the variance-only behaviour.
+    bool check_settling_complete(uint32_t window_ms, float* settled_weight_out = nullptr,
+                                 float max_drift_gps = 0.0f);
     void cancel_settling();
     
     // Load cell noise level diagnostic for UI display

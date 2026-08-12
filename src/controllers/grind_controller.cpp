@@ -698,8 +698,16 @@ void GrindController::update() {
             break;
 
         case GrindPhase::FINAL_SETTLING: {
+            // Require the reading to have stopped rising, not merely gone quiet, so the
+            // final weight is not captured mid-trickle. Falls back to the variance-only
+            // test after the backstop timeout so a slow grinder cannot stall here.
             bool settled = weight_sensor &&
-                           weight_sensor->check_settling_complete(GRIND_SCALE_PRECISION_SETTLING_TIME_MS);
+                           weight_sensor->check_settling_complete(GRIND_SCALE_PRECISION_SETTLING_TIME_MS,
+                                                                  nullptr, GRIND_SETTLING_DRIFT_MAX_GPS);
+            if (!settled && weight_sensor && mode == GrindMode::WEIGHT &&
+                (loop_data.now - phase_start_time) >= GRIND_SETTLING_STABLE_TIMEOUT_MS) {
+                settled = weight_sensor->check_settling_complete(GRIND_SCALE_PRECISION_SETTLING_TIME_MS);
+            }
 
             // Time mode reports whatever the scale happens to show; it never waits
             // on a scale that is absent, disabled or refusing to settle

@@ -128,9 +128,19 @@ void WeightGrindStrategy::run_pulse_decision_phase(GrindController& controller,
         return;
     }
 
+    // Wait for the reading to actually stop rising before deciding whether to pulse.
+    // Reading mid-creep under-reports the weight and can fire an unnecessary pulse that
+    // then overshoots. The backstop keeps a slow-trickling grinder from stalling here:
+    // after the timeout, accept a variance-settled reading like the old behaviour.
     float settled_weight;
-    if (!controller.weight_sensor->check_settling_complete(GRIND_SCALE_PRECISION_SETTLING_TIME_MS, &settled_weight)) {
-        return;
+    bool stable = controller.weight_sensor->check_settling_complete(
+        GRIND_SCALE_PRECISION_SETTLING_TIME_MS, &settled_weight, GRIND_SETTLING_DRIFT_MAX_GPS);
+    if (!stable) {
+        bool timed_out = (loop_data.now - controller.phase_start_time) >= GRIND_SETTLING_STABLE_TIMEOUT_MS;
+        if (!(timed_out && controller.weight_sensor->check_settling_complete(
+                               GRIND_SCALE_PRECISION_SETTLING_TIME_MS, &settled_weight))) {
+            return;
+        }
     }
 
     // The first settle after the predictive stop is the only clean look at coast:
