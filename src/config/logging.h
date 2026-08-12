@@ -4,10 +4,13 @@
 class BluetoothManager;
 extern BluetoothManager g_bluetooth_manager;
 
-// Temporary fallback logging - use Serial instead of BLE to avoid circular dependencies
+// Despite the name this does not go to BLE - it writes to the USB serial port, and
+// additionally into a ring buffer for the first few seconds so that startup can be
+// read back later over BLE. See src/logging/debug_log.h.
 #include <Arduino.h>
+#include "../logging/debug_log.h"
 
-#define LOG_BLE(format, ...) Serial.printf(format, ##__VA_ARGS__)
+#define LOG_BLE(format, ...) debug_log_printf(format, ##__VA_ARGS__)
 
 // Replace DEBUG macros to use Serial logging
 #if DEBUG_SERIAL_OUTPUT

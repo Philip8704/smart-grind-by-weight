@@ -51,6 +51,11 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     coast_time_dirty_ = false;
     pending_coast_time_s_ = 0.0f;
     anomaly_count_at_motor_stop_ = 0;
+    coast_history_count_ = 0;
+    coast_history_next_ = 0;
+    pending_observation_ = nullptr;
+    error_history_count_ = 0;
+    error_history_next_ = 0;
     // Deliberately not restored from NVS. It records esp_timer_get_time(), which is
     // time since boot and restarts at zero on every power-up, so a value saved in an
     // earlier session says nothing about this one - and being larger than the current
@@ -242,6 +247,7 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     // Only weight grinds use, or can measure, the coast model
     pending_coast_time_s_ = 0.0f;
     anomaly_count_at_motor_stop_ = 0;
+    pending_observation_ = nullptr;
     if (mode == GrindMode::WEIGHT) {
         load_coast_time(current_profile_id);
     } else {
@@ -1336,6 +1342,21 @@ void GrindController::set_error_message(const char* message) {
     }
     strncpy(last_error_message, message, sizeof(last_error_message) - 1);
     last_error_message[sizeof(last_error_message) - 1] = '\0';
+
+    // Keep a short history so a fault that has since been acknowledged, and its
+    // message overwritten, is still visible in the diagnostic report
+    ErrorRecord& record = error_history_[error_history_next_];
+    record.uptime_s = (uint32_t)(millis() / 1000);
+    strncpy(record.message, last_error_message, sizeof(record.message) - 1);
+    record.message[sizeof(record.message) - 1] = '\0';
+    const char* phase_name = get_phase_name();
+    strncpy(record.phase, phase_name ? phase_name : "?", sizeof(record.phase) - 1);
+    record.phase[sizeof(record.phase) - 1] = '\0';
+
+    error_history_next_ = (error_history_next_ + 1) % ERROR_HISTORY_SIZE;
+    if (error_history_count_ < ERROR_HISTORY_SIZE) {
+        error_history_count_++;
+    }
 }
 
 void GrindController::load_coast_time(uint8_t profile_id) {
@@ -1360,6 +1381,54 @@ void GrindController::load_coast_time(uint8_t profile_id) {
     LOG_BLE("[CONTROLLER] Profile %u learned coast time: %.3fs\n", (unsigned)profile_id, stored);
 }
 
+void GrindController::record_coast_observation(float observed_s, float coast_weight_g,
+                                               float flow_rate_gps, bool accepted,
+                                               const char* reason) {
+    CoastObservation& entry = coast_history_[coast_history_next_];
+    entry.uptime_s = (uint32_t)(millis() / 1000);
+    entry.observed_s = observed_s;
+    entry.coast_weight_g = coast_weight_g;
+    entry.flow_rate_gps = flow_rate_gps;
+    entry.error_g = 0.0f;  // Filled in later if the grind gets far enough to be judged
+    entry.profile_id = session_descriptor.profile_id;
+    entry.accepted = accepted;
+    if (reason && reason[0]) {
+        strncpy(entry.reason, reason, sizeof(entry.reason) - 1);
+        entry.reason[sizeof(entry.reason) - 1] = '\0';
+    } else {
+        entry.reason[0] = '\0';
+    }
+
+    // Only a still-undecided entry may be revisited later; a rejection is final
+    pending_observation_ = accepted ? &entry : nullptr;
+
+    coast_history_next_ = (coast_history_next_ + 1) % COAST_HISTORY_SIZE;
+    if (coast_history_count_ < COAST_HISTORY_SIZE) {
+        coast_history_count_++;
+    }
+}
+
+const CoastObservation* GrindController::get_coast_history_entry(int index_from_newest) const {
+    if (index_from_newest < 0 || index_from_newest >= coast_history_count_) {
+        return nullptr;
+    }
+    int slot = (coast_history_next_ - 1 - index_from_newest + COAST_HISTORY_SIZE * 2) % COAST_HISTORY_SIZE;
+    return &coast_history_[slot];
+}
+
+bool GrindController::get_error_history_entry(int index_from_newest, uint32_t* uptime_s_out,
+                                              const char** message_out,
+                                              const char** phase_out) const {
+    if (index_from_newest < 0 || index_from_newest >= error_history_count_) {
+        return false;
+    }
+    int slot = (error_history_next_ - 1 - index_from_newest + ERROR_HISTORY_SIZE * 2) % ERROR_HISTORY_SIZE;
+    if (uptime_s_out) *uptime_s_out = error_history_[slot].uptime_s;
+    if (message_out) *message_out = error_history_[slot].message;
+    if (phase_out) *phase_out = error_history_[slot].phase;
+    return true;
+}
+
 void GrindController::mark_coast_window_start() {
     // Only instability during the settle can corrupt the coast reading; a bump earlier
     // in the grind is irrelevant, so the baseline is taken here rather than at start
@@ -1380,6 +1449,7 @@ void GrindController::observe_coast(float coast_weight_g) {
     if (mechanical_anomaly_count_ != anomaly_count_at_motor_stop_) {
         queue_log_message("[COAST] Rejected - scale disturbed during settle (%d events)\n",
                           mechanical_anomaly_count_ - anomaly_count_at_motor_stop_);
+        record_coast_observation(0.0f, coast_weight_g, flow_rate, false, "scale disturbed");
         return;
     }
 
@@ -1387,12 +1457,14 @@ void GrindController::observe_coast(float coast_weight_g) {
     if (observed_s < GRIND_COAST_TIME_MIN_S || observed_s > GRIND_COAST_TIME_MAX_S) {
         queue_log_message("[COAST] Rejected observation %.3fs (%.2fg at %.2fg/s)\n",
                           observed_s, coast_weight_g, flow_rate);
+        record_coast_observation(observed_s, coast_weight_g, flow_rate, false, "out of range");
         return;
     }
 
     // Held, not applied: whether this grind actually hit its target is not known
     // until it finishes, and a grind that missed teaches the wrong coast
     pending_coast_time_s_ = observed_s;
+    record_coast_observation(observed_s, coast_weight_g, flow_rate, true, nullptr);
     queue_log_message("[COAST] Candidate %.3fs (%.2fg at %.2fg/s), pending grind outcome\n",
                       observed_s, coast_weight_g, flow_rate);
 }
@@ -1401,6 +1473,13 @@ void GrindController::discard_coast_observation(const char* reason) {
     if (pending_coast_time_s_ > 0.0f) {
         queue_log_message("[COAST] Discarded candidate %.3fs - %s\n",
                           pending_coast_time_s_, reason ? reason : "grind did not complete");
+        if (pending_observation_) {
+            pending_observation_->accepted = false;
+            strncpy(pending_observation_->reason, reason ? reason : "not completed",
+                    sizeof(pending_observation_->reason) - 1);
+            pending_observation_->reason[sizeof(pending_observation_->reason) - 1] = '\0';
+            pending_observation_ = nullptr;
+        }
         pending_coast_time_s_ = 0.0f;
     }
 }
@@ -1427,6 +1506,10 @@ void GrindController::commit_coast_observation() {
 
     float observed_s = pending_coast_time_s_;
     pending_coast_time_s_ = 0.0f;
+    if (pending_observation_) {
+        pending_observation_->error_g = error;
+        pending_observation_ = nullptr;
+    }
 
     if (learned_coast_time_s <= 0.0f) {
         learned_coast_time_s = observed_s;  // First clean grind on this profile seeds the average

@@ -83,6 +83,20 @@ enum class GrindPhase {
 };
 
 
+// One coast measurement and what became of it. Kept as a short history so the
+// diagnostic report can show whether the model is actually learning, and if not, why
+// its observations keep being thrown away.
+struct CoastObservation {
+    uint32_t uptime_s;       // When it was taken
+    float observed_s;        // Measured coast time, 0 if it never got that far
+    float coast_weight_g;    // Coffee that arrived after the motor stopped
+    float flow_rate_gps;     // Flow at motor stop, what the time was derived from
+    float error_g;           // Final weight minus target, only meaningful once judged
+    uint8_t profile_id;
+    bool accepted;
+    char reason[24];         // Why it was rejected, empty when accepted
+};
+
 struct PulseReport {
     float start_weight;
     float end_weight;
@@ -221,6 +235,28 @@ private:
     float pending_coast_time_s_;         // Candidate from this session (0 = nothing pending)
     int anomaly_count_at_motor_stop_;    // Instability count when the coast window opened
 
+    // Rolling history of coast measurements and their fate, for the diagnostic report
+    static const int COAST_HISTORY_SIZE = 10;
+    CoastObservation coast_history_[COAST_HISTORY_SIZE];
+    uint8_t coast_history_count_;   // Entries held, up to COAST_HISTORY_SIZE
+    uint8_t coast_history_next_;    // Next slot to overwrite
+    CoastObservation* pending_observation_;  // Entry awaiting the grind outcome
+
+    void record_coast_observation(float observed_s, float coast_weight_g, float flow_rate_gps,
+                                  bool accepted, const char* reason);
+
+    // Rolling history of errors, so a fault that has since been acknowledged is still
+    // visible in the report
+    static const int ERROR_HISTORY_SIZE = 5;
+    struct ErrorRecord {
+        uint32_t uptime_s;
+        char message[32];
+        char phase[16];
+    };
+    ErrorRecord error_history_[ERROR_HISTORY_SIZE];
+    uint8_t error_history_count_;
+    uint8_t error_history_next_;
+
 public:
     enum class GrindSessionResult {
         UNKNOWN,
@@ -318,6 +354,13 @@ public:
     // Learned coast model. Coast is stored as a time so it stays valid across dose
     // sizes and grind settings - the weight it predicts scales with the live flow rate.
     float get_learned_coast_time_s() const { return learned_coast_time_s; }
+
+    // Diagnostic accessors - newest first
+    int get_coast_history_count() const { return coast_history_count_; }
+    const CoastObservation* get_coast_history_entry(int index_from_newest) const;
+    int get_error_history_count() const { return error_history_count_; }
+    bool get_error_history_entry(int index_from_newest, uint32_t* uptime_s_out,
+                                 const char** message_out, const char** phase_out) const;
     void mark_coast_window_start();             // Motor just stopped - snapshot instability so the settle can be judged
     void observe_coast(float coast_weight_g);   // Record this grind's measured coast as a candidate
     void commit_coast_observation();            // Accept the candidate if the grind finished cleanly

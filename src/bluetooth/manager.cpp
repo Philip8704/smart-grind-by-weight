@@ -1795,7 +1795,129 @@ void BluetoothManager::generate_diagnostic_report() {
     snprintf(buf, sizeof(buf), "\n");
     send_chunk(buf);
 
-    // Section 15: Autotune Results
+    // Section 15: Algorithm state - what the device has actually learned, versus the
+    // compile-time constants listed further up
+    snprintf(buf, sizeof(buf),
+        "[ALGORITHM STATE]\n"
+        "  Motor latency (learned): %.1f ms\n"
+        "  Estimator window: %d ms, min %d samples\n"
+        "  Display filter: alpha %.2f down, deadband %.3f g\n"
+        "  Accuracy tolerance: %.3f g\n"
+        "  Min pulse delivery: %.3f g\n"
+        "  Coast EWMA alpha: %.2f, accepted range %.2f-%.2f s\n"
+        "\n",
+        grind_controller.get_motor_response_latency(),
+        SYS_CONTROL_FIT_WINDOW_MS, 3,
+        SYS_DISPLAY_FILTER_ALPHA_DOWN, SYS_DISPLAY_DEADBAND_G,
+        GRIND_ACCURACY_TOLERANCE_G,
+        GRIND_PULSE_MIN_DELIVERY_G,
+        GRIND_COAST_LEARNING_ALPHA, GRIND_COAST_TIME_MIN_S, GRIND_COAST_TIME_MAX_S);
+    send_chunk(buf);
+
+    // Section 16: Coast model - the learned values and how they were arrived at.
+    // Read here rather than reusing the system-info snapshot, which is a different call.
+    float coast[3] = {0.0f, 0.0f, 0.0f};
+    int32_t empty_ref = 0;
+    bool has_empty_ref = false;
+    {
+        Preferences report_prefs;
+        if (report_prefs.begin("grinder", true)) {
+            for (int i = 0; i < 3; i++) {
+                char key[16];
+                snprintf(key, sizeof(key), "%s%d", GrindController::PREF_KEY_COAST_TIME_PREFIX, i);
+                coast[i] = report_prefs.getFloat(key, 0.0f);
+            }
+            has_empty_ref = report_prefs.isKey("hx_empty");
+            empty_ref = has_empty_ref ? report_prefs.getInt("hx_empty", 0) : 0;
+            report_prefs.end();
+        }
+    }
+
+    snprintf(buf, sizeof(buf),
+        "[COAST MODEL]\n"
+        "  Learned per profile: %.3f / %.3f / %.3f s\n"
+        "  Empty-cradle reference: %s (%ld raw)\n"
+        "  (0.000 means nothing has been learned yet for that profile)\n",
+        coast[0], coast[1], coast[2],
+        has_empty_ref ? "stored" : "MISSING - calibrate to enable absolute weight",
+        (long)empty_ref);
+    send_chunk(buf);
+
+    int coast_entries = grind_controller.get_coast_history_count();
+    if (coast_entries == 0) {
+        snprintf(buf, sizeof(buf), "  No coast observations recorded this session\n\n");
+        send_chunk(buf);
+    } else {
+        snprintf(buf, sizeof(buf), "  Last %d observations, newest first:\n", coast_entries);
+        send_chunk(buf);
+        for (int i = 0; i < coast_entries; i++) {
+            const CoastObservation* entry = grind_controller.get_coast_history_entry(i);
+            if (!entry) continue;
+            if (entry->accepted) {
+                snprintf(buf, sizeof(buf),
+                         "   %5lus P%u ACCEPTED %.3fs (%.2fg @ %.2fg/s) err %+.2fg\n",
+                         (unsigned long)entry->uptime_s, (unsigned)entry->profile_id,
+                         entry->observed_s, entry->coast_weight_g, entry->flow_rate_gps,
+                         entry->error_g);
+            } else {
+                snprintf(buf, sizeof(buf),
+                         "   %5lus P%u REJECTED %.3fs (%.2fg @ %.2fg/s) - %s\n",
+                         (unsigned long)entry->uptime_s, (unsigned)entry->profile_id,
+                         entry->observed_s, entry->coast_weight_g, entry->flow_rate_gps,
+                         entry->reason[0] ? entry->reason : "unknown");
+            }
+            send_chunk(buf);
+        }
+        snprintf(buf, sizeof(buf), "\n");
+        send_chunk(buf);
+    }
+
+    // Section 17: Recent errors - survives acknowledgement, unlike the on-screen message
+    snprintf(buf, sizeof(buf), "[RECENT ERRORS]\n");
+    send_chunk(buf);
+    int error_entries = grind_controller.get_error_history_count();
+    if (error_entries == 0) {
+        snprintf(buf, sizeof(buf), "  None this session\n\n");
+        send_chunk(buf);
+    } else {
+        for (int i = 0; i < error_entries; i++) {
+            uint32_t uptime_s = 0;
+            const char* message = nullptr;
+            const char* phase = nullptr;
+            if (grind_controller.get_error_history_entry(i, &uptime_s, &message, &phase)) {
+                snprintf(buf, sizeof(buf), "   %5lus [%s] %s\n",
+                         (unsigned long)uptime_s, phase ? phase : "?",
+                         message ? message : "?");
+                send_chunk(buf);
+            }
+        }
+        snprintf(buf, sizeof(buf), "\n");
+        send_chunk(buf);
+    }
+
+    // Section 18: Boot log - the first seconds of startup, which is the only part that
+    // cannot be watched over BLE because nothing is connected yet. Streamed in slices
+    // so no copy of the whole buffer is needed.
+    size_t boot_log_bytes = debug_log_boot_log_size();
+    snprintf(buf, sizeof(buf), "[BOOT LOG] first %d s, %u bytes retained\n",
+             DEBUG_BOOT_LOG_WINDOW_MS / 1000, (unsigned)boot_log_bytes);
+    send_chunk(buf);
+    if (boot_log_bytes == 0) {
+        snprintf(buf, sizeof(buf), "  (empty - capture buffer unavailable)\n\n");
+        send_chunk(buf);
+    } else {
+        size_t offset = 0;
+        while (true) {
+            size_t copied = debug_log_copy_boot_log(offset, buf, sizeof(buf));
+            if (copied == 0) break;
+            send_chunk(buf);
+            offset += copied;
+        }
+        snprintf(buf, sizeof(buf), "\n");
+        send_chunk(buf);
+    }
+
+    // Section 19: Autotune Results
     snprintf(buf, sizeof(buf), "[AUTOTUNE RESULTS]\n");
     send_chunk(buf);
 

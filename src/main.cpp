@@ -36,7 +36,10 @@ void setup() {
 #ifdef UI_DEBUG_SERIAL_DELAY_MS
     delay(UI_DEBUG_SERIAL_DELAY_MS);
 #endif
-    
+
+    // Before anything else logs, so startup is captured for the diagnostic report
+    debug_log_init();
+
     // Log reset reason to help diagnose unexpected resets/freeze scenarios
     esp_reset_reason_t rr = esp_reset_reason();
     const char* rr_str = "UNKNOWN";
