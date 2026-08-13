@@ -50,6 +50,7 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     learned_coast_time_s = 0.0f;
     coast_time_dirty_ = false;
     pending_coast_time_s_ = 0.0f;
+    coast_prediction_flow_gps = 0.0f;
     anomaly_count_at_motor_stop_ = 0;
     coast_history_count_ = 0;
     coast_history_next_ = 0;
@@ -246,6 +247,7 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
 
     // Only weight grinds use, or can measure, the coast model
     pending_coast_time_s_ = 0.0f;
+    coast_prediction_flow_gps = 0.0f;
     anomaly_count_at_motor_stop_ = 0;
     pending_observation_ = nullptr;
     if (mode == GrindMode::WEIGHT) {
@@ -429,7 +431,16 @@ void GrindController::execute_continue_from_purge() {
         grinder->start();
     }
     time_grind_start_ms = millis();
-    switch_phase(GrindPhase::PREDICTIVE);  // No loop_data needed for phase transition
+
+    // Supply loop_data so the event bookkeeping starts a fresh record for PREDICTIVE.
+    // Without it switch_phase skips that step, and the whole predictive phase gets
+    // logged under PURGE_CONFIRM - which made the session data read as though 16g had
+    // been ground while waiting for the user to confirm.
+    GrindLoopData loop_data = {};
+    loop_data.now = millis();
+    loop_data.timestamp_ms = loop_data.now - start_time;
+    loop_data.current_weight = weight_sensor ? weight_sensor->get_weight_low_latency() : 0.0f;
+    switch_phase(GrindPhase::PREDICTIVE, loop_data);
 }
 
 void GrindController::execute_pause_time_grind() {
@@ -1444,9 +1455,13 @@ void GrindController::mark_coast_window_start() {
 }
 
 void GrindController::observe_coast(float coast_weight_g) {
-    // Convert the observed coast weight into a time using the flow rate that was
-    // running when the motor stopped, so the value transfers across dose sizes
-    float flow_rate = pulse_flow_rate;
+    // Convert the observed coast weight into a time using the SAME flow figure the
+    // prediction was built on, so the multiply and divide cancel. Using pulse_flow_rate
+    // here - a 95th percentile, and so higher than the mean the prediction uses - made
+    // every learned coast come out short by that ratio, roughly 20-25%, which the
+    // safety factor could not cover and showed up as a persistent overshoot.
+    float flow_rate = (coast_prediction_flow_gps > 0.0f) ? coast_prediction_flow_gps
+                                                         : pulse_flow_rate;
     if (!isfinite(coast_weight_g) || flow_rate < GRIND_FLOW_RATE_MIN_SANE_GPS) {
         return;
     }

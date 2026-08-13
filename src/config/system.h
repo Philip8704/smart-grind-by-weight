@@ -35,7 +35,12 @@
 #define SYS_TASK_WEIGHT_SAMPLING_STACK_SIZE 4096                               // 4KB stack for weight sampling (was 2KB, increased for BLE_LOG)
 #define SYS_TASK_GRIND_CONTROL_STACK_SIZE 6144                                 // 6KB stack for grind control logic (was 4KB, increased for complex algorithms)
 #define SYS_TASK_UI_STACK_SIZE 8192                                            // 8KB stack for LVGL rendering (unchanged)
-#define SYS_TASK_BLUETOOTH_STACK_SIZE 4096                                     // 4KB stack for BLE operations (unchanged)
+// 4KB was enough when this task only pushed characteristic values around. It now opens
+// NVS to report the learned coast and empty-cradle reference, and builds the diagnostic
+// report with 512-byte buffers and float-heavy snprintf - and NVS operations are
+// themselves stack-hungry. Both run shortly after a client connects, which is where a
+// panic was observed. Stack headroom per task is reported in the diagnostic report.
+#define SYS_TASK_BLUETOOTH_STACK_SIZE 8192                                     // 8KB stack for BLE operations
 #define SYS_TASK_FILE_IO_STACK_SIZE 6144                                       // 6KB stack for LittleFS operations (was 4KB, increased for file operations)
 
 // Task Priorities (higher number = higher priority)

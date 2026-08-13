@@ -4,40 +4,49 @@
 #include <stddef.h>
 
 /*
- * Boot log capture
+ * Log capture: boot log and crash dump
  *
  * Everything logged through LOG_BLE goes to the USB serial port and nowhere else,
- * so anything printed before a phone can connect - which is all of startup - was
- * simply lost. Startup is exactly where the interesting facts are: whether the
- * calibration and empty-cradle reference loaded, whether the load cell validated,
- * what sample rate was detected.
+ * so anything printed without a cable attached is lost. Two windows matter and
+ * neither can be watched live over BLE:
  *
- * This keeps a copy of the first few seconds in a ring buffer so the BLE
- * diagnostic report can hand it back later. Capture stops on its own once the
- * window closes, after which logging costs one comparison.
+ *  - Startup, because nothing is connected yet. Kept in a PSRAM buffer for the
+ *    first few seconds.
+ *
+ *  - The moments before a crash. Kept in a rolling ring in RTC memory, which is
+ *    a separate region from the heap and PSRAM and, crucially, is NOT cleared by
+ *    a panic or watchdog reset. Nothing is written anywhere while running: the
+ *    ring simply rolls. On the next boot the reset reason is examined, and only
+ *    if it was a crash is the surviving content kept and offered for download.
+ *    A clean restart discards it.
+ *
+ * Nothing here writes to flash, so there is no wear and no storage to fill. Both
+ * buffers are fixed size and overwrite oldest.
  */
 
-// How long after boot to keep capturing, and how much to keep. The buffer lives in
-// PSRAM when available; the window is short because startup is the only part that
-// cannot be observed any other way.
+// Boot window: how long to capture and how much to keep (PSRAM).
 #define DEBUG_BOOT_LOG_WINDOW_MS 10000
 #define DEBUG_BOOT_LOG_BYTES 6144
 
-// Allocates the buffer. Safe to call before anything else; logging works without it,
-// it just is not retained.
+// Rolling crash ring (RTC slow memory, survives a panic reset but not power loss).
+// Kept modest because this region is only ~8KB in total and is shared with the system.
+#define DEBUG_CRASH_LOG_BYTES 3072
+
+// Allocates buffers and decides whether the previous boot left a crash dump.
+// Call before anything else logs.
 void debug_log_init();
 
-// Writes to Serial and, while the boot window is open, to the ring buffer.
-// Safe to call from any task - the ring is guarded by a spinlock.
+// Writes to Serial, to the boot buffer while that window is open, and always to the
+// rolling crash ring. Safe from any task - both rings are guarded by a spinlock.
 void debug_log_printf(const char* format, ...) __attribute__((format(printf, 1, 2)));
 
-// Total bytes currently held.
+// --- Boot log (this session) ---
 size_t debug_log_boot_log_size();
-
-// Copies a slice of the captured text, oldest first, NUL-terminated. Reading in slices
-// lets the caller stream it out without allocating a copy of the whole buffer. Returns
-// bytes written excluding the terminator; zero once offset passes the end.
 size_t debug_log_copy_boot_log(size_t offset, char* out, size_t out_size);
-
-// True once the capture window has closed.
 bool debug_log_boot_capture_finished();
+
+// --- Crash dump (previous session, only present if that session ended badly) ---
+bool debug_log_has_crash_dump();
+const char* debug_log_crash_reason();      // Reset reason that produced the dump
+size_t debug_log_crash_dump_size();
+size_t debug_log_copy_crash_dump(size_t offset, char* out, size_t out_size);

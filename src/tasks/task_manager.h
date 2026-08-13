@@ -80,6 +80,11 @@ private:
     static TaskManager* instance;
     
 public:
+    // Read-only view of the task handles, for reporting stack headroom in diagnostics.
+    // A task that runs out of stack corrupts memory rather than failing cleanly, so the
+    // margin is worth being able to see.
+    const TaskHandles& get_task_handles() const { return task_handles; }
+
     TaskManager();
     ~TaskManager();
     

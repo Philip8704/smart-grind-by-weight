@@ -111,6 +111,13 @@ void WeightGrindStrategy::run_predictive_phase(GrindController& controller,
                 // pulse can fix; underestimating lands heavy, which nothing can.
                 controller.motor_stop_target_weight =
                     coast_time_s * current_flow_rate * GRIND_COAST_SAFETY_FACTOR;
+
+                // Remember which flow figure this prediction was built on. The coast
+                // observation has to divide by the same one, or the units do not
+                // cancel: dividing the observed coast weight by a different (higher)
+                // flow yields a smaller coast time, which then gets multiplied back by
+                // this lower one, and the model reads permanently short.
+                controller.coast_prediction_flow_gps = current_flow_rate;
             }
         }
     }

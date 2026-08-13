@@ -8,6 +8,7 @@
 #include <nvs.h>
 #include "../system/performance_monitor.h"
 #include "../system/statistics_manager.h"
+#include "../tasks/task_manager.h"
 #include "../system/diagnostics_controller.h"
 #include "../config/constants.h"
 #include "../config/user.h"
@@ -1799,6 +1800,34 @@ void BluetoothManager::generate_diagnostic_report() {
     snprintf(buf, sizeof(buf), "\n");
     send_chunk(buf);
 
+    // Section 14b: Stack headroom. A task that exhausts its stack corrupts memory
+    // rather than failing cleanly, so the remaining margin is worth being able to see -
+    // especially on the Bluetooth task, which builds this very report.
+    {
+        const TaskHandles& handles = task_manager.get_task_handles();
+        struct { const char* name; TaskHandle_t handle; uint32_t allocated; } tasks[] = {
+            {"WeightSampling", handles.weight_sampling_task, SYS_TASK_WEIGHT_SAMPLING_STACK_SIZE},
+            {"GrindControl",   handles.grind_control_task,   SYS_TASK_GRIND_CONTROL_STACK_SIZE},
+            {"UIRender",       handles.ui_render_task,       SYS_TASK_UI_STACK_SIZE},
+            {"Bluetooth",      handles.bluetooth_task,       SYS_TASK_BLUETOOTH_STACK_SIZE},
+            {"FileIO",         handles.file_io_task,         SYS_TASK_FILE_IO_STACK_SIZE},
+        };
+
+        snprintf(buf, sizeof(buf), "[STACK HEADROOM] bytes still unused, lowest since boot\n");
+        send_chunk(buf);
+        for (auto& t : tasks) {
+            if (!t.handle) continue;
+            // High water mark is in words on ESP32
+            uint32_t free_bytes = uxTaskGetStackHighWaterMark(t.handle) * sizeof(StackType_t);
+            snprintf(buf, sizeof(buf), "  %-15s %5lu free of %lu%s\n",
+                     t.name, (unsigned long)free_bytes, (unsigned long)t.allocated,
+                     (free_bytes < 512) ? "   <-- LOW" : "");
+            send_chunk(buf);
+        }
+        snprintf(buf, sizeof(buf), "\n");
+        send_chunk(buf);
+    }
+
     // Section 15: Algorithm state - what the device has actually learned, versus the
     // compile-time constants listed further up
     snprintf(buf, sizeof(buf),
@@ -1896,6 +1925,31 @@ void BluetoothManager::generate_diagnostic_report() {
             }
         }
         snprintf(buf, sizeof(buf), "\n");
+        send_chunk(buf);
+    }
+
+    // Section 17b: Crash dump - the tail of the log from a previous session that ended
+    // in a panic or watchdog reset, recovered from RTC memory on the next boot. Absent
+    // after a clean restart, which is the normal case.
+    if (debug_log_has_crash_dump()) {
+        size_t dump_bytes = debug_log_crash_dump_size();
+        snprintf(buf, sizeof(buf),
+                 "[CRASH DUMP] previous session ended in %s\n"
+                 "  %u bytes recovered - this is the log immediately before it stopped\n",
+                 debug_log_crash_reason(), (unsigned)dump_bytes);
+        send_chunk(buf);
+
+        size_t offset = 0;
+        while (true) {
+            size_t copied = debug_log_copy_crash_dump(offset, buf, sizeof(buf));
+            if (copied == 0) break;
+            send_chunk(buf);
+            offset += copied;
+        }
+        snprintf(buf, sizeof(buf), "\n");
+        send_chunk(buf);
+    } else {
+        snprintf(buf, sizeof(buf), "[CRASH DUMP] none - previous shutdown was clean\n\n");
         send_chunk(buf);
     }
 

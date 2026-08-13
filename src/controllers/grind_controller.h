@@ -233,6 +233,11 @@ private:
     // A coast observation is measured mid-grind but only folded into the average once
     // the grind finishes cleanly, because whether it hit the target is not known yet
     float pending_coast_time_s_;         // Candidate from this session (0 = nothing pending)
+
+    // Flow figure the last coast prediction was built on. The observation must divide
+    // by this same value so the multiply and divide cancel; using a different measure
+    // (the 95th percentile, say) biases every learned coast low.
+    float coast_prediction_flow_gps;
     int anomaly_count_at_motor_stop_;    // Instability count when the coast window opened
 
     // Rolling history of coast measurements and their fate, for the diagnostic report
