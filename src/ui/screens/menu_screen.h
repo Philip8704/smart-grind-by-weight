@@ -61,7 +61,8 @@ private:
     lv_obj_t* grind_mode_swipe_toggle;
     lv_obj_t* time_scale_toggle;
     lv_obj_t* auto_start_toggle;
-    lv_obj_t* auto_start_min_weight_dropdown;
+    lv_obj_t* auto_start_min_weight_slider;
+    lv_obj_t* auto_start_min_weight_label;
     lv_obj_t* auto_return_toggle;
     lv_obj_t* grinder_purge_mode_radio_group;
     lv_obj_t* grinder_purge_amount_slider;
@@ -99,6 +100,15 @@ private:
 
 public:
     static constexpr float kPurgeSliderScale = 10.0f; // Slider uses 0.1g increments
+
+    // Auto-start threshold options. The slider moves between these fixed positions
+    // rather than sweeping continuously, so a value can be dialled in exactly and
+    // cannot land a few grams off. Index 0 is Off; the rest bracket the portafilter
+    // weights this fits, with finer spacing where real portafilters actually sit.
+    static const int kMinWeightOptions[];
+    static const int kMinWeightOptionCount;
+    static int min_weight_for_index(int index);
+    static int index_for_min_weight(int grams);
 
     void create(BluetoothManager* bluetooth, GrindController* grind_ctrl, GrindingScreen* grind_screen, class HardwareManager* hw_mgr, DiagnosticsController* diag_ctrl);
     void show();
@@ -138,8 +148,8 @@ public:
     lv_obj_t* get_grind_mode_swipe_toggle() const { return grind_mode_swipe_toggle; }
     lv_obj_t* get_time_scale_toggle() const { return time_scale_toggle; }
     lv_obj_t* get_auto_start_toggle() const { return auto_start_toggle; }
-    lv_obj_t* get_auto_start_min_weight_dropdown() const { return auto_start_min_weight_dropdown; }
-    static const char* auto_start_min_weight_options();
+    lv_obj_t* get_auto_start_min_weight_slider() const { return auto_start_min_weight_slider; }
+    void update_auto_start_min_weight_label(int min_weight_g);
     lv_obj_t* get_auto_return_toggle() const { return auto_return_toggle; }
     lv_obj_t* get_grinder_purge_mode_radio_group() const { return grinder_purge_mode_radio_group; }
     lv_obj_t* get_grinder_purge_amount_slider() const { return grinder_purge_amount_slider; }
@@ -158,8 +168,6 @@ private:
     lv_obj_t* create_separator(lv_obj_t* parent, const char* text = nullptr);
     lv_obj_t* create_menu_item(lv_obj_t* parent, const char* text);
     lv_obj_t *create_toggle_row(lv_obj_t *parent, const char *text,lv_obj_t **out_toggle);
-    lv_obj_t *create_dropdown_row(lv_obj_t *parent, const char *text, const char *options,
-                                  lv_obj_t **out_dropdown);
     lv_obj_t *create_slider_row(lv_obj_t *parent, const char *text,
                                 lv_obj_t **label, lv_obj_t **slider,
                                 lv_color_t slider_color = lv_color_hex(THEME_COLOR_ACCENT),

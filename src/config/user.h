@@ -24,7 +24,7 @@
 
 // Weight limits
 #define USER_MIN_TARGET_WEIGHT_G 5.0f                                          // Minimum allowed target weight
-#define USER_MAX_TARGET_WEIGHT_G 1000.0f                                        // Maximum allowed target weight
+#define USER_MAX_TARGET_WEIGHT_G 30.0f                                          // Maximum allowed target weight - a dose, not a hopper refill
 
 #define USER_MIN_TARGET_TIME_S 0.5f                                            // Minimum allowed target time
 #define USER_MAX_TARGET_TIME_S 25.0f                                           // Maximum allowed target time
@@ -83,8 +83,7 @@
 // than the portafilter ever reaches the threshold. Left at 0 there is no trigger at
 // all and grinding only starts from the on-screen button.
 #define USER_AUTO_GRIND_MIN_WEIGHT_DEFAULT_G 0                                  // 0 = auto-start disabled, manual button only
-#define USER_AUTO_GRIND_MIN_WEIGHT_STEP_G 100                                   // Dropdown granularity
-#define USER_AUTO_GRIND_MIN_WEIGHT_MAX_G 1000                                   // Highest selectable threshold
+#define USER_AUTO_GRIND_MIN_WEIGHT_MAX_G 700                                    // Highest selectable threshold; the slider steps through MenuScreen::kMinWeightOptions
 
 // Re-arming: after a grind the portafilter is still on the scale, settled and heavy, so
 // the trigger stays disarmed until the scale is clearly unloaded again. Requiring both a

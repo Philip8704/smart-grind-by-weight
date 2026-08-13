@@ -49,7 +49,8 @@ void MenuUIController::register_events() {
     EventBridgeLVGL::register_handler(ET::TIME_SCALE_TOGGLE, [this](lv_event_t*) { handle_time_scale_toggle(); });
     EventBridgeLVGL::register_handler(ET::GRIND_MODE_RADIO_BUTTON, [this](lv_event_t*) { handle_grind_mode_radio_button(); });
     EventBridgeLVGL::register_handler(ET::AUTO_START_TOGGLE, [this](lv_event_t*) { handle_auto_start_toggle(); });
-    EventBridgeLVGL::register_handler(ET::AUTO_START_MIN_WEIGHT_DROPDOWN, [this](lv_event_t*) { handle_auto_start_min_weight_dropdown(); });
+    EventBridgeLVGL::register_handler(ET::AUTO_START_MIN_WEIGHT_SLIDER, [this](lv_event_t*) { handle_auto_start_min_weight_slider(); });
+    EventBridgeLVGL::register_handler(ET::AUTO_START_MIN_WEIGHT_SLIDER_RELEASED, [this](lv_event_t*) { handle_auto_start_min_weight_slider_released(); });
     EventBridgeLVGL::register_handler(ET::AUTO_RETURN_TOGGLE, [this](lv_event_t*) { handle_auto_return_toggle(); });
     EventBridgeLVGL::register_handler(ET::GRINDER_PURGE_MODE_RADIO_BUTTON, [this](lv_event_t*) { handle_grinder_purge_mode_radio_button(); });
     EventBridgeLVGL::register_handler(ET::GRINDER_PURGE_AMOUNT_SLIDER, [this](lv_event_t*) { handle_grinder_purge_amount_slider(); });
@@ -383,15 +384,25 @@ void MenuUIController::handle_auto_start_toggle() {
     LOG_DEBUG_PRINTLN(enabled ? "Auto-start on cup enabled" : "Auto-start on cup disabled");
 }
 
-void MenuUIController::handle_auto_start_min_weight_dropdown() {
+void MenuUIController::handle_auto_start_min_weight_slider() {
     if (!ui_manager_) return;
 
-    auto* dropdown = ui_manager_->menu_screen.get_auto_start_min_weight_dropdown();
-    if (!dropdown) return;
+    auto* slider = ui_manager_->menu_screen.get_auto_start_min_weight_slider();
+    if (!slider) return;
 
-    // Index 0 is "Off", index n is n * step grams
-    int selected = static_cast<int>(lv_dropdown_get_selected(dropdown));
-    int min_weight_g = selected * USER_AUTO_GRIND_MIN_WEIGHT_STEP_G;
+    // Live feedback only while dragging - the value is persisted on release.
+    // The slider position is an option index, not grams.
+    int grams = MenuScreen::min_weight_for_index(lv_slider_get_value(slider));
+    ui_manager_->menu_screen.update_auto_start_min_weight_label(grams);
+}
+
+void MenuUIController::handle_auto_start_min_weight_slider_released() {
+    if (!ui_manager_) return;
+
+    auto* slider = ui_manager_->menu_screen.get_auto_start_min_weight_slider();
+    if (!slider) return;
+
+    int min_weight_g = MenuScreen::min_weight_for_index(lv_slider_get_value(slider));
 
     Preferences prefs;
     prefs.begin("autogrind", false);
@@ -399,6 +410,7 @@ void MenuUIController::handle_auto_start_min_weight_dropdown() {
     prefs.end();
 
     ui_manager_->refresh_auto_action_settings();
+    ui_manager_->menu_screen.update_auto_start_min_weight_label(min_weight_g);
 
     LOG_DEBUG_PRINTF("Auto-start minimum weight set to %dg\n", min_weight_g);
 }

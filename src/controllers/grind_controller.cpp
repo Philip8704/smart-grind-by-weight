@@ -1497,20 +1497,18 @@ void GrindController::commit_coast_observation() {
         return;
     }
 
-    // Only a grind that landed on target teaches anything useful about coast. An
-    // overshoot means the prediction was already wrong; an undershoot means the
-    // pulses gave up early. Either way the measured coast reflects a miss, not the
-    // machine, so learning from it would drag the model further off.
-    if (last_session_result_ != GrindSessionResult::SUCCESS) {
-        discard_coast_observation("grind did not finish cleanly");
-        return;
-    }
-
+    // Missing the target does NOT invalidate the measurement. Coast is measured at the
+    // first settle after the motor stops, before any correction pulse runs, so it
+    // records what was actually in flight regardless of where the grind finally landed.
+    // Refusing to learn from a miss was self-defeating: a profile predicting coast
+    // badly would overshoot, have its observation thrown away, and so never improve -
+    // it could not climb out of a bad starting point. An overshoot is precisely the
+    // evidence that coast is larger than believed, which is what the model needs.
+    //
+    // What genuinely does invalidate it is handled elsewhere: a disturbed scale or an
+    // out-of-range value in observe_coast(), and an aborted grind, which never reaches
+    // here at all.
     float error = final_weight - target_weight;
-    if (fabsf(error) > GRIND_ACCURACY_TOLERANCE_G) {
-        discard_coast_observation("target not reached");
-        return;
-    }
 
     float observed_s = pending_coast_time_s_;
     pending_coast_time_s_ = 0.0f;
@@ -1527,8 +1525,11 @@ void GrindController::commit_coast_observation() {
     }
     coast_time_dirty_ = true;
 
-    queue_log_message("[COAST] Accepted %.3fs (error %+.2fg), learned now %.3fs\n",
-                      observed_s, error, learned_coast_time_s);
+    queue_log_message("[COAST] Accepted %.3fs (%s, error %+.2fg), learned now %.3fs\n",
+                      observed_s,
+                      (fabsf(error) <= GRIND_ACCURACY_TOLERANCE_G) ? "on target"
+                          : (error > 0.0f ? "overshot" : "undershot"),
+                      error, learned_coast_time_s);
 }
 
 

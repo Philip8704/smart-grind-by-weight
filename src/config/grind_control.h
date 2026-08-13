@@ -56,7 +56,23 @@ enum class GrinderPurgeMode {
 // (settled weight - weight at motor stop) / flow rate, then averaged across grinds.
 // Storing it as a TIME rather than a weight keeps it valid across dose sizes and
 // grind settings, since the weight it turns into scales with the current flow rate.
-#define GRIND_COAST_LEARNING_ALPHA 0.25f                                  // EWMA weight of the newest observation (4-grind effective memory)
+// Deliberate bias toward stopping early. The predicted in-flight coffee is inflated by
+// this factor, so the motor cuts sooner than the model strictly says and the grind
+// lands a little light - which the correction pulses then top up.
+//
+// The asymmetry is the whole point: coffee still in the chute can be added by a pulse,
+// coffee already in the cup cannot be taken back. Aiming dead-on means overshooting
+// roughly half the time coast runs above its average. Above 1.0 = stop earlier =
+// undershoot; below 1.0 would stop later and overshoot, which is what we are avoiding.
+#define GRIND_COAST_SAFETY_FACTOR 1.15f                                   // Predict 15% more in flight than measured
+
+// EWMA weight of the newest observation. Effective memory is roughly 1/alpha, so this
+// averages over about 8 grinds. Longer than it needs to be for a stable machine, but
+// observations now include overshoots and undershoots as well as clean grinds, and a
+// wider average keeps one unusual dose from moving the model much. The cost is that a
+// genuine change - new beans, a grind setting adjustment - takes about 8 grinds to
+// track rather than 4.
+#define GRIND_COAST_LEARNING_ALPHA 0.125f
 #define GRIND_COAST_TIME_MIN_S 0.05f                                      // Reject observations below this as measurement noise
 #define GRIND_COAST_TIME_MAX_S 1.50f                                      // Reject observations above this as a stalled or mis-settled grind
 

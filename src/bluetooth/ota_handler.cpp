@@ -142,6 +142,21 @@ bool OTAHandler::start_ota(uint32_t size, const String& expected_build_number, b
     esp_task_wdt_reconfigure(&wdt_config);
     LOG_OTA_DEBUG("Watchdog reconfigured successfully\n");
 
+    // Cut the motor before the control loop is suspended. Suspending the grind task
+    // freezes the state machine wherever it happens to be - and if that is mid-grind,
+    // the relay stays energised with nothing left running to turn it off. The transfer
+    // takes minutes before the reboot, so the grinder would run for all of it.
+    // Unconditional on purpose: it costs nothing when idle and does not depend on any
+    // state flag being accurate.
+    {
+        extern HardwareManager hardware_manager;
+        Grinder* grinder = hardware_manager.get_grinder();
+        if (grinder) {
+            grinder->stop();
+            LOG_BLE("OTA: Motor stopped before suspending tasks\n");
+        }
+    }
+
     // Suspend hardware tasks to prevent watchdog timeouts during OTA
     LOG_BLE("OTA: Suspending hardware tasks...\n");
     task_manager.suspend_hardware_tasks();

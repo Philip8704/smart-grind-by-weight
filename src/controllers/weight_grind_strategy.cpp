@@ -106,7 +106,11 @@ void WeightGrindStrategy::run_predictive_phase(GrindController& controller,
                     coast_time_s = (controller.grind_latency_ms * GRIND_LATENCY_TO_COAST_RATIO) /
                                    (float)SYS_MS_PER_SECOND;
                 }
-                controller.motor_stop_target_weight = coast_time_s * current_flow_rate;
+                // Inflated on purpose - see GRIND_COAST_SAFETY_FACTOR. Overestimating
+                // what is still falling stops the motor early and lands light, which a
+                // pulse can fix; underestimating lands heavy, which nothing can.
+                controller.motor_stop_target_weight =
+                    coast_time_s * current_flow_rate * GRIND_COAST_SAFETY_FACTOR;
             }
         }
     }

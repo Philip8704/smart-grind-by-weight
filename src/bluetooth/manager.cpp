@@ -1651,12 +1651,16 @@ void BluetoothManager::generate_diagnostic_report() {
                             snprintf(buf, sizeof(buf),
                                 "\n--- Session #%lu ---\n"
                                 "  Mode: %s | Profile: %u | Status: %.16s\n"
-                                "  Target: %.1fg | Final: %.1fg | Error: %+.2fg\n"
+                                "  Target: %.1fg | Final: %.1fg | Error: %+.2fg (+ = over)\n"
                                 "  Total Time: %.1fs | Motor Time: %.1fs | Pulses: %u\n"
                                 "  Termination: %s\n",
                                 session.session_id,
                                 mode_name, session.profile_id, session.result_status,
-                                session.target_weight, session.final_weight, session.error_grams,
+                                // Stored as target-minus-final, so negate it: every other
+                                // part of this report treats a positive error as an
+                                // overshoot, and two conventions in one report is worse
+                                // than either convention on its own
+                                session.target_weight, session.final_weight, -session.error_grams,
                                 session.total_time_ms / 1000.0f, session.total_motor_on_time_ms / 1000.0f, session.pulse_count,
                                 term_name
                             );

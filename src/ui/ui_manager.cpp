@@ -371,9 +371,15 @@ void UIManager::refresh_auto_action_settings() {
     auto_actions_.min_start_weight_g = prefs.getInt("min_weight_g", USER_AUTO_GRIND_MIN_WEIGHT_DEFAULT_G);
     prefs.end();
 
-    if (auto_actions_.min_start_weight_g < 0 ||
-        auto_actions_.min_start_weight_g > USER_AUTO_GRIND_MIN_WEIGHT_MAX_G) {
+    // Clamp rather than discard. A value saved before the selectable range narrowed -
+    // 1000g, say - is a deliberate setting, and resetting it to the default would
+    // silently switch auto-start off while the menu still showed a threshold, because
+    // the menu maps the same value to the nearest option instead. Clamping keeps the
+    // two in agreement.
+    if (auto_actions_.min_start_weight_g < 0) {
         auto_actions_.min_start_weight_g = USER_AUTO_GRIND_MIN_WEIGHT_DEFAULT_G;
+    } else if (auto_actions_.min_start_weight_g > USER_AUTO_GRIND_MIN_WEIGHT_MAX_G) {
+        auto_actions_.min_start_weight_g = USER_AUTO_GRIND_MIN_WEIGHT_MAX_G;
     }
 
     // Require the scale to be unloaded once before the threshold trigger can fire, so
