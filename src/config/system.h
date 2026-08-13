@@ -34,7 +34,10 @@
 // Task Stack Sizes (bytes) - Increased for BLE_LOG overhead and complex operations
 #define SYS_TASK_WEIGHT_SAMPLING_STACK_SIZE 4096                               // 4KB stack for weight sampling (was 2KB, increased for BLE_LOG)
 #define SYS_TASK_GRIND_CONTROL_STACK_SIZE 6144                                 // 6KB stack for grind control logic (was 4KB, increased for complex algorithms)
-#define SYS_TASK_UI_STACK_SIZE 8192                                            // 8KB stack for LVGL rendering (unchanged)
+// LVGL rendering. Measured headroom was down to about 1KB of 8KB - the tightest task
+// in the system - and a crash dump showed this task degrading badly (frame times rising
+// to over a second) immediately before a panic. 12KB removes it as a variable.
+#define SYS_TASK_UI_STACK_SIZE 12288                                           // 12KB stack for LVGL rendering
 // 4KB was enough when this task only pushed characteristic values around. It now opens
 // NVS to report the learned coast and empty-cradle reference, and builds the diagnostic
 // report with 512-byte buffers and float-heavy snprintf - and NVS operations are

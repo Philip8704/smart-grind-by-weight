@@ -1233,6 +1233,30 @@ void BluetoothManager::generate_diagnostic_report() {
     );
     send_chunk(buf);
 
+    // Section 2b: Memory detail. The heap figure above includes PSRAM and so stays
+    // healthy right up until an allocation fails; internal DRAM is what actually runs
+    // out. The largest free block matters as much as the total, because fragmentation
+    // fails an allocation long before the total looks alarming, and the low-water mark
+    // shows how close this boot has come even if it has since recovered.
+    {
+        DiagnosticsController::MemorySnapshot mem = DiagnosticsController::sample_memory();
+        snprintf(buf, sizeof(buf),
+            "[MEMORY]\n"
+            "  Internal free:      %u KB\n"
+            "  Largest block:      %u KB%s\n"
+            "  Lowest ever:        %u KB%s\n"
+            "  LVGL pool free:     %u KB (%u%% fragmented)\n"
+            "\n",
+            (unsigned)(mem.internal_free_bytes / 1024),
+            (unsigned)(mem.internal_largest_block_bytes / 1024),
+            (mem.internal_largest_block_bytes < 16384) ? "   <-- LOW" : "",
+            (unsigned)(mem.internal_min_free_ever_bytes / 1024),
+            (mem.internal_min_free_ever_bytes < 40960) ? "   <-- came close" : "",
+            (unsigned)(mem.lvgl_pool_free_bytes / 1024),
+            (unsigned)mem.lvgl_pool_frag_pct);
+        send_chunk(buf);
+    }
+
     // Section 3: Runtime Diagnostics
     WeightSensor* weight_sensor = hardware_manager.get_weight_sensor();
 
