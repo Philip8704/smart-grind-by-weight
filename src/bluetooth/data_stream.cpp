@@ -75,8 +75,13 @@ uint32_t DataStreamManager::get_session_list(uint32_t* session_ids, uint32_t max
         }
     }
     
-    // Sort session IDs for consistent order
-    for (uint32_t i = 0; i < list_count - 1; i++) {
+    // Sort session IDs for consistent order.
+    // Written as i + 1 < list_count rather than i < list_count - 1 because the count is
+    // unsigned: with no entries collected, list_count - 1 wraps to 4 billion and the
+    // loop walks off the end of the allocation. That is reachable - the count that
+    // sized this array accepts any session_*.bin filename, while the scan below only
+    // keeps those whose id parses above zero, so the two can legitimately disagree.
+    for (uint32_t i = 0; i + 1 < list_count; i++) {
         for (uint32_t j = i + 1; j < list_count; j++) {
             if (session_list[i] > session_list[j]) {
                 uint32_t temp = session_list[i];

@@ -598,8 +598,10 @@ void GrindLogger::export_sessions_binary_chunk(uint8_t* buffer, size_t buffer_si
                 }
             }
             
-            // Sort session IDs for consistent order
-            for (uint32_t i = 0; i < list_count - 1; i++) {
+            // Sort session IDs for consistent order. i + 1 < list_count, not
+            // i < list_count - 1: the count is unsigned, so with nothing collected the
+            // subtraction wraps to 4 billion and the loop runs off the allocation.
+            for (uint32_t i = 0; i + 1 < list_count; i++) {
                 for (uint32_t j = i + 1; j < list_count; j++) {
                     if (session_list[i] > session_list[j]) {
                         uint32_t temp = session_list[i];
