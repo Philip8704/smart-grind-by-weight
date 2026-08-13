@@ -315,7 +315,7 @@ Access **Menu → Grind Settings** to configure:
 - **Time Mode**: Directly toggle between Weight and Time modes regardless of swipe setting
 - **Scale** *(time mode)*: Tare on start and show the live weight under the countdown. The grind is always driven by the clock — this only controls the display, so a failed tare or a broken load cell never stops a time grind
 - **Start on Cup**: Master enable for auto-start
-- **Min. weight**: The auto-start trigger itself, in 100 g steps up to 1000 g. Grinding begins once the scale comes to rest above this weight, so you can seat the portafilter and work the slider at your own pace. Set it just below your portafilter weight and nothing lighter — a dosing funnel, a cup, a hand on the scale — can start a grind. **Off means auto-start does nothing at all; only the on-screen button starts a grind.**
+- **Min. weight**: The auto-start trigger itself - a slider stepping through Off / 200 / 400 / 500 / 600 / 700 g. Grinding begins once the scale comes to rest above this weight, so you can seat the portafilter and work the slider at your own pace. Set it just below your portafilter weight and nothing lighter — a dosing funnel, a cup, a hand on the scale — can start a grind. **Off means auto-start does nothing at all; only the on-screen button starts a grind.**
 - **Return on Removal**: Leave the completion screen as soon as that cup weight drops back off the scale
 - **Purging** *(Advanced)*: Control how the grinder saturates itself before weight-mode grinding
   - **Prime mode**: Keeps the coffee used to saturate the grinder, continues immediately
@@ -442,7 +442,7 @@ Want the scale to run itself? Enable the automation toggles in **Menu → Grind 
 
 **How the zero point is kept honest.** A grind tares with the portafilter already on the cradle, so once you lift it the empty cradle reads roughly minus one portafilter. Left alone that would mean auto-start worked exactly once - no portafilter would ever reach the threshold again. So while the cradle is empty, has been for the dwell period, and the reading is settled, the zero is re-taken automatically. This only happens with a threshold set, and only with nothing on the scale.
 
-**How re-arming works.** After a grind the portafilter is still sitting there, settled and above the threshold, so auto-start disarms itself the moment it fires. It re-arms only once the weight drops 100 g below the threshold *and stays there for 2 s* — briefly lifting the portafilter or knocking the scale is not enough. It also starts disarmed after any settings change or calibration, so adjusting the dropdown with a portafilter in place cannot kick off a grind.
+**How re-arming works.** After a grind the portafilter is still sitting there, settled and above the threshold, so auto-start disarms itself the moment it fires. It re-arms only once the weight drops 100 g below the threshold *and stays there for 2 s* — briefly lifting the portafilter or knocking the scale is not enough. It also starts disarmed after any settings change or calibration, so adjusting the slider with a portafilter in place cannot kick off a grind.
 
 Leave **Min. weight** on *Off* if you want the on-screen button to be the only way to start.
 
@@ -468,6 +468,15 @@ Generate a comprehensive diagnostic report from your device for troubleshooting 
   - Noise acceptability assessment
   - Motor response latency (default or auto-tuned value)
 - **Compile-Time Parameters**: Profile defaults, weight/time ranges, screen settings, auto-grind thresholds, and all user-configurable constants
+- **Crash Dump**: shown first, so a report that fails partway still explains why the device restarted. Logging rolls continuously into a small buffer in RTC memory, which a panic or watchdog reset does not clear. Nothing is written while running - on the next boot the reset reason decides whether the survivors are kept, so a clean restart shows `none`. It captures the log leading up to the fault, not a backtrace; for that, use `tools/crash_monitor.py` over USB
+- **Memory**: internal DRAM free, largest free block, and the lowest it has been since boot, plus LVGL pool usage. The heap figure in the System section counts PSRAM and stays healthy until an allocation fails, so these are the numbers that matter
+- **Stack Headroom**: bytes still unused per task, lowest since boot. A task that exhausts its stack corrupts memory rather than failing cleanly, so the margin is worth watching
+- **Algorithm State**: the values the device has actually learned - motor latency, estimator and filter settings - as opposed to what was compiled in
+- **Coast Model**: learned coast time per profile, whether the empty-cradle reference is stored, and the last ten coast observations with the reason any were rejected. If the learned value stays at `0.000` after several grinds, this section says why
+- **Recent Errors**: the last five, with the phase each occurred in. These survive acknowledgement, unlike the message on screen
+- **Boot Log**: the first ten seconds of startup, which cannot be watched over Bluetooth because nothing is connected yet
+
+> **A slow report is not a failed report.** Notifications are paced by the connection interval your phone negotiates, so a large report can take a minute. The page shows kilobytes received - if that number is climbing, it is working. It only gives up after fifteen seconds of complete silence.
 
 ### Access Methods
 
@@ -573,6 +582,9 @@ The system uses a **zero-shot learning algorithm** requiring no prior knowledge 
 
 **Learned Coast Model:**
 
+The prediction deliberately overestimates what is still in flight, by `GRIND_COAST_SAFETY_FACTOR`, so the grind lands slightly light and a correction pulse tops it up. The asymmetry is the point: coffee still in the chute can be added, coffee already in the cup cannot. Expect one short pulse on a typical grind rather than none.
+
+
 Coffee keeps falling after the motor stops. The firmware stops early by that amount, and it *measures* how much rather than guessing:
 
 - On the first settle after the predictive stop, the extra weight that arrived is the coast. Divided by the flow rate at motor stop, that gives a coast **time**
@@ -580,13 +592,12 @@ Coffee keeps falling after the motor stops. The firmware stops early by that amo
 - Observations outside 0.05-1.5s are discarded as measurement errors
 - Storing a *time* rather than a weight is what makes it transferable: change dose or grind setting and the coast time barely moves, while the coast weight changes a lot. The model multiplies by whatever flow rate it sees today
 - Only the very first grind on a profile falls back to seeding the coast from the spin-up latency
+- The observation is divided by the **same flow rate the prediction was built on**. Using a different measure for each does not cancel, and made every learned coast read about a quarter short - enough to overshoot on every grind, and not something the model could correct on its own
 
-**A coast measurement is only learned from a grind that went cleanly.** The reading is taken mid-grind but held, and folded into the average only once the outcome is known. It is discarded if:
+**A coast measurement is learned from any grind that finished, including one that missed the target.** An overshoot is precisely the evidence that coast is larger than believed, so refusing to learn from it would leave a badly-predicting profile unable to improve. What still discards it is the measurement being spoiled rather than the outcome being poor: The reading is taken mid-grind but held, and folded into the average only once the outcome is known. It is discarded if:
 
 - The scale was disturbed during the settle (any single instability event — stricter than the 3 needed to raise the diagnostic, because one bad coast value skews the next several grinds)
-- The final weight missed the target in either direction, beyond tolerance. An overshoot means the prediction was already wrong; an undershoot means the pulses gave up early. Either way the measured coast reflects the miss, not the machine
-- The grind ended as OVERSHOOT, MAX PULSES, TIMEOUT or an error
-- You stopped the grind by hand, or it was aborted automatically
+- The grind was aborted - stopped by hand, or ended by a timeout or failsafe - so the settle never completed
 
 The learned value per profile is reported in the BLE system info as `coast_s`. If it stays at `0.000` after several grinds, every observation is being rejected — check the log for `[COAST] Rejected` / `[COAST] Discarded` lines, which state the reason.
 
