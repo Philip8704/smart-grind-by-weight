@@ -1139,7 +1139,11 @@ void BluetoothManager::generate_diagnostic_report() {
         size_t offset = 0;
         while (offset < len) {
             size_t part_len = std::min(static_cast<size_t>(BLE_DEBUG_MAX_CHUNK_BYTES), len - offset);
-            LOG_BLE("TX: %zu bytes\n", part_len);
+            // Deliberately not logged. This runs once per BLE packet, so a single
+            // report used to inject around 85 lines of "TX: n bytes" into the capture
+            // rings - over a kilobyte of noise in a 3KB crash ring, displacing the
+            // content it exists to preserve. It also put serial writes in the middle
+            // of the BLE flow-control loop.
             debug_tx_characteristic->setValue(reinterpret_cast<const uint8_t*>(chunk + offset), part_len);
             debug_tx_characteristic->notify();
             vTaskDelay(chunk_delay); // Give BLE stack time to drain queue
@@ -1172,6 +1176,31 @@ void BluetoothManager::generate_diagnostic_report() {
         BUILD_TIMESTAMP
     );
     send_chunk(buf);
+
+    // Section 1b: Crash dump - placed this early on purpose - the tail of the log from a previous session that ended
+    // in a panic or watchdog reset, recovered from RTC memory on the next boot. Absent
+    // after a clean restart, which is the normal case.
+    if (debug_log_has_crash_dump()) {
+        size_t dump_bytes = debug_log_crash_dump_size();
+        snprintf(buf, sizeof(buf),
+                 "[CRASH DUMP] previous session ended in %s\n"
+                 "  %u bytes recovered - this is the log immediately before it stopped\n",
+                 debug_log_crash_reason(), (unsigned)dump_bytes);
+        send_chunk(buf);
+
+        size_t offset = 0;
+        while (true) {
+            size_t copied = debug_log_copy_crash_dump(offset, buf, sizeof(buf));
+            if (copied == 0) break;
+            send_chunk(buf);
+            offset += copied;
+        }
+        snprintf(buf, sizeof(buf), "\n");
+        send_chunk(buf);
+    } else {
+        snprintf(buf, sizeof(buf), "[CRASH DUMP] none - previous shutdown was clean\n\n");
+        send_chunk(buf);
+    }
 
     // Section 2: System Runtime
     size_t heap_free = ESP.getFreeHeap();
@@ -1925,31 +1954,6 @@ void BluetoothManager::generate_diagnostic_report() {
             }
         }
         snprintf(buf, sizeof(buf), "\n");
-        send_chunk(buf);
-    }
-
-    // Section 17b: Crash dump - the tail of the log from a previous session that ended
-    // in a panic or watchdog reset, recovered from RTC memory on the next boot. Absent
-    // after a clean restart, which is the normal case.
-    if (debug_log_has_crash_dump()) {
-        size_t dump_bytes = debug_log_crash_dump_size();
-        snprintf(buf, sizeof(buf),
-                 "[CRASH DUMP] previous session ended in %s\n"
-                 "  %u bytes recovered - this is the log immediately before it stopped\n",
-                 debug_log_crash_reason(), (unsigned)dump_bytes);
-        send_chunk(buf);
-
-        size_t offset = 0;
-        while (true) {
-            size_t copied = debug_log_copy_crash_dump(offset, buf, sizeof(buf));
-            if (copied == 0) break;
-            send_chunk(buf);
-            offset += copied;
-        }
-        snprintf(buf, sizeof(buf), "\n");
-        send_chunk(buf);
-    } else {
-        snprintf(buf, sizeof(buf), "[CRASH DUMP] none - previous shutdown was clean\n\n");
         send_chunk(buf);
     }
 

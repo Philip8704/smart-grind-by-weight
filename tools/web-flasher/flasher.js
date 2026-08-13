@@ -601,6 +601,8 @@ async function getDiagnosticReport() {
         // Collect report chunks
         let reportChunks = [];
         let reportComplete = false;
+        let bytesReceived = 0;
+        let lastChunkTime = Date.now();
 
         // Try to stop notifications first (in case they're already active)
         try {
@@ -615,6 +617,8 @@ async function getDiagnosticReport() {
         debugTxChar.addEventListener('characteristicvaluechanged', (event) => {
             const chunk = new TextDecoder().decode(event.target.value);
             reportChunks.push(chunk);
+            lastChunkTime = Date.now();
+            bytesReceived += chunk.length;
 
             // Check if report is complete
             if (chunk.includes('=== END OF REPORT ===')) {
@@ -626,11 +630,22 @@ async function getDiagnosticReport() {
         await diagnosticsChar.writeValue(new Uint8Array([0x01]));
         statusDiv.innerHTML = '<div class="status info">Generating report...</div>';
 
-        // Wait for report to complete (with timeout)
-        const timeout = 30000; // 30 seconds
+        // Wait for the report, timing out on SILENCE rather than on total elapsed time.
+        // A fixed overall budget punishes a long report exactly like a dead device, and
+        // how long a report takes is not really ours to predict: notifications are
+        // delivered at the connection interval the phone negotiates, which can be
+        // hundreds of milliseconds, so a few hundred packets can legitimately take a
+        // minute. What actually indicates failure is nothing arriving at all.
+        const idleTimeout = 15000;   // no data at all for this long means it has stopped
+        const overallCap = 300000;   // absolute backstop so this can never hang forever
         const startTime = Date.now();
-        while (!reportComplete && (Date.now() - startTime) < timeout) {
+        while (!reportComplete &&
+               (Date.now() - lastChunkTime) < idleTimeout &&
+               (Date.now() - startTime) < overallCap) {
             await new Promise(resolve => setTimeout(resolve, 100));
+            if (!reportComplete && bytesReceived > 0) {
+                statusDiv.innerHTML = `<div class="status info">Receiving report... ${(bytesReceived / 1024).toFixed(1)} KB</div>`;
+            }
         }
 
         // Stop notifications
