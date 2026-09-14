@@ -163,15 +163,17 @@ Using the 4-pin Eureka plug pinout (see `../media/4-pin_Eureka_plug_pinout.png`)
 ```
 ESP32-S3 5V        →    Pin 1 (5V power)
                         Pin 2 (Button signal - not used in this project)
-ESP32-S3 GPIO 18   →    Pin 3 (Motor control signal)
+ESP32-S3 GPIO 16   →    Pin 3 (Motor control signal)
 ESP32-S3 GND       →    Pin 4 (Ground)
 ```
 
 **4-Pin Eureka Plug Reference (Left to Right):**
 - **Pin 1**: 5V power supply
 - **Pin 2**: Button signal (unused in this project)  
-- **Pin 3**: Motor control signal *(active-high — the motor runs when GPIO 18 drives this pin to ~3.3V)*
+- **Pin 3**: Motor control signal *(active-high — the motor runs when GPIO 16 drives this pin to ~3.3V)*
 - **Pin 4**: Ground
+
+GPIO 16 drives the motor because it is free on both revisions of the Waveshare board; GPIO 18 doubles as the touchscreen interrupt on V2.
 
 ⚠️ **VERIFY 5V:** Use a multimeter to confirm 5V pin - wire colors vary between units! The Waveshare board has reverse polarity protection, and button/motor wires can be swapped without risk of damage.
 

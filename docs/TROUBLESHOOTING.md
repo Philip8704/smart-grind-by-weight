@@ -52,10 +52,10 @@ The motor control wire (Pin 3) is the wire that **starts the motor when briefly 
 ### Resolution
 
 **Swap the wire connections:**
-- The motor control wire (Pin 3) should connect to Waveshare **GPIO 18**
+- The motor control wire (Pin 3) should connect to Waveshare **GPIO 16**
 - The button signal wire (Pin 2) can remain disconnected (unused in this project)
 
-If wires were reversed, swap them so Pin 3 connects to GPIO 18. The Waveshare board has reverse polarity protection for power connections, but the motor/button wires should be correctly identified for proper operation.
+If wires were reversed, swap them so Pin 3 connects to GPIO 16. The Waveshare board has reverse polarity protection for power connections, but the motor/button wires should be correctly identified for proper operation.
 
 **Important:** Wire colors vary significantly between Eureka units - always refer to pin positions rather than wire colors when troubleshooting.
 

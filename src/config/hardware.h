@@ -30,7 +30,7 @@
 #define HW_LOADCELL_SCK_PIN 2                                                  // HX711 serial clock pin
 
 // Motor Control
-#define HW_MOTOR_RELAY_PIN 18                                                  // GPIO pin for grinder motor control relay
+#define HW_MOTOR_RELAY_PIN 16                                                  // GPIO pin for grinder motor control relay
 #define HW_GRINDER_SETTLING_TIME_MS 500                                        // Startup transient immunity (tune based on mechanical rigidity, 0 to disable)
 
 //------------------------------------------------------------------------------
