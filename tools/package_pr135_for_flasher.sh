@@ -49,17 +49,53 @@ cat > "$OUT/$BASE.manifest.json" <<EOF
 }
 EOF
 
-# BLE OTA patch - optional, requires detools
+# BLE OTA patch - needs detools, which does not install on this machine's Windows venv
+# because it builds C extensions. It lives in a WSL venv instead, so try that as well.
+# Without the patch a phone cannot flash at all: ESP Web Tools needs USB, and BLE OTA is
+# the only path a phone has. Dropping silently to USB-only looks like a working package
+# right up until someone tries to use it, so the fallback is worth the extra branch.
 OTA_LINE=""
-if "$VPY" -c "import detools" 2>/dev/null; then
+OTA_BUILT=0
+
+make_patch() {  # $1 = command prefix that runs a python with detools
   : > "$OUT/empty.bin"
-  "$VPY" -c "import detools;detools.create_patch(open('$OUT/empty.bin','rb'),open('$OUT/$BASE.bin','rb'),open('$OUT/$BASE-web-ota.bin','wb'),compression='heatshrink')"
+  if "$@" -c "import detools;detools.create_patch(open('$OUT/empty.bin','rb'),open('$OUT/$BASE.bin','rb'),open('$OUT/$BASE-web-ota.bin','wb'),compression='heatshrink')"; then
+    rm -f "$OUT/empty.bin"
+    return 0
+  fi
   rm -f "$OUT/empty.bin"
-  OTA_LINE="    \"ota\": \"firmware/$TAG/$BASE-web-ota.bin\","
-  echo "[OK] detools available - BLE OTA patch created"
-else
-  echo "[SKIP] detools not installed - USB flashing only for PR #135 (BLE OTA omitted)"
+  return 1
+}
+
+if "$VPY" -c "import detools" 2>/dev/null && make_patch "$VPY"; then
+  OTA_BUILT=1
+  echo "[OK] BLE OTA patch created (native venv)"
+elif command -v wsl >/dev/null 2>&1 && \
+     wsl -e bash -lc "~/dtenv/bin/python -c 'import detools'" >/dev/null 2>&1; then
+  WSL_OUT="$(wsl -e wslpath -a "$(cygpath -w "$OUT" 2>/dev/null || echo "$OUT")" 2>/dev/null)"
+  if [ -n "$WSL_OUT" ] && wsl -e bash -lc "cd '$WSL_OUT' && : > empty.bin && ~/dtenv/bin/python -c \"import detools;detools.create_patch(open('empty.bin','rb'),open('$BASE.bin','rb'),open('$BASE-web-ota.bin','wb'),compression='heatshrink')\" && rm -f empty.bin"; then
+    OTA_BUILT=1
+    echo "[OK] BLE OTA patch created (WSL detools)"
+  fi
 fi
+
+if [ "$OTA_BUILT" = "1" ]; then
+  OTA_LINE="    \"ota\": \"firmware/$TAG/$BASE-web-ota.bin\","
+else
+  # Remove rather than leave behind: a patch from an earlier build is named exactly like
+  # a current one, and index.json omitting it is the only thing standing between that
+  # file and someone flashing last week's firmware believing it is this one.
+  rm -f "$OUT/$BASE-web-ota.bin"
+  echo "[WARN] detools unavailable in venv and WSL - USB flashing only, stale OTA patch removed"
+  echo "       Phones cannot flash over USB; install detools to restore phone flashing."
+fi
+
+# The build number is what distinguishes one local package from the next - the version
+# string only moves on a release - so it goes in the label the flasher shows. Picking it
+# out of the generated header rather than tracking it by hand keeps the page honest
+# about which build is actually being served.
+BUILD_NO="$(sed -n 's/.*define BUILD_NUMBER \([0-9]*\).*/\1/p' "$REPO/include/git_info.h" | head -1)"
+[ -n "$BUILD_NO" ] || BUILD_NO="?"
 
 # index.json - pr-135 first (default selection), stock rc.6 kept for rollback
 cat > "$REPO/tools/web-flasher/firmware/index.json" <<EOF
@@ -67,7 +103,7 @@ cat > "$REPO/tools/web-flasher/firmware/index.json" <<EOF
   {
     "tag": "$TAG",
     "version": "$(sed -n 's/.*BUILD_FIRMWARE_VERSION "\([^"]*\)".*/\1/p' "$REPO/src/config/build_info.h")",
-    "display": "PR #135 - time mode without weight sensor",
+    "display": "PR #135 fork - build $BUILD_NO",
     "prerelease": false,
 $OTA_LINE
     "manifest": "firmware/$TAG/$BASE.manifest.json"
