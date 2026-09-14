@@ -132,6 +132,38 @@ void MenuUIController::handle_purge() {
 void MenuUIController::handle_motor_test() {
     if (!ui_manager_) return;
 
+    // Checked here, before the confirmation dialog, rather than after the user hits RUN.
+    // Reporting the fault from inside the RUN callback would ask the confirm controller
+    // to show a second dialog while it is still dispatching the first, replacing the
+    // std::function that owns the lambda currently executing.
+    //
+    // Worth surfacing at all because the failure is otherwise completely silent: every
+    // actuation path returns early on !rmt_initialized, so a grinder whose RMT channel
+    // did not come up simply does nothing, in every mode, with no message anywhere.
+    auto* hardware = ui_manager_->get_hardware_manager();
+    auto* motor = hardware ? hardware->get_grinder() : nullptr;
+    if (motor && (!motor->is_initialized() || !motor->is_rmt_ready())) {
+        LOG_BLE("[MOTOR] Motor test blocked - RMT not ready on GPIO %d: %s\n",
+                motor->get_motor_pin(), esp_err_to_name(motor->get_rmt_init_error()));
+        char message[192];
+        snprintf(message, sizeof(message),
+                 "Motor cannot run in any mode - weight, time or test."
+                 "\n\n"
+                 "RMT channel failed on GPIO %d:"
+                 "\n%s",
+                 motor->get_motor_pin(), esp_err_to_name(motor->get_rmt_init_error()));
+        ui_manager_->show_confirmation(
+            "MOTOR FAULT",
+            message,
+            "OK",
+            lv_color_hex(THEME_COLOR_ERROR),
+            [this]() { return_to_menu(); },
+            "CLOSE",
+            [this]() { return_to_menu(); }
+        );
+        return;
+    }
+
     ui_manager_->show_confirmation(
         "MOTOR TEST",
         "Motor will be engaged for 1 second."
@@ -672,6 +704,15 @@ void MenuUIController::run_motor_test() {
 
     ui_manager_->set_background_active(true);
     grinder->start_pulse_rmt(1000);
+
+    // Logged on every press, unlike the grind-loop paths which report only their first
+    // failure to keep the crash ring readable. A button pressed by hand cannot flood
+    // anything, and "I pressed it and nothing happened" is exactly the case that needs
+    // a line saying whether the hardware was even asked to move.
+    LOG_BLE("[MOTOR] Motor test: 1000ms pulse on GPIO %d, transmit %s (%lu prior failures)\n",
+            grinder->get_motor_pin(),
+            esp_err_to_name(grinder->get_last_transmit_error()),
+            (unsigned long)grinder->get_transmit_fail_count());
 
     // Update statistics for motor test (1000ms = 1 second)
     statistics_manager.update_motor_test(1000);

@@ -13,6 +13,11 @@ void Grinder::init(int pin) {
     current_encoder = nullptr;
     motor_start_time = 0;
 
+    rmt_init_err = ESP_OK;
+    last_transmit_err = ESP_OK;
+    transmit_fail_count = 0;
+    encoder_fail_count = 0;
+
     // Initialize background indicator
     background_active = false;
     ui_event_callback = nullptr;
@@ -31,10 +36,19 @@ void Grinder::init(int pin) {
         .trans_queue_depth = 4,
     };
     
-    if (rmt_new_tx_channel(&tx_chan_config, &rmt_channel) == ESP_OK) {
+    // Logged on both paths on purpose. A failure here disables the motor everywhere -
+    // weight, time, motor test, autotune - because every actuation path returns early
+    // on !rmt_initialized. Without a line at boot that condition is indistinguishable
+    // from a wiring fault, and the report had no way to tell them apart.
+    rmt_init_err = rmt_new_tx_channel(&tx_chan_config, &rmt_channel);
+    if (rmt_init_err == ESP_OK) {
         rmt_enable(rmt_channel);
         rmt_initialized = true;
         initialized = true;
+        LOG_BLE("[MOTOR] RMT ready on GPIO %d - motor control available\n", motor_pin);
+    } else {
+        LOG_BLE("[MOTOR] RMT channel FAILED on GPIO %d: %s - motor is dead in ALL modes\n",
+                motor_pin, esp_err_to_name(rmt_init_err));
     }
 }
 
@@ -64,6 +78,14 @@ void Grinder::start() {
     rmt_copy_encoder_config_t encoder_config = {};
     
     if (rmt_new_copy_encoder(&encoder_config, &current_encoder) != ESP_OK) {
+        // Counted rather than logged every time: this sits on the grind control loop,
+        // and a repeating fault would bury the 3KB crash ring in its own noise. The
+        // count is reported, and callers that fire once (motor test) log it directly.
+        encoder_fail_count++;
+        last_transmit_err = ESP_ERR_NO_MEM;
+        if (encoder_fail_count == 1) {
+            LOG_BLE("[MOTOR] Encoder creation FAILED - motor will not actuate\n");
+        }
         return;
     }
     
@@ -78,7 +100,18 @@ void Grinder::start() {
         .loop_count = -1, // Infinite loop
     };
     
-    rmt_transmit(rmt_channel, current_encoder, continuous_data, sizeof(continuous_data), &tx_config);
+    // The return value used to be discarded, so a failed transmit left the firmware
+    // believing the motor was running. It is recorded now, but `grinding` is still set
+    // exactly as before: clearing it would make PRIME re-issue start() every control
+    // cycle, and this change is meant to reveal the fault, not alter what follows it.
+    last_transmit_err = rmt_transmit(rmt_channel, current_encoder, continuous_data,
+                                     sizeof(continuous_data), &tx_config);
+    if (last_transmit_err != ESP_OK) {
+        transmit_fail_count++;
+        if (transmit_fail_count == 1) {
+            LOG_BLE("[MOTOR] Continuous transmit FAILED: %s\n", esp_err_to_name(last_transmit_err));
+        }
+    }
     grinding = true;
     emit_background_change(true);
 }
@@ -133,6 +166,14 @@ void Grinder::start_pulse_rmt(uint32_t duration_ms) {
     rmt_copy_encoder_config_t encoder_config = {};
     
     if (rmt_new_copy_encoder(&encoder_config, &current_encoder) != ESP_OK) {
+        // Counted rather than logged every time: this sits on the grind control loop,
+        // and a repeating fault would bury the 3KB crash ring in its own noise. The
+        // count is reported, and callers that fire once (motor test) log it directly.
+        encoder_fail_count++;
+        last_transmit_err = ESP_ERR_NO_MEM;
+        if (encoder_fail_count == 1) {
+            LOG_BLE("[MOTOR] Encoder creation FAILED - motor will not actuate\n");
+        }
         return;
     }
     
@@ -152,7 +193,11 @@ void Grinder::start_pulse_rmt(uint32_t duration_ms) {
         pulse_active = true;
         grinding = true;
         
-        rmt_transmit(rmt_channel, current_encoder, pulse_symbols, sizeof(rmt_symbol_word_t), &tx_config);
+        last_transmit_err = rmt_transmit(rmt_channel, current_encoder, pulse_symbols,
+                                         sizeof(rmt_symbol_word_t), &tx_config);
+        if (last_transmit_err != ESP_OK) {
+            transmit_fail_count++;
+        }
         emit_background_change(true);
     } else {
         // For longer durations, use loop_count to repeat
@@ -174,7 +219,11 @@ void Grinder::start_pulse_rmt(uint32_t duration_ms) {
         pulse_active = true;
         grinding = true;
         
-        rmt_transmit(rmt_channel, current_encoder, pulse_symbols, sizeof(pulse_symbols), &tx_config);
+        last_transmit_err = rmt_transmit(rmt_channel, current_encoder, pulse_symbols,
+                                         sizeof(pulse_symbols), &tx_config);
+        if (last_transmit_err != ESP_OK) {
+            transmit_fail_count++;
+        }
         emit_background_change(true);
     }
 }
