@@ -940,10 +940,12 @@ void BluetoothManager::update_system_info() {
     // The low-water mark shows how close this boot has come to the edge.
     DiagnosticsController::MemorySnapshot memory = DiagnosticsController::sample_memory();
 
-    // Learned coast time per profile. Surfaced because the model silently stops
-    // learning if every grind is rejected - a value stuck at 0 explains why accuracy
-    // never improves, and there is nowhere else to see it.
+    // Predicted coast time per profile, and how many measurements it was drawn from.
+    // Surfaced because the model silently stops learning if every grind is rejected -
+    // a sample count stuck at zero explains why accuracy never improves, and there is
+    // nowhere else to see it.
     float coast[3] = {0.0f, 0.0f, 0.0f};
+    uint8_t coast_n[3] = {0, 0, 0};
     // Empty-cradle reference from calibration. Reported because the only other sign it
     // exists is a serial line printed during boot, long before a phone can connect -
     // and without it auto-start silently falls back to the old tare-relative gate.
@@ -953,9 +955,11 @@ void BluetoothManager::update_system_info() {
         Preferences coast_prefs;
         if (coast_prefs.begin("grinder", true)) {
             for (int i = 0; i < 3; i++) {
-                char key[16];
-                snprintf(key, sizeof(key), "%s%d", GrindController::PREF_KEY_COAST_TIME_PREFIX, i);
-                coast[i] = coast_prefs.getFloat(key, 0.0f);
+                CoastWindow window;
+                if (GrindController::read_coast_window(coast_prefs, (uint8_t)i, window)) {
+                    coast[i] = coast_window_prediction_s(window);
+                    coast_n[i] = window.count;
+                }
             }
             has_empty_ref = coast_prefs.isKey("hx_empty");
             empty_ref = has_empty_ref ? coast_prefs.getInt("hx_empty", 0) : 0;
@@ -979,6 +983,7 @@ void BluetoothManager::update_system_info() {
         "\"lvgl_free\":%u,"
         "\"lvgl_frag\":%u,"
         "\"coast_s\":[%.3f,%.3f,%.3f],"
+        "\"coast_n\":[%u,%u,%u],"
         "\"empty_ref\":%ld,"
         "\"has_empty_ref\":%d,"
         "\"flash_size\":%u,"
@@ -998,6 +1003,7 @@ void BluetoothManager::update_system_info() {
         (unsigned int)memory.lvgl_pool_free_bytes,
         (unsigned int)memory.lvgl_pool_frag_pct,
         coast[0], coast[1], coast[2],
+        (unsigned)coast_n[0], (unsigned)coast_n[1], (unsigned)coast_n[2],
         (long)empty_ref,
         has_empty_ref ? 1 : 0,
         (unsigned int)flash_size,
@@ -1199,6 +1205,160 @@ void BluetoothManager::generate_diagnostic_report() {
         send_chunk(buf);
     } else {
         snprintf(buf, sizeof(buf), "[CRASH DUMP] none - previous shutdown was clean\n\n");
+        send_chunk(buf);
+    }
+
+    // Section 1b2: Motor readiness. Placed this early because a motor that cannot
+    // actuate makes every other number in this report meaningless. Every actuation path
+    // - weight, time, motor test, autotune - returns early unless BOTH flags below are
+    // true, and they are set only if the RMT channel came up at boot. When they are
+    // false the grinder does nothing at all, in any mode, and previously said nothing
+    // about why: the failure was invisible to the log and absent from this report, so
+    // it was indistinguishable from a wiring fault.
+    {
+        Grinder* motor = hardware_manager.get_grinder();
+        if (!motor) {
+            snprintf(buf, sizeof(buf), "[MOTOR]\n  Grinder unavailable\n\n");
+        } else {
+            bool ready = motor->is_initialized() && motor->is_rmt_ready();
+            snprintf(buf, sizeof(buf),
+                "[MOTOR]\n"
+                "  Status: %s\n"
+                "  GPIO: %d\n"
+                "  Initialized: %s, RMT ready: %s\n"
+                "  RMT init result: %s\n"
+                "  Last transmit: %s\n"
+                "  Failures: %lu transmit, %lu encoder\n"
+                "\n",
+                ready ? "READY" : "DEAD - motor cannot run in any mode",
+                motor->get_motor_pin(),
+                motor->is_initialized() ? "yes" : "NO",
+                motor->is_rmt_ready() ? "yes" : "NO",
+                esp_err_to_name(motor->get_rmt_init_error()),
+                esp_err_to_name(motor->get_last_transmit_error()),
+                (unsigned long)motor->get_transmit_fail_count(),
+                (unsigned long)motor->get_encoder_fail_count());
+        }
+        send_chunk(buf);
+    }
+
+    // Section 1c: Algorithm state - what the device has actually learned, versus the
+    // compile-time constants listed further up
+    snprintf(buf, sizeof(buf),
+        "[ALGORITHM STATE]\n"
+        "  Motor latency (learned): %.1f ms\n"
+        "  Estimator window: %d ms, min %d samples\n"
+        "  Display filter: alpha %.2f down, deadband %.3f g\n"
+        "  Accuracy tolerance: %.3f g\n"
+        "  Min pulse delivery: %.3f g\n"
+        "  Coast: window %d, rank %d from top, pad %.3f s\n"
+        "  Coast accepted range: %.2f-%.2f s\n"
+        "\n",
+        grind_controller.get_motor_response_latency(),
+        SYS_CONTROL_FIT_WINDOW_MS, 3,
+        SYS_DISPLAY_FILTER_ALPHA_DOWN, SYS_DISPLAY_DEADBAND_G,
+        GRIND_ACCURACY_TOLERANCE_G,
+        GRIND_PULSE_MIN_DELIVERY_G,
+        GRIND_COAST_WINDOW_SIZE, GRIND_COAST_RANK_FROM_TOP, GRIND_COAST_TAIL_PAD_S,
+        GRIND_COAST_TIME_MIN_S, GRIND_COAST_TIME_MAX_S);
+    send_chunk(buf);
+
+    // Section 1d: Coast model - the stored measurements and how the prediction is
+    // picked from them. Read here rather than reusing the system-info snapshot, which
+    // is a different call. Persisted state is shown for all three profiles because the
+    // controller only holds the one belonging to the last session.
+    CoastWindow windows[3];
+    bool window_stored[3] = {false, false, false};
+    int32_t empty_ref = 0;
+    bool has_empty_ref = false;
+    {
+        Preferences report_prefs;
+        if (report_prefs.begin("grinder", true)) {
+            for (int i = 0; i < 3; i++) {
+                window_stored[i] = GrindController::read_coast_window(report_prefs, (uint8_t)i,
+                                                                     windows[i]);
+            }
+            has_empty_ref = report_prefs.isKey("hx_empty");
+            empty_ref = has_empty_ref ? report_prefs.getInt("hx_empty", 0) : 0;
+            report_prefs.end();
+        } else {
+            for (int i = 0; i < 3; i++) {
+                coast_window_reset(windows[i]);
+            }
+        }
+    }
+
+    snprintf(buf, sizeof(buf),
+        "[COAST MODEL]\n"
+        "  Prediction = rank %d of the last %d measurements, plus a %.3fs pad\n"
+        "  Empty-cradle reference: %s (%ld raw)\n",
+        GRIND_COAST_RANK_FROM_TOP, GRIND_COAST_WINDOW_SIZE, GRIND_COAST_TAIL_PAD_S,
+        has_empty_ref ? "stored" : "MISSING - calibrate to enable absolute weight",
+        (long)empty_ref);
+    send_chunk(buf);
+
+    for (int i = 0; i < 3; i++) {
+        if (!window_stored[i] || windows[i].count == 0) {
+            snprintf(buf, sizeof(buf), "  Profile %d: nothing learned yet\n", i);
+            send_chunk(buf);
+            continue;
+        }
+        snprintf(buf, sizeof(buf), "  Profile %d: %u samples, predicts %.3fs (quantile %.3fs)\n",
+                 i, (unsigned)windows[i].count,
+                 coast_window_prediction_s(windows[i]),
+                 coast_window_quantile_s(windows[i]));
+        send_chunk(buf);
+
+        float sorted[CoastWindow::CAPACITY];
+        int n = coast_window_sorted(windows[i], sorted, CoastWindow::CAPACITY);
+        // Chunked into a fixed-width line rather than one snprintf over the whole
+        // window, so a larger window later cannot silently overrun the buffer.
+        char list[128];
+        int offset = snprintf(list, sizeof(list), "    sorted:");
+        for (int s = 0; s < n && offset > 0 && (size_t)offset < sizeof(list); s++) {
+            int written = snprintf(list + offset, sizeof(list) - offset, " %.3f", sorted[s]);
+            if (written < 0 || (size_t)written >= sizeof(list) - offset) break;
+            offset += written;
+        }
+        snprintf(buf, sizeof(buf), "%s\n", list);
+        send_chunk(buf);
+    }
+
+    int coast_entries = grind_controller.get_coast_history_count();
+    if (coast_entries == 0) {
+        snprintf(buf, sizeof(buf), "  No grinds recorded since boot\n\n");
+        send_chunk(buf);
+    } else {
+        // Two lines per grind: what the model predicted against what actually happened,
+        // then where the dose landed. Splitting them keeps each inside one chunk and
+        // keeps the columns readable on a phone.
+        snprintf(buf, sizeof(buf), "  Last %d grinds, newest first:\n", coast_entries);
+        send_chunk(buf);
+        for (int i = 0; i < coast_entries; i++) {
+            const CoastObservation* entry = grind_controller.get_coast_history_entry(i);
+            if (!entry) continue;
+            if (entry->accepted) {
+                snprintf(buf, sizeof(buf),
+                         "   %5lus P%u predicted %.3fs (%.2fg) measured %.3fs (%.2fg @ %.2fg/s)\n",
+                         (unsigned long)entry->uptime_s, (unsigned)entry->profile_id,
+                         entry->predicted_s, entry->predicted_weight_g,
+                         entry->observed_s, entry->coast_weight_g, entry->flow_rate_gps);
+                send_chunk(buf);
+                snprintf(buf, sizeof(buf),
+                         "          landed %.2fg of %.2fg (%+.2fg%s) after %u pulses\n",
+                         entry->final_weight_g, entry->target_weight_g, entry->error_g,
+                         (entry->error_g > GRIND_ACCURACY_TOLERANCE_G) ? " OVERSHOOT" : "",
+                         (unsigned)entry->pulse_count);
+            } else {
+                snprintf(buf, sizeof(buf),
+                         "   %5lus P%u REJECTED %.3fs (%.2fg @ %.2fg/s) - %s\n",
+                         (unsigned long)entry->uptime_s, (unsigned)entry->profile_id,
+                         entry->observed_s, entry->coast_weight_g, entry->flow_rate_gps,
+                         entry->reason[0] ? entry->reason : "unknown");
+            }
+            send_chunk(buf);
+        }
+        snprintf(buf, sizeof(buf), "\n");
         send_chunk(buf);
     }
 
@@ -1875,83 +2035,6 @@ void BluetoothManager::generate_diagnostic_report() {
             snprintf(buf, sizeof(buf), "  %-15s %5lu free of %lu%s\n",
                      t.name, (unsigned long)free_bytes, (unsigned long)t.allocated,
                      (free_bytes < 512) ? "   <-- LOW" : "");
-            send_chunk(buf);
-        }
-        snprintf(buf, sizeof(buf), "\n");
-        send_chunk(buf);
-    }
-
-    // Section 15: Algorithm state - what the device has actually learned, versus the
-    // compile-time constants listed further up
-    snprintf(buf, sizeof(buf),
-        "[ALGORITHM STATE]\n"
-        "  Motor latency (learned): %.1f ms\n"
-        "  Estimator window: %d ms, min %d samples\n"
-        "  Display filter: alpha %.2f down, deadband %.3f g\n"
-        "  Accuracy tolerance: %.3f g\n"
-        "  Min pulse delivery: %.3f g\n"
-        "  Coast EWMA alpha: %.2f, accepted range %.2f-%.2f s\n"
-        "\n",
-        grind_controller.get_motor_response_latency(),
-        SYS_CONTROL_FIT_WINDOW_MS, 3,
-        SYS_DISPLAY_FILTER_ALPHA_DOWN, SYS_DISPLAY_DEADBAND_G,
-        GRIND_ACCURACY_TOLERANCE_G,
-        GRIND_PULSE_MIN_DELIVERY_G,
-        GRIND_COAST_LEARNING_ALPHA, GRIND_COAST_TIME_MIN_S, GRIND_COAST_TIME_MAX_S);
-    send_chunk(buf);
-
-    // Section 16: Coast model - the learned values and how they were arrived at.
-    // Read here rather than reusing the system-info snapshot, which is a different call.
-    float coast[3] = {0.0f, 0.0f, 0.0f};
-    int32_t empty_ref = 0;
-    bool has_empty_ref = false;
-    {
-        Preferences report_prefs;
-        if (report_prefs.begin("grinder", true)) {
-            for (int i = 0; i < 3; i++) {
-                char key[16];
-                snprintf(key, sizeof(key), "%s%d", GrindController::PREF_KEY_COAST_TIME_PREFIX, i);
-                coast[i] = report_prefs.getFloat(key, 0.0f);
-            }
-            has_empty_ref = report_prefs.isKey("hx_empty");
-            empty_ref = has_empty_ref ? report_prefs.getInt("hx_empty", 0) : 0;
-            report_prefs.end();
-        }
-    }
-
-    snprintf(buf, sizeof(buf),
-        "[COAST MODEL]\n"
-        "  Learned per profile: %.3f / %.3f / %.3f s\n"
-        "  Empty-cradle reference: %s (%ld raw)\n"
-        "  (0.000 means nothing has been learned yet for that profile)\n",
-        coast[0], coast[1], coast[2],
-        has_empty_ref ? "stored" : "MISSING - calibrate to enable absolute weight",
-        (long)empty_ref);
-    send_chunk(buf);
-
-    int coast_entries = grind_controller.get_coast_history_count();
-    if (coast_entries == 0) {
-        snprintf(buf, sizeof(buf), "  No coast observations recorded this session\n\n");
-        send_chunk(buf);
-    } else {
-        snprintf(buf, sizeof(buf), "  Last %d observations, newest first:\n", coast_entries);
-        send_chunk(buf);
-        for (int i = 0; i < coast_entries; i++) {
-            const CoastObservation* entry = grind_controller.get_coast_history_entry(i);
-            if (!entry) continue;
-            if (entry->accepted) {
-                snprintf(buf, sizeof(buf),
-                         "   %5lus P%u ACCEPTED %.3fs (%.2fg @ %.2fg/s) err %+.2fg\n",
-                         (unsigned long)entry->uptime_s, (unsigned)entry->profile_id,
-                         entry->observed_s, entry->coast_weight_g, entry->flow_rate_gps,
-                         entry->error_g);
-            } else {
-                snprintf(buf, sizeof(buf),
-                         "   %5lus P%u REJECTED %.3fs (%.2fg @ %.2fg/s) - %s\n",
-                         (unsigned long)entry->uptime_s, (unsigned)entry->profile_id,
-                         entry->observed_s, entry->coast_weight_g, entry->flow_rate_gps,
-                         entry->reason[0] ? entry->reason : "unknown");
-            }
             send_chunk(buf);
         }
         snprintf(buf, sizeof(buf), "\n");

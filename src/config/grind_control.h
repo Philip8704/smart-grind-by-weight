@@ -53,26 +53,42 @@ enum class GrinderPurgeMode {
 // LEARNED COAST MODEL (per profile, persisted)
 //------------------------------------------------------------------------------
 // Coast = coffee still in flight after the motor stops. Measured every grind as
-// (settled weight - weight at motor stop) / flow rate, then averaged across grinds.
-// Storing it as a TIME rather than a weight keeps it valid across dose sizes and
-// grind settings, since the weight it turns into scales with the current flow rate.
-// Deliberate bias toward stopping early. The predicted in-flight coffee is inflated by
-// this factor, so the motor cuts sooner than the model strictly says and the grind
-// lands a little light - which the correction pulses then top up.
+// (settled weight - weight at motor stop) / flow rate. Storing it as a TIME rather than
+// a weight keeps it valid across dose sizes and grind settings, since the weight it
+// turns into scales with the current flow rate.
 //
-// The asymmetry is the whole point: coffee still in the chute can be added by a pulse,
-// coffee already in the cup cannot be taken back. Aiming dead-on means overshooting
-// roughly half the time coast runs above its average. Above 1.0 = stop earlier =
-// undershoot; below 1.0 would stop later and overshoot, which is what we are avoiding.
-#define GRIND_COAST_SAFETY_FACTOR 1.15f                                   // Predict 15% more in flight than measured
+// The model keeps the last few measurements and predicts with a HIGH QUANTILE of them
+// rather than with an average. That choice follows directly from the cost being
+// one-sided: coffee still in the chute can be topped up by a pulse, coffee already in
+// the cup cannot be taken back. An average is the right answer when overshooting and
+// undershooting cost the same, and the wrong one here - it is beaten by roughly half
+// of all grinds by construction. The quantile that minimises a one-sided cost is the
+// upper one, so that is what gets predicted.
+//
+// Why a window of real measurements instead of a running average plus a safety factor:
+// a running average has to be nudged after every grind, and any scheme that nudges it
+// harder in one direction than the other ratchets. The visible symptom is hunting -
+// creep down over several grinds, one overshoot, a large correction down, creep back
+// up - which never settles. A window cannot do that. The predicted value is always one
+// of the measurements actually taken, so it can only ever move to another value the
+// grinder has really produced, and it can never wander outside the range of observed
+// behaviour no matter how the errors fall.
+//
+// The rank is counted from the top of the window: 1 = highest of the window, which
+// estimates the N/(N+1) quantile (about the 89th percentile at N=8), 2 = second
+// highest (about the 78th), which is immune to a single freak measurement at the cost
+// of predicting lower. Rank 1 is the default because the failure it risks is an extra
+// correction pulse, and the failure the alternative risks is an overshoot.
+#define GRIND_COAST_WINDOW_SIZE 8                                         // Measurements kept per profile
+#define GRIND_COAST_RANK_FROM_TOP 1                                       // Which order statistic to predict with (1 = highest)
 
-// EWMA weight of the newest observation. Effective memory is roughly 1/alpha, so this
-// averages over about 8 grinds. Longer than it needs to be for a stable machine, but
-// observations now include overshoots and undershoots as well as clean grinds, and a
-// wider average keeps one unusual dose from moving the model much. The cost is that a
-// genuine change - new beans, a grind setting adjustment - takes about 8 grinds to
-// track rather than 4.
-#define GRIND_COAST_LEARNING_ALPHA 0.125f
+// A window of eight can only resolve a quantile as fine as one part in nine, so it
+// cannot see the tail beyond about the 89th percentile on its own. This pad reaches a
+// little past what the samples can show, and also covers the very first grinds when
+// the window holds one or two entries and says almost nothing about spread. At a
+// typical 1.2 g/s it is worth well under a tenth of a gram - about one short pulse.
+#define GRIND_COAST_TAIL_PAD_S 0.02f
+
 #define GRIND_COAST_TIME_MIN_S 0.05f                                      // Reject observations below this as measurement noise
 #define GRIND_COAST_TIME_MAX_S 1.50f                                      // Reject observations above this as a stalled or mis-settled grind
 

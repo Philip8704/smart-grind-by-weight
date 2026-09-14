@@ -98,19 +98,26 @@ void WeightGrindStrategy::run_predictive_phase(GrindController& controller,
 
             if (current_flow_rate > GRIND_FLOW_DETECTION_THRESHOLD_GPS) {
                 // Coffee still in flight when the motor stops = coast time x flow rate.
-                // Coast time comes from previous grinds on this profile; only the very
-                // first grind falls back to guessing it from the spin-up latency, which
-                // measures chute fill rather than burr spin-down and is only a seed.
-                float coast_time_s = controller.get_learned_coast_time_s();
-                if (coast_time_s <= 0.0f) {
-                    coast_time_s = (controller.grind_latency_ms * GRIND_LATENCY_TO_COAST_RATIO) /
-                                   (float)SYS_MS_PER_SECOND;
+                //
+                // The coast time is an upper quantile of what this profile has actually
+                // measured, not an average of it, because the two ways of being wrong
+                // do not cost the same: predicting too little lands the grind heavy and
+                // nothing can undo that, predicting too much lands it light and a pulse
+                // fixes it. Only the very first grind on a profile falls back to
+                // guessing from the spin-up latency, which measures chute fill rather
+                // than burr spin-down and is a seed rather than a measurement.
+                float predicted_coast_s = controller.get_coast_prediction_s();
+                if (predicted_coast_s <= 0.0f) {
+                    predicted_coast_s = (controller.grind_latency_ms * GRIND_LATENCY_TO_COAST_RATIO) /
+                                        (float)SYS_MS_PER_SECOND +
+                                        GRIND_COAST_TAIL_PAD_S;
                 }
-                // Inflated on purpose - see GRIND_COAST_SAFETY_FACTOR. Overestimating
-                // what is still falling stops the motor early and lands light, which a
-                // pulse can fix; underestimating lands heavy, which nothing can.
-                controller.motor_stop_target_weight =
-                    coast_time_s * current_flow_rate * GRIND_COAST_SAFETY_FACTOR;
+                controller.motor_stop_target_weight = predicted_coast_s * current_flow_rate;
+
+                // Held so the observation that follows can be logged against what was
+                // actually predicted. Recomputing it later would read a window that the
+                // previous grind may already have moved.
+                controller.coast_predicted_s_ = predicted_coast_s;
 
                 // Remember which flow figure this prediction was built on. The coast
                 // observation has to divide by the same one, or the units do not

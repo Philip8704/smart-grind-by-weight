@@ -20,6 +20,38 @@ class DiagnosticsController;
 struct GrindEventData;
 
 
+// The last few coast measurements for one profile, oldest overwritten first.
+//
+// The prediction is an order statistic of these rather than an average of them, so the
+// value the grinder acts on is always one the grinder actually produced. See the
+// GRIND_COAST_* block in grind_control.h for why that matters. Small and POD so it can
+// be copied through the flash-op queue and written to NVS as one blob.
+struct CoastWindow {
+    // An enumerator rather than a static const member: it gets passed by value as a
+    // buffer length below, which would odr-use a static data member and need an
+    // out-of-line definition to link under C++11/14. Nothing in platformio.ini pins
+    // the standard, so it follows whichever framework version is installed.
+    enum : int { CAPACITY = GRIND_COAST_WINDOW_SIZE };
+    float samples[CAPACITY];
+    uint8_t count;   // Valid entries held, up to CAPACITY
+    uint8_t next;    // Slot the next measurement overwrites
+};
+
+void coast_window_reset(CoastWindow& window);
+void coast_window_push(CoastWindow& window, float observed_s);
+
+// Value the predictive stop should use, pad included, or 0 when nothing is stored yet
+float coast_window_prediction_s(const CoastWindow& window);
+
+// Selected order statistic without the pad - what the window says coast actually is
+float coast_window_quantile_s(const CoastWindow& window);
+
+// Copies the samples into `out` sorted ascending. Returns how many were written.
+int coast_window_sorted(const CoastWindow& window, float* out, int out_capacity);
+
+// True if the blob read back from NVS is self-consistent and every sample is in range
+bool coast_window_is_valid(const CoastWindow& window);
+
 // Flash operation request structure for Core 0 → Core 1 communication
 struct FlashOpRequest {
     enum Type {
@@ -37,9 +69,9 @@ struct FlashOpRequest {
 
     // Settings that need persisting at the end of a session. They ride along here so
     // the NVS writes happen on the file IO task instead of blocking the control loop.
-    bool persist_coast_time;
+    bool persist_coast_window;
     uint8_t coast_profile_id;
-    float coast_time_s;
+    CoastWindow coast_window;
 };
 
 // Log message structure for Core 0 → Core 1 communication
@@ -86,15 +118,26 @@ enum class GrindPhase {
 // One coast measurement and what became of it. Kept as a short history so the
 // diagnostic report can show whether the model is actually learning, and if not, why
 // its observations keep being thrown away.
+//
+// Both halves of the comparison are stored, not just the measurement. Knowing that
+// coast came out at 0.29s says nothing on its own; knowing the model had predicted
+// 0.34s and the grind then landed 0.01g under target is the whole picture, and it is
+// not recoverable afterwards because the window has already moved on by the time
+// anyone reads the report.
 struct CoastObservation {
-    uint32_t uptime_s;       // When it was taken
-    float observed_s;        // Measured coast time, 0 if it never got that far
-    float coast_weight_g;    // Coffee that arrived after the motor stopped
-    float flow_rate_gps;     // Flow at motor stop, what the time was derived from
-    float error_g;           // Final weight minus target, only meaningful once judged
+    uint32_t uptime_s;         // When it was taken
+    float predicted_s;         // What the model expected before the grind, pad included
+    float predicted_weight_g;  // That prediction turned into grams at the measured flow
+    float observed_s;          // Measured coast time, 0 if it never got that far
+    float coast_weight_g;      // Coffee that arrived after the motor stopped
+    float flow_rate_gps;       // Flow at motor stop, what the time was derived from
+    float target_weight_g;     // Dose that was asked for
+    float final_weight_g;      // Dose that was delivered, 0 until the grind is judged
+    float error_g;             // Final weight minus target, only meaningful once judged
+    uint8_t pulse_count;       // Correction pulses it took to get there
     uint8_t profile_id;
     bool accepted;
-    char reason[24];         // Why it was rejected, empty when accepted
+    char reason[24];           // Why it was rejected, empty when accepted
 };
 
 struct PulseReport {
@@ -227,10 +270,14 @@ private:
     uint64_t last_purge_runtime_ms;      // Runtime when last grind completed (persisted)
 
     // Learned coast model - see GRIND_COAST_* in grind_control.h
-    float learned_coast_time_s;          // Coast time for the profile of the running session (0 = never learned)
-    bool coast_time_dirty_;              // A new observation is waiting to be written to NVS at session end
+    CoastWindow coast_window_;           // Measurements for the profile of the running session
+    bool coast_window_dirty_;            // A new measurement is waiting to be written to NVS at session end
 
-    // A coast observation is measured mid-grind but only folded into the average once
+    // What the predictive stop actually used this grind. Held so the history entry can
+    // show the prediction next to the measurement that followed it.
+    float coast_predicted_s_;
+
+    // A coast observation is measured mid-grind but only folded into the window once
     // the grind finishes cleanly, because whether it hit the target is not known yet
     float pending_coast_time_s_;         // Candidate from this session (0 = nothing pending)
 
@@ -249,6 +296,7 @@ private:
 
     void record_coast_observation(float observed_s, float coast_weight_g, float flow_rate_gps,
                                   bool accepted, const char* reason);
+    void log_coast_window(const char* prefix);   // Queues the window contents as one line
 
     // Rolling history of errors, so a fault that has since been acknowledged is still
     // visible in the report
@@ -320,7 +368,8 @@ public:
     static constexpr const char* PREF_KEY_GRINDER_MODE = "grinder_mode";
     static constexpr const char* PREF_KEY_GRINDER_AMOUNT_G = "grinder_amount_g";
     static constexpr const char* PREF_KEY_GRIND_FRESHNESS_HOURS = "freshness_hrs";
-    static constexpr const char* PREF_KEY_COAST_TIME_PREFIX = "coast";  // Suffixed with the profile id, e.g. "coast1"
+    static constexpr const char* PREF_KEY_COAST_TIME_PREFIX = "coast";    // Legacy single-value key, read once to migrate
+    static constexpr const char* PREF_KEY_COAST_WINDOW_PREFIX = "coastw"; // Suffixed with the profile id, e.g. "coastw1"
     GrindMode get_mode() const { return mode; }
     const GrindSessionDescriptor& get_session_descriptor() const { return session_descriptor; }
     
@@ -358,7 +407,18 @@ public:
 
     // Learned coast model. Coast is stored as a time so it stays valid across dose
     // sizes and grind settings - the weight it predicts scales with the live flow rate.
-    float get_learned_coast_time_s() const { return learned_coast_time_s; }
+    //
+    // The prediction includes the tail pad and is what the predictive stop multiplies
+    // by the live flow; the quantile is the same figure without the pad, for reporting.
+    // Both return 0 when the profile has no measurements yet, which is the caller's cue
+    // to fall back to the latency seed.
+    float get_coast_prediction_s() const { return coast_window_prediction_s(coast_window_); }
+    float get_learned_coast_time_s() const { return coast_window_quantile_s(coast_window_); }
+    const CoastWindow& get_coast_window() const { return coast_window_; }
+
+    // Reads one profile's window straight from NVS, for callers that need a profile
+    // other than the running session's. Returns false if nothing valid is stored.
+    static bool read_coast_window(Preferences& prefs, uint8_t profile_id, CoastWindow& out);
 
     // Diagnostic accessors - newest first
     int get_coast_history_count() const { return coast_history_count_; }
@@ -370,7 +430,7 @@ public:
     void observe_coast(float coast_weight_g);   // Record this grind's measured coast as a candidate
     void commit_coast_observation();            // Accept the candidate if the grind finished cleanly
     void discard_coast_observation(const char* reason);
-    void load_coast_time(uint8_t profile_id);   // Read the profile's learned value from NVS
+    void load_coast_time(uint8_t profile_id);   // Read the profile's window from NVS into coast_window_
     
     // Removed - predictive logic now inline in update_realtime()
     

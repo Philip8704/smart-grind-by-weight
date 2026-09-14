@@ -22,6 +22,107 @@
 
 static constexpr float NO_WEIGHT_DELIVERED_THRESHOLD_G = 0.2f;
 
+//------------------------------------------------------------------------------
+// Coast measurement window
+//------------------------------------------------------------------------------
+// A ring of the last few coast times for one profile, and the order statistic the
+// predictive stop reads off it. See GRIND_COAST_* in grind_control.h for why the
+// prediction is a quantile of real measurements rather than a running average.
+
+void coast_window_reset(CoastWindow& window) {
+    // memset rather than field-by-field so the trailing padding is zeroed too. The
+    // struct is written to NVS as a raw blob, and leaving padding uninitialised would
+    // make an unchanged window serialise differently each boot - which NVS cannot tell
+    // from a real change, so it would rewrite the entry every grind for no reason.
+    memset(&window, 0, sizeof(CoastWindow));
+}
+
+void coast_window_push(CoastWindow& window, float observed_s) {
+    if (!isfinite(observed_s) ||
+        observed_s < GRIND_COAST_TIME_MIN_S ||
+        observed_s > GRIND_COAST_TIME_MAX_S) {
+        return;
+    }
+    // Guard the index rather than trusting it: this struct round-trips through NVS,
+    // and a stale or truncated blob must not be able to write outside the array.
+    if (window.next >= CoastWindow::CAPACITY) {
+        window.next = 0;
+    }
+    window.samples[window.next] = observed_s;
+    window.next = (uint8_t)((window.next + 1) % CoastWindow::CAPACITY);
+    if (window.count < CoastWindow::CAPACITY) {
+        window.count++;
+    }
+}
+
+int coast_window_sorted(const CoastWindow& window, float* out, int out_capacity) {
+    if (!out || out_capacity <= 0) {
+        return 0;
+    }
+    int n = window.count;
+    if (n > CoastWindow::CAPACITY) n = CoastWindow::CAPACITY;
+    if (n > out_capacity) n = out_capacity;
+
+    for (int i = 0; i < n; i++) {
+        out[i] = window.samples[i];
+    }
+    // Insertion sort ascending. At most eight elements, so the simplest thing that
+    // works is also the fastest, and it runs once per grind rather than per cycle.
+    for (int i = 1; i < n; i++) {
+        float key = out[i];
+        int j = i - 1;
+        while (j >= 0 && out[j] > key) {
+            out[j + 1] = out[j];
+            j--;
+        }
+        out[j + 1] = key;
+    }
+    return n;
+}
+
+float coast_window_quantile_s(const CoastWindow& window) {
+    float sorted[CoastWindow::CAPACITY];
+    int n = coast_window_sorted(window, sorted, CoastWindow::CAPACITY);
+    if (n <= 0) {
+        return 0.0f;
+    }
+    // Rank counted from the top, clamped to what the window actually holds so the
+    // first grinds - when only one or two measurements exist - still return the
+    // highest of them rather than reading off the end of the array.
+    int rank = GRIND_COAST_RANK_FROM_TOP;
+    if (rank < 1) rank = 1;
+    if (rank > n) rank = n;
+    return sorted[n - rank];
+}
+
+float coast_window_prediction_s(const CoastWindow& window) {
+    float quantile = coast_window_quantile_s(window);
+    if (quantile <= 0.0f) {
+        return 0.0f;  // Nothing learned yet - caller falls back to the latency seed
+    }
+    float predicted = quantile + GRIND_COAST_TAIL_PAD_S;
+    // The pad can only push the prediction past the sanity ceiling, never below the
+    // floor, but both ends are clamped so a corrupted window cannot reach the motor.
+    if (predicted < GRIND_COAST_TIME_MIN_S) predicted = GRIND_COAST_TIME_MIN_S;
+    if (predicted > GRIND_COAST_TIME_MAX_S) predicted = GRIND_COAST_TIME_MAX_S;
+    return predicted;
+}
+
+bool coast_window_is_valid(const CoastWindow& window) {
+    if (window.count > CoastWindow::CAPACITY || window.next >= CoastWindow::CAPACITY) {
+        return false;
+    }
+    // Only the occupied slots are checked. Unused ones are left at zero by
+    // coast_window_reset and would fail a range test that the ring never reads.
+    for (int i = 0; i < window.count; i++) {
+        float s = window.samples[i];
+        if (!isfinite(s) || s < GRIND_COAST_TIME_MIN_S || s > GRIND_COAST_TIME_MAX_S) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     weight_sensor = lc;
     grinder = gr;
@@ -47,8 +148,9 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     // Initialize grind freshness tracking
     grinder_purged_since_boot = false;
     last_purge_runtime_ms = 0;
-    learned_coast_time_s = 0.0f;
-    coast_time_dirty_ = false;
+    coast_window_reset(coast_window_);
+    coast_window_dirty_ = false;
+    coast_predicted_s_ = 0.0f;
     pending_coast_time_s_ = 0.0f;
     coast_prediction_flow_gps = 0.0f;
     anomaly_count_at_motor_stop_ = 0;
@@ -248,13 +350,14 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     // Only weight grinds use, or can measure, the coast model
     pending_coast_time_s_ = 0.0f;
     coast_prediction_flow_gps = 0.0f;
+    coast_predicted_s_ = 0.0f;
     anomaly_count_at_motor_stop_ = 0;
     pending_observation_ = nullptr;
     if (mode == GrindMode::WEIGHT) {
         load_coast_time(current_profile_id);
     } else {
-        learned_coast_time_s = 0.0f;
-        coast_time_dirty_ = false;
+        coast_window_reset(coast_window_);
+        coast_window_dirty_ = false;
     }
 
     // Initialize pulse tracking
@@ -774,10 +877,10 @@ void GrindController::update() {
                 request.pulse_count = pulse_attempts;
 
                 // Piggyback the session's NVS writes so they land off the control loop
-                request.persist_coast_time = coast_time_dirty_;
+                request.persist_coast_window = coast_window_dirty_;
                 request.coast_profile_id = session_descriptor.profile_id;
-                request.coast_time_s = learned_coast_time_s;
-                coast_time_dirty_ = false;
+                request.coast_window = coast_window_;
+                coast_window_dirty_ = false;
 
                 queue_flash_operation(request);
                 
@@ -1300,11 +1403,14 @@ void GrindController::process_queued_flash_operations() {
                 // Session settings are persisted here rather than on the control loop,
                 // where a blocking flash write would stall grind timing
                 if (preferences) {
-                    if (request.persist_coast_time) {
+                    // Refuse to write a window that would fail validation on the way
+                    // back in. Storing one would leave the profile permanently seeded
+                    // from latency, since the load path resets anything it cannot trust.
+                    if (request.persist_coast_window && coast_window_is_valid(request.coast_window)) {
                         char key[16];
-                        snprintf(key, sizeof(key), "%s%u", PREF_KEY_COAST_TIME_PREFIX,
+                        snprintf(key, sizeof(key), "%s%u", PREF_KEY_COAST_WINDOW_PREFIX,
                                  (unsigned)request.coast_profile_id);
-                        preferences->putFloat(key, request.coast_time_s);
+                        preferences->putBytes(key, &request.coast_window, sizeof(CoastWindow));
                     }
                 }
                 break;
@@ -1378,26 +1484,87 @@ void GrindController::set_error_message(const char* message) {
     }
 }
 
+bool GrindController::read_coast_window(Preferences& prefs, uint8_t profile_id, CoastWindow& out) {
+    coast_window_reset(out);
+
+    char key[16];
+    snprintf(key, sizeof(key), "%s%u", PREF_KEY_COAST_WINDOW_PREFIX, (unsigned)profile_id);
+
+    // getBytes into a scratch copy first: a short read leaves the destination partly
+    // written, and validating a half-filled struct is not the same as rejecting it.
+    CoastWindow scratch;
+    coast_window_reset(scratch);
+    // getBytes returns the STORED length when it differs from the buffer size, and
+    // having already copied that many bytes in if it was the shorter of the two, so a
+    // short blob leaves scratch part-written. Requiring an exact-size read rejects
+    // both that and a missing key, and scratch is discarded either way.
+    size_t read = prefs.getBytes(key, &scratch, sizeof(CoastWindow));
+    if (read == sizeof(CoastWindow) && coast_window_is_valid(scratch) && scratch.count > 0) {
+        out = scratch;
+        return true;
+    }
+
+    // No usable window. A device updated from a build that stored a single averaged
+    // value still has one, and throwing it away would make the next grind guess coast
+    // from spin-up latency, which is a far worse starting point than a real
+    // measurement. Seed the window with it and let real measurements displace it.
+    char legacy_key[16];
+    snprintf(legacy_key, sizeof(legacy_key), "%s%u", PREF_KEY_COAST_TIME_PREFIX, (unsigned)profile_id);
+    float legacy = prefs.getFloat(legacy_key, 0.0f);
+    if (isfinite(legacy) && legacy >= GRIND_COAST_TIME_MIN_S && legacy <= GRIND_COAST_TIME_MAX_S) {
+        coast_window_push(out, legacy);
+        return true;
+    }
+    return false;
+}
+
 void GrindController::load_coast_time(uint8_t profile_id) {
-    learned_coast_time_s = 0.0f;
-    coast_time_dirty_ = false;
+    coast_window_reset(coast_window_);
+    coast_window_dirty_ = false;
 
     if (!preferences) {
         return;
     }
 
-    char key[16];
-    snprintf(key, sizeof(key), "%s%u", PREF_KEY_COAST_TIME_PREFIX, (unsigned)profile_id);
-    float stored = preferences->getFloat(key, 0.0f);
+    if (read_coast_window(*preferences, profile_id, coast_window_)) {
+        LOG_BLE("[CONTROLLER] Profile %u coast window: %u samples, predicting %.3fs\n",
+                (unsigned)profile_id, (unsigned)coast_window_.count,
+                coast_window_prediction_s(coast_window_));
+    } else {
+        LOG_BLE("[CONTROLLER] Profile %u has no coast history - seeding from latency\n",
+                (unsigned)profile_id);
+    }
+}
 
-    // Guard against a corrupted or out-of-range value putting the predictive
-    // stop somewhere absurd - fall back to seeding from latency instead
-    if (!isfinite(stored) || stored < GRIND_COAST_TIME_MIN_S || stored > GRIND_COAST_TIME_MAX_S) {
-        return;
+void GrindController::log_coast_window(const char* prefix) {
+    // One line listing every measurement the prediction was chosen from, so a report
+    // read days later shows the spread rather than just the number that came out of it.
+    float sorted[CoastWindow::CAPACITY];
+    int n = coast_window_sorted(coast_window_, sorted, CoastWindow::CAPACITY);
+
+    // Eight samples print as "0.318 " each, so 64 bytes holds the full window with room
+    // to spare and still leaves the fixed text inside the 128-byte log message buffer.
+    char list[64];
+    int offset = 0;
+    for (int i = 0; i < n; i++) {
+        int written = snprintf(list + offset, sizeof(list) - offset, "%s%.3f",
+                               (i > 0) ? " " : "", sorted[i]);
+        // snprintf returns what it WOULD have written, so a truncated tail must stop
+        // the loop rather than advance the offset past the end of the buffer
+        if (written < 0 || (size_t)written >= sizeof(list) - offset) {
+            break;
+        }
+        offset += written;
+    }
+    list[sizeof(list) - 1] = '\0';
+    if (n == 0) {
+        snprintf(list, sizeof(list), "empty");
     }
 
-    learned_coast_time_s = stored;
-    LOG_BLE("[CONTROLLER] Profile %u learned coast time: %.3fs\n", (unsigned)profile_id, stored);
+    queue_log_message("%s window [%s] n=%u -> %.3fs +%.3fs pad = %.3fs\n",
+                      prefix, list, (unsigned)coast_window_.count,
+                      coast_window_quantile_s(coast_window_), GRIND_COAST_TAIL_PAD_S,
+                      coast_window_prediction_s(coast_window_));
 }
 
 void GrindController::record_coast_observation(float observed_s, float coast_weight_g,
@@ -1405,10 +1572,16 @@ void GrindController::record_coast_observation(float observed_s, float coast_wei
                                                const char* reason) {
     CoastObservation& entry = coast_history_[coast_history_next_];
     entry.uptime_s = (uint32_t)(millis() / 1000);
+    entry.predicted_s = coast_predicted_s_;
+    entry.predicted_weight_g = motor_stop_target_weight;
     entry.observed_s = observed_s;
     entry.coast_weight_g = coast_weight_g;
     entry.flow_rate_gps = flow_rate_gps;
-    entry.error_g = 0.0f;  // Filled in later if the grind gets far enough to be judged
+    entry.target_weight_g = target_weight;
+    // Filled in later if the grind gets far enough to be judged
+    entry.final_weight_g = 0.0f;
+    entry.error_g = 0.0f;
+    entry.pulse_count = 0;
     entry.profile_id = session_descriptor.profile_id;
     entry.accepted = accepted;
     if (reason && reason[0]) {
@@ -1458,11 +1631,18 @@ void GrindController::observe_coast(float coast_weight_g) {
     // Convert the observed coast weight into a time using the SAME flow figure the
     // prediction was built on, so the multiply and divide cancel. Using pulse_flow_rate
     // here - a 95th percentile, and so higher than the mean the prediction uses - made
-    // every learned coast come out short by that ratio, roughly 20-25%, which the
-    // safety factor could not cover and showed up as a persistent overshoot.
+    // every learned coast come out short by that ratio, roughly 20-25%, which showed up
+    // as a persistent overshoot no amount of headroom could cover.
     float flow_rate = (coast_prediction_flow_gps > 0.0f) ? coast_prediction_flow_gps
                                                          : pulse_flow_rate;
     if (!isfinite(coast_weight_g) || flow_rate < GRIND_FLOW_RATE_MIN_SANE_GPS) {
+        // Recorded rather than dropped. This fires when the predictive phase never got
+        // a usable flow reading, so the stop happened on the fallback undershoot target
+        // instead of a real prediction. Returning quietly left the grind missing from
+        // the history entirely, which reads as "the model learned nothing" without
+        // saying why - the one question the report exists to answer.
+        queue_log_message("[COAST] Rejected - no usable flow rate (%.2fg/s)\n", flow_rate);
+        record_coast_observation(0.0f, coast_weight_g, flow_rate, false, "no flow rate");
         return;
     }
 
@@ -1488,7 +1668,8 @@ void GrindController::observe_coast(float coast_weight_g) {
     // until it finishes, and a grind that missed teaches the wrong coast
     pending_coast_time_s_ = observed_s;
     record_coast_observation(observed_s, coast_weight_g, flow_rate, true, nullptr);
-    queue_log_message("[COAST] Candidate %.3fs (%.2fg at %.2fg/s), pending grind outcome\n",
+    queue_log_message("[COAST] Predicted %.3fs (%.2fg), measured %.3fs (%.2fg at %.2fg/s)\n",
+                      coast_predicted_s_, motor_stop_target_weight,
                       observed_s, coast_weight_g, flow_rate);
 }
 
@@ -1528,23 +1709,26 @@ void GrindController::commit_coast_observation() {
     float observed_s = pending_coast_time_s_;
     pending_coast_time_s_ = 0.0f;
     if (pending_observation_) {
+        pending_observation_->final_weight_g = final_weight;
         pending_observation_->error_g = error;
+        pending_observation_->pulse_count = (uint8_t)pulse_attempts;
         pending_observation_ = nullptr;
     }
 
-    if (learned_coast_time_s <= 0.0f) {
-        learned_coast_time_s = observed_s;  // First clean grind on this profile seeds the average
-    } else {
-        learned_coast_time_s = GRIND_COAST_LEARNING_ALPHA * observed_s +
-                               (1.0f - GRIND_COAST_LEARNING_ALPHA) * learned_coast_time_s;
-    }
-    coast_time_dirty_ = true;
+    // The measurement simply joins the window; nothing is averaged and no rate decides
+    // how far the model moves. What the next grind predicts is whichever of the stored
+    // measurements the rank selects, so a single grind can only change the prediction
+    // by displacing the oldest sample - never by dragging an estimate toward itself.
+    // That is what stops the model hunting: there is no accumulator to ratchet.
+    coast_window_push(coast_window_, observed_s);
+    coast_window_dirty_ = true;
 
-    queue_log_message("[COAST] Accepted %.3fs (%s, error %+.2fg), learned now %.3fs\n",
+    queue_log_message("[COAST] Accepted %.3fs (%s, %.2fg vs %.2fg target, %+.2fg, %d pulses)\n",
                       observed_s,
                       (fabsf(error) <= GRIND_ACCURACY_TOLERANCE_G) ? "on target"
-                          : (error > 0.0f ? "overshot" : "undershot"),
-                      error, learned_coast_time_s);
+                          : (error > 0.0f ? "OVERSHOT" : "undershot"),
+                      final_weight, target_weight, error, pulse_attempts);
+    log_coast_window("[COAST]");
 }
 
 
