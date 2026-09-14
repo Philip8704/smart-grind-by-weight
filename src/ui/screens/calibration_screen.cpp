@@ -76,7 +76,7 @@ void CalibrationScreen::create() {
     lv_obj_add_flag(weight_input, LV_OBJ_FLAG_HIDDEN);
 
     current_step = CAL_STEP_EMPTY;
-    calibration_weight = 20.0f; // Default calibration weight
+    calibration_weight = USER_CALIBRATION_REFERENCE_WEIGHT_G;
     visible = false;
     lv_obj_add_flag(screen, LV_OBJ_FLAG_HIDDEN);
 }
@@ -169,6 +169,13 @@ void CalibrationScreen::update_current_weight(float weight) {
         }
         lv_label_set_text(weight_label, weight_text);
     }
+}
+
+float CalibrationScreen::clamp_calibration_weight(float weight) {
+    if (!isfinite(weight)) return USER_CALIBRATION_REFERENCE_WEIGHT_G;
+    if (weight < USER_CALIBRATION_MIN_WEIGHT_G) return USER_CALIBRATION_MIN_WEIGHT_G;
+    if (weight > USER_CALIBRATION_MAX_WEIGHT_G) return USER_CALIBRATION_MAX_WEIGHT_G;
+    return weight;
 }
 
 void CalibrationScreen::update_calibration_weight(float weight) {

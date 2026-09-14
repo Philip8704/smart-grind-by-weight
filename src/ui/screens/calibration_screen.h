@@ -50,4 +50,8 @@ public:
     lv_obj_t* get_minus_btn() const { return minus_btn; }
     lv_obj_t* get_weight_input() const { return weight_input; }
     float get_calibration_weight() const { return calibration_weight; }
+
+    // Reference-mass range, deliberately not the dose range. Callers adjusting the
+    // value must clamp through this rather than ProfileController::clamp_weight.
+    static float clamp_calibration_weight(float weight);
 };

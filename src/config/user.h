@@ -40,7 +40,14 @@
 //------------------------------------------------------------------------------
 // SCALE CALIBRATION
 //------------------------------------------------------------------------------
-#define USER_CALIBRATION_REFERENCE_WEIGHT_G 100.0f                             // Default reference weight for calibration
+// Calibration uses a reference mass, not a dose, so it has its own range. It used to
+// borrow the target-weight clamp, which meant capping the target at 30g - a sane limit
+// for a shot of coffee - silently capped the calibration weight at 30g too, and no
+// ordinary calibration weight is that light.
+#define USER_CALIBRATION_REFERENCE_WEIGHT_G 400.0f                             // Default reference weight for calibration
+#define USER_CALIBRATION_MIN_WEIGHT_G 50.0f                                    // Below this a reference mass is too light to calibrate well
+#define USER_CALIBRATION_MAX_WEIGHT_G 1000.0f                                  // Upper bound for the reference mass
+#define USER_CALIBRATION_ADJUSTMENT_G 1.0f                                     // Step per press. 0.1g steps need 6000 presses to cross this range
 #define USER_DEFAULT_CALIBRATION_FACTOR -7050.0f                               // Default load cell calibration factor
 
 // Plausible magnitude for a calibration factor, in ADC counts per gram. The sign

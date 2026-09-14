@@ -602,7 +602,17 @@ float WeightSensor::get_saved_calibration_weight() {
     return USER_CALIBRATION_REFERENCE_WEIGHT_G;
 #endif
     if (prefs) {
-        return prefs->getFloat("hx_wt", USER_CALIBRATION_REFERENCE_WEIGHT_G);
+        // Range-checked on the way out, not just on the way in. Devices that ran the
+        // build where calibration borrowed the 5-30g dose clamp have a reference mass
+        // stored that no real calibration weight matches, and it would otherwise be
+        // restored on every boot.
+        float stored = prefs->getFloat("hx_wt", USER_CALIBRATION_REFERENCE_WEIGHT_G);
+        if (!isfinite(stored) ||
+            stored < USER_CALIBRATION_MIN_WEIGHT_G ||
+            stored > USER_CALIBRATION_MAX_WEIGHT_G) {
+            return USER_CALIBRATION_REFERENCE_WEIGHT_G;
+        }
+        return stored;
     }
     return USER_CALIBRATION_REFERENCE_WEIGHT_G;
 }

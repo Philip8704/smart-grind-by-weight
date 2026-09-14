@@ -74,8 +74,8 @@ void JogAdjustController::handle_timer(lv_timer_t* timer) {
                                                             ui_manager_->edit_target + ui_manager_->jog_direction * traits.fine_increment);
         } else if (ui_manager_->state_machine->is_state(UIState::CALIBRATION)) {
             float cal_weight = ui_manager_->calibration_screen.get_calibration_weight();
-            cal_weight = ui_manager_->profile_controller->clamp_weight(
-                cal_weight + ui_manager_->jog_direction * USER_FINE_WEIGHT_ADJUSTMENT_G);
+            cal_weight = CalibrationScreen::clamp_calibration_weight(
+                cal_weight + ui_manager_->jog_direction * USER_CALIBRATION_ADJUSTMENT_G);
             ui_manager_->calibration_screen.update_calibration_weight(cal_weight);
         }
     }
