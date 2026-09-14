@@ -47,7 +47,7 @@
 #define USER_CALIBRATION_REFERENCE_WEIGHT_G 400.0f                             // Default reference weight for calibration
 #define USER_CALIBRATION_MIN_WEIGHT_G 50.0f                                    // Below this a reference mass is too light to calibrate well
 #define USER_CALIBRATION_MAX_WEIGHT_G 1000.0f                                  // Upper bound for the reference mass
-#define USER_CALIBRATION_ADJUSTMENT_G 1.0f                                     // Step per press. 0.1g steps need 6000 presses to cross this range
+#define USER_CALIBRATION_ADJUSTMENT_G 0.1f                                     // Step per press; holding ramps up through the jog stages
 #define USER_DEFAULT_CALIBRATION_FACTOR -7050.0f                               // Default load cell calibration factor
 
 // Plausible magnitude for a calibration factor, in ADC counts per gram. The sign
