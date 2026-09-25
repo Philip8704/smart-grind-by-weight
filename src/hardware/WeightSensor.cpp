@@ -34,6 +34,9 @@ WeightSensor::WeightSensor() {
     current_weight = 0.0;
     current_temperature = NAN;
     current_raw_adc = 0;
+    snapshot_raw_adc_ = 0;
+    snapshot_timestamp_ms_ = 0;
+    snapshot_seq_ = 0;
     last_update = 0;
     data_available = false;
     prefs = nullptr;
@@ -95,6 +98,9 @@ void WeightSensor::init(Preferences* preferences) {
     current_weight = 0.0;
     current_temperature = NAN;
     current_raw_adc = 0;
+    snapshot_raw_adc_ = 0;
+    snapshot_timestamp_ms_ = 0;
+    snapshot_seq_ = 0;
     data_available = false;
     last_update = 0;
     doTare = false;
@@ -415,6 +421,16 @@ float WeightSensor::get_settled_weight(uint32_t window_ms, float* settle_time_ou
 // Raw ADC data access methods
 int32_t WeightSensor::get_raw_adc_instant() const {
     return raw_filter.get_instant_raw();
+}
+
+WeightSensor::RawSampleSnapshot WeightSensor::get_raw_sample_snapshot() const {
+    RawSampleSnapshot snapshot;
+    portENTER_CRITICAL(&snapshot_mux_);
+    snapshot.raw_adc = snapshot_raw_adc_;
+    snapshot.timestamp_ms = snapshot_timestamp_ms_;
+    snapshot.seq = snapshot_seq_;
+    portEXIT_CRITICAL(&snapshot_mux_);
+    return snapshot;
 }
 
 int32_t WeightSensor::get_raw_adc_smoothed(uint32_t window_ms) const {
@@ -790,6 +806,12 @@ bool WeightSensor::sample_and_feed_filter() {
             // Update instance variables atomically (ESP32 guarantees atomic 32-bit writes)
             current_raw_adc = raw_adc;
             current_weight = raw_to_weight(raw_adc);  // Convert using WeightSensor calibration
+
+            portENTER_CRITICAL(&snapshot_mux_);
+            snapshot_raw_adc_ = raw_adc;
+            snapshot_timestamp_ms_ = timestamp;
+            snapshot_seq_++;
+            portEXIT_CRITICAL(&snapshot_mux_);
             
             // Update temperature if available
             update_temperature_if_available();

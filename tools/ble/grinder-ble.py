@@ -28,6 +28,7 @@ import time
 import subprocess
 import tempfile
 import sqlite3
+import hashlib
 import json
 from typing import List, Dict, Optional, Tuple
 from pathlib import Path
@@ -45,7 +46,13 @@ def ensure_venv_requirements():
         print("Run: python3 -m venv tools/venv && source tools/venv/bin/activate && pip install -r tools/requirements.txt")
         return False
     
-    pip_cmd = str(venv_dir / "bin" / "pip")
+    # Windows venvs keep pip under Scripts/. Using bin/ unconditionally made this check
+    # raise on Windows, and the script exits when the check fails - so every BLE command
+    # (export included) died at startup there. tools/grinder.py already makes this split.
+    if os.name == "nt":
+        pip_cmd = str(venv_dir / "Scripts" / "pip.exe")
+    else:
+        pip_cmd = str(venv_dir / "bin" / "pip")
     
     # Check if requirements.txt exists
     if not requirements_file.exists():
@@ -120,11 +127,14 @@ BLE_DEBUG_CMD_DISABLE = 0x02
 
 BLE_OTA_IDLE = 0x00
 
-# Binary log schema definitions (must match firmware)
-LOG_SCHEMA_VERSION = 2
-SESSION_STRUCT_SIZE = 80
+# Binary log schema definitions (must match firmware, see grind_logging.h).
+# Record sizes depend on the schema version in each file's own header: files written by
+# older firmware stay on the device after an update, so both layouts must parse.
+LOG_SCHEMA_VERSION = 3
 EVENT_STRUCT_SIZE = 44
-MEASUREMENT_STRUCT_SIZE = 24
+SESSION_STRUCT_SIZE_BY_SCHEMA = {2: 80, 3: 88}       # v3 adds tare_offset_raw, cal_factor
+MEASUREMENT_STRUCT_SIZE_BY_SCHEMA = {2: 24, 3: 32}   # v3 adds raw_adc, raw_sample_seq, raw_sample_age_ms
+MIN_SESSION_STRUCT_SIZE = min(SESSION_STRUCT_SIZE_BY_SCHEMA.values())
 BLE_OTA_READY = 0x01
 BLE_OTA_RECEIVING = 0x02
 BLE_OTA_SUCCESS = 0x03
@@ -635,12 +645,17 @@ class GrinderBLETool:
         """Parse data from a single session file.
         Format on device (LittleFS):
         [TimeSeriesSessionHeader (24 bytes)]
-        [GrindSession (80 bytes)]
+        [GrindSession (80 bytes v2, 88 bytes v3)]
         [GrindEvent x event_count (44 bytes each)]
-        [GrindMeasurement x measurement_count (24 bytes each)]
+        [GrindMeasurement x measurement_count (24 bytes v2, 32 bytes v3)]
         """
-        if len(file_data) < (24 + SESSION_STRUCT_SIZE):
+        if len(file_data) < (24 + MIN_SESSION_STRUCT_SIZE):
             raise ValueError(f"File data too small: {len(file_data)} bytes")
+
+        # Identifies this exact grind across exports. The firmware checksum is not
+        # implemented and session IDs restart after a purge, so neither can tell a
+        # re-download of a stored grind from a new grind that reused its ID.
+        file_sha1 = hashlib.sha1(file_data).hexdigest()
 
         PHASE_NAMES = {
             0: "IDLE", 1: "INITIALIZING", 2: "SETUP", 3: "TARING", 4: "TARE_CONFIRM",
@@ -658,13 +673,17 @@ class GrinderBLETool:
 
         if hdr_session_id != session_id:
             raise ValueError(f"Header session ID mismatch: expected {session_id}, got {hdr_session_id}")
-        if schema_version != LOG_SCHEMA_VERSION:
-            self.safe_print(
-                f"[WARNING] Session {session_id} uses schema {schema_version}, expected {LOG_SCHEMA_VERSION}. Attempting to parse anyway."
+        if schema_version not in SESSION_STRUCT_SIZE_BY_SCHEMA:
+            raise ValueError(
+                f"Session {session_id} uses unknown schema {schema_version} - "
+                f"this tool knows {sorted(SESSION_STRUCT_SIZE_BY_SCHEMA)}; update grinder-ble.py"
             )
-        
-        # Extract full GrindSession struct at exact offsets (80-byte struct)
-        session_bytes = file_data[offset:offset + SESSION_STRUCT_SIZE]
+        session_struct_size = SESSION_STRUCT_SIZE_BY_SCHEMA[schema_version]
+        measurement_struct_size = MEASUREMENT_STRUCT_SIZE_BY_SCHEMA[schema_version]
+        if len(file_data) < 24 + session_struct_size:
+            raise ValueError(f"File data too small for schema {schema_version}: {len(file_data)} bytes")
+
+        session_bytes = file_data[offset:offset + session_struct_size]
 
         parsed_session_id = struct.unpack_from('<I', session_bytes, 0)[0]
         session_timestamp = struct.unpack_from('<I', session_bytes, 4)[0]
@@ -694,13 +713,24 @@ class GrinderBLETool:
         # Extract result_status from byte array and clean it
         result_status = result_bytes.decode('utf-8', errors='ignore').rstrip('\x00')
 
+        # Raw-to-grams conversion for this session: grams = (raw_adc - tare) / cal_factor.
+        # Absent before v3; cal_factor 0 also means the grind never tared (sensor-free time mode).
+        if schema_version >= 3:
+            tare_offset_raw = struct.unpack_from('<i', session_bytes, 80)[0]
+            cal_factor = struct.unpack_from('<f', session_bytes, 84)[0]
+        else:
+            tare_offset_raw, cal_factor = None, None
+
         # VALIDATION 1: Verify session ID matches what we requested
         if parsed_session_id != session_id:
             raise ValueError(f"Session ID mismatch: expected {session_id}, got {parsed_session_id}")
         
-        offset += SESSION_STRUCT_SIZE
+        offset += session_struct_size
 
         session = {
+            'file_sha1': file_sha1,
+            'tare_offset_raw': tare_offset_raw,
+            'cal_factor': cal_factor,
             'session_id': parsed_session_id,
             'session_timestamp': session_timestamp,
             'profile_id': profile_id,
@@ -782,7 +812,7 @@ class GrinderBLETool:
             expected_event_sequence += 1
 
         measurements = []
-        MEASUREMENT_SIZE = MEASUREMENT_STRUCT_SIZE
+        MEASUREMENT_SIZE = measurement_struct_size
         expected_measurement_sequence = 0  # Measurements should start at 0 and increment
 
         for meas_idx in range(measurement_count):
@@ -798,6 +828,12 @@ class GrinderBLETool:
             sequence_id = struct.unpack_from('<H', meas_bytes, 20)[0]
             motor_is_on = struct.unpack_from('<B', meas_bytes, 22)[0]
             phase_id = struct.unpack_from('<B', meas_bytes, 23)[0]
+            if schema_version >= 3:
+                raw_adc = struct.unpack_from('<i', meas_bytes, 24)[0]
+                raw_sample_seq = struct.unpack_from('<H', meas_bytes, 28)[0]
+                raw_sample_age_ms = struct.unpack_from('<H', meas_bytes, 30)[0]
+            else:
+                raw_adc = raw_sample_seq = raw_sample_age_ms = None
 
             if timestamp_ms == 0xFFFFFFFF or weight_grams == -999.0:  # Skip invalid measurements
                 expected_measurement_sequence += 1
@@ -819,7 +855,10 @@ class GrinderBLETool:
                 'motor_is_on': motor_is_on,
                 'phase_id': phase_id,
                 'phase_name': PHASE_NAMES.get(phase_id, 'UNKNOWN'),
-                'motor_stop_target_weight': motor_stop_target_weight
+                'motor_stop_target_weight': motor_stop_target_weight,
+                'raw_adc': raw_adc,
+                'raw_sample_seq': raw_sample_seq,
+                'raw_sample_age_ms': raw_sample_age_ms,
             }
             measurements.append(measurement)
             expected_measurement_sequence += 1
@@ -836,15 +875,51 @@ class GrinderBLETool:
     
     
     
+    # Columns added after the database first shipped. An existing database gains them via
+    # ALTER TABLE, so its history keeps accumulating instead of being replaced.
+    _SESSION_EXTRA_COLUMNS = {
+        'device_session_id': 'INTEGER',  # ID the device used; differs from session_id only after a remap
+        'file_sha1': 'TEXT',             # Fingerprint of the downloaded file, identifies the grind
+        'tare_offset_raw': 'INTEGER',    # grams = (raw_adc - tare_offset_raw) / cal_factor
+        'cal_factor': 'REAL',
+    }
+    _MEASUREMENT_EXTRA_COLUMNS = {
+        'raw_adc': 'INTEGER',            # Unfiltered HX711 sample
+        'raw_sample_seq': 'INTEGER',     # Changes once per HX711 sample; repeats mean no new sample
+        'raw_sample_age_ms': 'INTEGER',  # Age of that sample when the row was written
+    }
+
+    @staticmethod
+    def _add_missing_columns(cursor, table: str, columns: Dict[str, str]):
+        present = {row[1] for row in cursor.execute(f"PRAGMA table_info({table})")}
+        for name, sql_type in columns.items():
+            if name not in present:
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}")
+
+    @staticmethod
+    def _same_grind(stored_row, session: Dict) -> bool:
+        """True if a row stored without a fingerprint describes this session."""
+        stored_timestamp, stored_target, stored_final, stored_total_ms = stored_row[:4]
+        return (stored_timestamp == session['session_timestamp'] and
+                stored_total_ms == session['total_time_ms'] and
+                abs((stored_target or 0.0) - session['target_weight']) < 1e-4 and
+                abs((stored_final or 0.0) - session['final_weight']) < 1e-4)
+
     def _store_data(self, sessions: List[Dict], events: List[Dict], measurements: List[Dict], db_path: str):
-        if os.path.exists(db_path):
-            os.remove(db_path)
-        
+        """Merge exported sessions into the database, keeping everything already there.
+
+        The device keeps only its most recent sessions, so replacing the database on
+        every export capped the history at whatever the device still held - never enough
+        to fit or tune anything against. Sessions are matched by a fingerprint of the
+        downloaded file instead: re-exporting a stored grind changes nothing, and a
+        different grind arriving under an ID already taken (session IDs restart after a
+        purge) is stored under the next free ID rather than silently dropped.
+        """
         with sqlite3.connect(db_path) as conn:
             cursor = conn.cursor()
-            
+
             cursor.execute("""
-                CREATE TABLE grind_sessions (
+                CREATE TABLE IF NOT EXISTS grind_sessions (
                     session_id INTEGER PRIMARY KEY,
                     session_timestamp INTEGER,
                     profile_id INTEGER,
@@ -871,9 +946,9 @@ class GrinderBLETool:
                 );""")
 
             cursor.execute("""
-                CREATE TABLE grind_events (
-                    session_id INTEGER, event_sequence_id INTEGER, timestamp_ms INTEGER, 
-                    phase_id INTEGER, phase_name TEXT, pulse_attempt_number INTEGER, 
+                CREATE TABLE IF NOT EXISTS grind_events (
+                    session_id INTEGER, event_sequence_id INTEGER, timestamp_ms INTEGER,
+                    phase_id INTEGER, phase_name TEXT, pulse_attempt_number INTEGER,
                     duration_ms INTEGER, start_weight REAL, end_weight REAL,
                     motor_stop_target_weight REAL, pulse_duration_ms REAL, grind_latency_ms INTEGER,
                     settling_duration_ms INTEGER, pulse_flow_rate REAL, loop_count INTEGER,
@@ -883,48 +958,109 @@ class GrinderBLETool:
                 );""")
 
             cursor.execute("""
-                CREATE TABLE grind_measurements (
+                CREATE TABLE IF NOT EXISTS grind_measurements (
                     session_id INTEGER, sequence_id INTEGER, timestamp_ms INTEGER,
-                    weight_grams REAL, weight_delta REAL, flow_rate_g_per_s REAL, motor_is_on BOOLEAN, 
+                    weight_grams REAL, weight_delta REAL, flow_rate_g_per_s REAL, motor_is_on BOOLEAN,
                     phase_id INTEGER, phase_name TEXT, motor_stop_target_weight REAL,
                     FOREIGN KEY (session_id) REFERENCES grind_sessions(session_id),
                     PRIMARY KEY (session_id, sequence_id)
                 );""")
-            
-            # Insert data
-            
-            # Build placeholders dynamically to match column count
-            _cols_sessions = """session_id, session_timestamp, profile_id, grind_mode, target_weight, target_time_ms, tolerance, final_weight, start_weight, error_grams, time_error_ms, total_time_ms, total_motor_on_time_ms, pulse_count, max_pulse_attempts, termination_reason, latency_to_coast_ratio, flow_rate_threshold, schema_version, result_status, checksum, session_size_bytes"""
-            _params_sessions = [
+
+            self._add_missing_columns(cursor, 'grind_sessions', self._SESSION_EXTRA_COLUMNS)
+            self._add_missing_columns(cursor, 'grind_measurements', self._MEASUREMENT_EXTRA_COLUMNS)
+
+            events_by_session: Dict[int, List[Dict]] = {}
+            for e in events:
+                events_by_session.setdefault(e['session_id'], []).append(e)
+            measurements_by_session: Dict[int, List[Dict]] = {}
+            for m in measurements:
+                measurements_by_session.setdefault(m['session_id'], []).append(m)
+
+            session_columns = (
+                "session_id, device_session_id, file_sha1, session_timestamp, profile_id, grind_mode, "
+                "target_weight, target_time_ms, tolerance, final_weight, start_weight, error_grams, "
+                "time_error_ms, total_time_ms, total_motor_on_time_ms, pulse_count, max_pulse_attempts, "
+                "termination_reason, latency_to_coast_ratio, flow_rate_threshold, schema_version, "
+                "result_status, checksum, session_size_bytes, tare_offset_raw, cal_factor"
+            )
+            event_columns = (
+                "session_id, event_sequence_id, timestamp_ms, phase_id, phase_name, pulse_attempt_number, "
+                "duration_ms, start_weight, end_weight, motor_stop_target_weight, pulse_duration_ms, "
+                "grind_latency_ms, settling_duration_ms, pulse_flow_rate, loop_count, event_flags"
+            )
+            measurement_columns = (
+                "session_id, sequence_id, timestamp_ms, weight_grams, weight_delta, flow_rate_g_per_s, "
+                "motor_is_on, phase_id, phase_name, motor_stop_target_weight, "
+                "raw_adc, raw_sample_seq, raw_sample_age_ms"
+            )
+
+            added = already_stored = remapped = 0
+            for s in sessions:
+                device_id = s['session_id']
+
+                if cursor.execute("SELECT 1 FROM grind_sessions WHERE file_sha1 = ?",
+                                  (s['file_sha1'],)).fetchone():
+                    already_stored += 1
+                    continue
+
+                existing = cursor.execute(
+                    "SELECT session_timestamp, target_weight, final_weight, total_time_ms, file_sha1 "
+                    "FROM grind_sessions WHERE session_id = ?", (device_id,)).fetchone()
+
+                if existing is None:
+                    db_id = device_id
+                elif existing[4] is None and self._same_grind(existing, s):
+                    # Stored by an earlier version of this tool, which kept no fingerprint.
+                    # Adopt the fingerprint so later exports recognise it directly.
+                    cursor.execute("UPDATE grind_sessions SET file_sha1 = ?, device_session_id = ? "
+                                   "WHERE session_id = ?", (s['file_sha1'], device_id, device_id))
+                    already_stored += 1
+                    continue
+                else:
+                    db_id = cursor.execute(
+                        "SELECT COALESCE(MAX(session_id), 0) + 1 FROM grind_sessions").fetchone()[0]
+                    remapped += 1
+                    self.safe_print(f"[INFO] Device session {device_id} is a different grind from the one "
+                                    f"already stored under that ID - storing it as session {db_id}")
+
+                cursor.execute(
+                    f"INSERT INTO grind_sessions ({session_columns}) VALUES ({','.join(['?'] * 26)})",
                     (
-                        s['session_id'], s['session_timestamp'], s['profile_id'], s.get('grind_mode', 0),
-                        s['target_weight'], s.get('target_time_ms', 0), s['tolerance'],
+                        db_id, device_id, s['file_sha1'], s['session_timestamp'], s['profile_id'],
+                        s.get('grind_mode', 0), s['target_weight'], s.get('target_time_ms', 0), s['tolerance'],
                         s['final_weight'], s.get('start_weight', 0.0), s['error_grams'], s.get('time_error_ms', 0),
-                        s['total_time_ms'], s['total_motor_on_time_ms'], s['pulse_count'], s.get('max_pulse_attempts', 0),
-                        s.get('termination_reason', 255), s.get('latency_to_coast_ratio', 0.0), s.get('flow_rate_threshold', 0.0),
-                        s.get('schema_version', LOG_SCHEMA_VERSION),
-                        s['result_status'], s.get('checksum', 0), s.get('session_size_bytes', 0)
-                    )
-                    for s in sessions
-                ]
-            if _params_sessions:
-                _ph_sessions = "(" + ",".join(["?"] * len(_params_sessions[0])) + ")"
-                cursor.executemany(f"INSERT INTO grind_sessions ({_cols_sessions}) VALUES {_ph_sessions}", _params_sessions)
-            else:
-                pass
+                        s['total_time_ms'], s['total_motor_on_time_ms'], s['pulse_count'],
+                        s.get('max_pulse_attempts', 0), s.get('termination_reason', 255),
+                        s.get('latency_to_coast_ratio', 0.0), s.get('flow_rate_threshold', 0.0),
+                        s.get('schema_version', LOG_SCHEMA_VERSION), s['result_status'],
+                        s.get('checksum', 0), s.get('session_size_bytes', 0),
+                        s.get('tare_offset_raw'), s.get('cal_factor'),
+                    ))
 
-            cursor.executemany("INSERT INTO grind_events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                [(e['session_id'], e['event_sequence_id'], e['timestamp_ms'], e['phase_id'], 
-                  e['phase_name'], e['pulse_attempt_number'], e['duration_ms'],
-                  e['start_weight'], e['end_weight'], e['motor_stop_target_weight'], 
-                  e['pulse_duration_ms'], e['grind_latency_ms'], e['settling_duration_ms'],
-                  e['pulse_flow_rate'], e['loop_count'], e.get('event_flags', 0)) for e in events])
+                cursor.executemany(
+                    f"INSERT INTO grind_events ({event_columns}) VALUES ({','.join(['?'] * 16)})",
+                    [(db_id, e['event_sequence_id'], e['timestamp_ms'], e['phase_id'], e['phase_name'],
+                      e['pulse_attempt_number'], e['duration_ms'], e['start_weight'], e['end_weight'],
+                      e['motor_stop_target_weight'], e['pulse_duration_ms'], e['grind_latency_ms'],
+                      e['settling_duration_ms'], e['pulse_flow_rate'], e['loop_count'], e.get('event_flags', 0))
+                     for e in events_by_session.get(device_id, [])])
 
-            cursor.executemany("INSERT INTO grind_measurements VALUES (?,?,?,?,?,?,?,?,?,?)",
-                [(m['session_id'], m['sequence_id'], m['timestamp_ms'], m['weight_grams'], m['weight_delta'], m['flow_rate_g_per_s'], m['motor_is_on'], m['phase_id'], m['phase_name'], m['motor_stop_target_weight']) for m in measurements])
-            
+                cursor.executemany(
+                    f"INSERT INTO grind_measurements ({measurement_columns}) VALUES ({','.join(['?'] * 13)})",
+                    [(db_id, m['sequence_id'], m['timestamp_ms'], m['weight_grams'], m['weight_delta'],
+                      m['flow_rate_g_per_s'], m['motor_is_on'], m['phase_id'], m['phase_name'],
+                      m['motor_stop_target_weight'], m.get('raw_adc'), m.get('raw_sample_seq'),
+                      m.get('raw_sample_age_ms'))
+                     for m in measurements_by_session.get(device_id, [])])
+
+                added += 1
+
             conn.commit()
-    
+            total = cursor.execute("SELECT COUNT(*) FROM grind_sessions").fetchone()[0]
+
+        self.safe_print(f"[OK] Database: {added} new session(s) added, {already_stored} already stored"
+                        f"{f', {remapped} stored under a new ID' if remapped else ''} - {total} in total")
+
     # === Analyze Data (Export + Streamlit Report) ===
     async def analyze_data(self, db_path: str = None, skip_export: bool = False) -> bool:
         """Export data from grinder and launch Streamlit report."""

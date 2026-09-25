@@ -275,8 +275,10 @@ void GrindLogger::log_event(GrindEvent& event) {
 }
 
 void GrindLogger::log_continuous_measurement(uint32_t timestamp_ms, float weight_grams, float weight_delta, 
-                                            float flow_rate_g_per_s, uint8_t motor_is_on, uint8_t phase_id, 
-                                            float motor_stop_target_weight) {
+                                            float flow_rate_g_per_s, uint8_t motor_is_on, uint8_t phase_id,
+                                            float motor_stop_target_weight,
+                                            int32_t raw_adc, uint16_t raw_sample_seq,
+                                            uint16_t raw_sample_age_ms) {
     if (!logging_active || measurement_count >= MEASUREMENT_TEMP_BUFFER_SIZE) {
         return;
     }
@@ -291,7 +293,10 @@ void GrindLogger::log_continuous_measurement(uint32_t timestamp_ms, float weight
     measurement.sequence_id = measurement_sequence_counter++;
     measurement.motor_is_on = motor_is_on;
     measurement.phase_id = phase_id;
-    
+    measurement.raw_adc = raw_adc;
+    measurement.raw_sample_seq = raw_sample_seq;
+    measurement.raw_sample_age_ms = raw_sample_age_ms;
+
     // Track motor time changes for session summary
     bool current_motor_state = (motor_is_on == 1);
     if (current_motor_state && !last_motor_state) {
@@ -306,6 +311,14 @@ void GrindLogger::log_continuous_measurement(uint32_t timestamp_ms, float weight
     measurement_buffer[measurement_count++] = measurement;
 }
 
+void GrindLogger::record_scale_state(int32_t tare_offset_raw, float cal_factor) {
+    if (!logging_active || !current_session) {
+        return;
+    }
+    current_session->tare_offset_raw = tare_offset_raw;
+    current_session->cal_factor = cal_factor;
+}
+
 bool GrindLogger::flush_session_to_flash() {
     if (!current_session || !event_buffer || !measurement_buffer) {
         return false;
@@ -317,12 +330,18 @@ bool GrindLogger::flush_session_to_flash() {
         return false;
     }
     
+    // Make room BEFORE writing. Cleaning up only after a successful write meant a full
+    // partition failed the write, never ran cleanup, and so failed every write after it
+    // - logging stopped for good with nothing on screen to say so.
+    size_t incoming_bytes = sizeof(TimeSeriesSessionHeader) + sizeof(GrindSession) +
+                            sizeof(GrindEvent) * event_count +
+                            sizeof(GrindMeasurement) * measurement_count;
+    cleanup_old_session_files(incoming_bytes);
+
     // Write individual session file
     bool success = write_individual_session_file(current_session->session_id, *current_session, event_buffer, measurement_buffer);
-    
+
     if (success) {
-        // Clean up old session files to maintain the limit
-        cleanup_old_session_files();
         mark_session_storage_dirty();
         
         LOG_BLE("Session %lu flushed to individual file\n", current_session->session_id);
@@ -752,7 +771,7 @@ void GrindLogger::print_session_data_table() {
                             GrindSession session_data;
                             
                             if (sessionFile.read((uint8_t*)&header, sizeof(header)) == sizeof(header) &&
-                                sessionFile.read((uint8_t*)&session_data, sizeof(session_data)) == sizeof(session_data)) {
+                                read_grind_session(sessionFile, header.schema_version, session_data)) {
                                 
                                 LOG_BLE("%2lu | %6.1fg | %6.1fg | %5.1fg | %4lus | %6u | %12u\n",
                                     session_data.session_id,
@@ -1070,7 +1089,7 @@ void GrindLogger::print_comprehensive_debug() {
         LOG_BLE("  checksum: %lu\n", header.checksum);
         
         // Read session data
-        if (file.read((uint8_t*)&session, sizeof(session)) != sizeof(session)) break;
+        if (!read_grind_session(file, header.schema_version, session)) break;
         
         LOG_BLE("GrindSession:\n");
         LOG_BLE("  session_id: %lu\n", session.session_id);
@@ -1125,7 +1144,7 @@ void GrindLogger::print_comprehensive_debug() {
         LOG_BLE("Measurements (showing first %d of %d):\n", min(MAX_MEASUREMENTS_PER_SESSION, (int)header.measurement_count), header.measurement_count);
         for (int i = 0; i < min(MAX_MEASUREMENTS_PER_SESSION, (int)header.measurement_count); i++) {
             GrindMeasurement meas;
-            if (file.read((uint8_t*)&meas, sizeof(meas)) != sizeof(meas)) break;
+            if (!read_grind_measurement(file, header.schema_version, meas)) break;
             
             LOG_BLE("  Measurement %d:\n", i);
             LOG_BLE("    timestamp_ms: %lu, weight: %.3f, delta: %.3f\n", 
@@ -1144,7 +1163,7 @@ void GrindLogger::print_comprehensive_debug() {
         
         // Skip remaining measurements
         int remaining_measurements = header.measurement_count - min(MAX_MEASUREMENTS_PER_SESSION, (int)header.measurement_count);
-        file.seek(file.position() + remaining_measurements * sizeof(GrindMeasurement));
+        file.seek(file.position() + remaining_measurements * grind_measurement_size_for_schema(header.schema_version));
         
                             session_count++;
                         }
@@ -1272,61 +1291,77 @@ bool GrindLogger::remove_session_file(uint32_t session_id) {
     return true; // File doesn't exist, so "removal" succeeded
 }
 
-void GrindLogger::cleanup_old_session_files() {
+static size_t littlefs_free_bytes() {
+    size_t total = LittleFS.totalBytes();
+    size_t used = LittleFS.usedBytes();
+    return (used < total) ? (total - used) : 0;
+}
+
+void GrindLogger::cleanup_old_session_files(size_t incoming_bytes) {
     File dir = LittleFS.open(GRIND_SESSIONS_DIR);
     if (!dir || !dir.isDirectory()) {
         LOG_BLE("WARNING: Cannot open sessions directory for cleanup.\n");
         return;
     }
 
-    // Step 1: Count files and collect session IDs
-    uint32_t session_count = 0;
+    // Step 1: Count files
+    uint32_t file_count = 0;
     File file = dir.openNextFile();
     while (file) {
-        session_count++;
+        file_count++;
         file = dir.openNextFile();
     }
-    dir.close(); // Close after counting
+    dir.close();
 
-    if (session_count <= MAX_STORED_SESSIONS_FLASH) {
-        return; // No cleanup needed
+    const size_t space_needed = incoming_bytes + SESSION_STORAGE_RESERVE_BYTES;
+    if (file_count < MAX_STORED_SESSIONS_FLASH && littlefs_free_bytes() >= space_needed) {
+        return; // Room for this session on both counts
+    }
+    if (file_count == 0) {
+        return; // Nothing to remove; the write will fail on its own and say so
     }
 
-    LOG_BLE("Session count (%lu) exceeds limit (%d). Cleaning up old files...\n", session_count, MAX_STORED_SESSIONS_FLASH);
-
-    // Step 2: Create a list of session IDs
-    uint32_t* session_ids = (uint32_t*)malloc(session_count * sizeof(uint32_t));
+    // Step 2: Collect session IDs from the filenames
+    uint32_t* session_ids = (uint32_t*)malloc(file_count * sizeof(uint32_t));
     if (!session_ids) {
         LOG_BLE("ERROR: Failed to allocate memory for session ID list during cleanup.\n");
         return;
     }
 
     dir = LittleFS.open(GRIND_SESSIONS_DIR);
-    uint32_t list_idx = 0;
+    uint32_t id_count = 0;
     file = dir.openNextFile();
-    while (file && list_idx < session_count) {
+    while (file && id_count < file_count) {
         String filename = file.name();
         int start_pos = filename.indexOf('_') + 1;
         int end_pos = filename.lastIndexOf('.');
         if (start_pos > 0 && end_pos > start_pos) {
-            session_ids[list_idx++] = filename.substring(start_pos, end_pos).toInt();
+            session_ids[id_count++] = filename.substring(start_pos, end_pos).toInt();
         }
         file = dir.openNextFile();
     }
     dir.close();
 
-    // Step 3: Sort the session IDs in ascending order
-    std::sort(session_ids, session_ids + session_count);
+    // Step 3: Sort only the entries actually filled. Sorting file_count entries sorted
+    // uninitialised memory into the deletion order whenever a filename failed to parse.
+    std::sort(session_ids, session_ids + id_count);
 
-    // Step 4: Remove the oldest files
-    uint32_t files_to_remove = session_count - MAX_STORED_SESSIONS_FLASH;
-    for (uint32_t i = 0; i < files_to_remove; i++) {
-        remove_session_file(session_ids[i]);
+    // Step 4: Remove oldest first until one more session fits by count and by space.
+    // Free space is re-read after every removal since file sizes vary several-fold.
+    uint32_t removed = 0;
+    uint32_t remaining = id_count;
+    while (removed < id_count &&
+           (remaining >= MAX_STORED_SESSIONS_FLASH || littlefs_free_bytes() < space_needed)) {
+        remove_session_file(session_ids[removed]);
+        removed++;
+        remaining--;
     }
 
     free(session_ids);
-    LOG_BLE("Cleanup complete. Removed %lu old session(s).\n", files_to_remove);
-    if (files_to_remove > 0) {
+    LOG_BLE("Cleanup: removed %lu old session(s), %lu kept, %lu KB free\n",
+            (unsigned long)removed, (unsigned long)remaining,
+            (unsigned long)(littlefs_free_bytes() / 1024));
+    if (removed > 0) {
         mark_session_storage_dirty();
     }
 }

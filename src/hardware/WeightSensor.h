@@ -61,6 +61,15 @@ private:
     float current_temperature;  // For ADCs with temperature sensors
     int32_t current_raw_adc;
     unsigned long last_update;
+
+    // Newest sample as one consistent unit - value, when it was taken, and a count that
+    // advances once per sample. Guarded by a spinlock rather than left to 32-bit atomicity:
+    // the sampling and control tasks share Core 0 and preempt each other, so reading the
+    // three fields separately could pair one sample's value with the next one's number.
+    int32_t snapshot_raw_adc_;
+    uint32_t snapshot_timestamp_ms_;
+    uint32_t snapshot_seq_;
+    mutable portMUX_TYPE snapshot_mux_ = portMUX_INITIALIZER_UNLOCKED;
     Preferences* prefs;
     
     bool data_available;
@@ -165,6 +174,16 @@ public:
     int32_t get_raw_adc_instant() const;                    // Latest raw ADC reading
     int32_t get_raw_adc_smoothed(uint32_t window_ms) const; // Smoothed raw ADC over time window
     int32_t get_raw_adc_data() const;  // Direct hardware access
+
+    // The newest HX711 sample with its timestamp and sequence number, read atomically.
+    // The sequence number is what tells a logger whether a sample is new since it last
+    // looked - the control loop runs five times per sample at 10 SPS.
+    struct RawSampleSnapshot {
+        int32_t raw_adc;
+        uint32_t timestamp_ms;
+        uint32_t seq;
+    };
+    RawSampleSnapshot get_raw_sample_snapshot() const;
     
     // Primary weight readings using CircularBufferMath with single conversion point
     float get_instant_weight() const;                        // Latest single sample converted to weight

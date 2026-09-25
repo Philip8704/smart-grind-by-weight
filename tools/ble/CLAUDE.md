@@ -2,11 +2,27 @@
 
 This document provides essential guidance for maintaining data structure alignment between the ESP32 C++ firmware and Python BLE data processing tools. **Following this guide prevents parsing failures and data corruption during binary data exchange.**
 
-## Critical Warning: Data Structure Changes Require Purge
+## Struct Changes Are Versioned - Do Not Purge To Work Around Them
 
-⚠️ **MANDATORY**: Every time you modify any struct in `grind_logging.h`, you MUST purge all flash data using the "PURGE HISTORY" button on the ESP32 device before testing. Old corrupted data will cause alignment issues and false debugging results.
+Every session file records its `schema_version` in the header, and both the Python
+parser and on-device readers size records by that version (`SESSION_STRUCT_SIZE_BY_SCHEMA`
+/ `MEASUREMENT_STRUCT_SIZE_BY_SCHEMA` here; `read_grind_session()` /
+`read_grind_measurement()` in `grind_logging.h`). Files from older firmware stay
+readable after an update. When changing a struct:
 
-**Session ID Reset**: The purge function automatically resets all cached session tracking variables, ensuring session IDs restart from 1 after a purge.
+1. Append new fields at the END so earlier offsets stay put
+2. Bump `GRIND_LOG_SCHEMA_VERSION` and update the `static_assert` sizes
+3. Add the new sizes to both `*_BY_SCHEMA` tables and parse the new fields only when
+   `schema_version >= N`
+4. Route any on-device reader through the `read_grind_*` helpers, never `sizeof()`
+
+Purging would destroy the accumulated history the export now builds up. A purge also
+restarts session IDs at 1; the exporter fingerprints each file (SHA-1) so a reused ID
+is stored under a new one rather than dropped.
+
+**Current sizes (schema 3):** header 24, session 88, event 44, measurement 32 bytes.
+Schema 2: session 80, measurement 24. See `grind_logging.h` for field layout - it is
+the source of truth; the reference below may lag.
 
 ## Struct Alignment Process
 

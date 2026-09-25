@@ -692,6 +692,12 @@ void GrindController::update() {
             }
 
             if (tare_complete) {
+                // Snapshot the conversion the raw samples need. This is the grind's only
+                // tare, so it holds for every sample from here to the end of the session.
+                if (weight_sensor) {
+                    grind_logger.record_scale_state(weight_sensor->get_zero_offset(),
+                                                    weight_sensor->get_calibration_factor());
+                }
                 if (!grinder->is_grinding()) {
                     grinder->start();  // Ensure motor is running
                 }
@@ -910,8 +916,22 @@ void GrindController::update() {
     
     // Unified continuous logging for ALL active phases at the control loop rate
     if (should_log_measurements()) {
-        grind_logger.log_continuous_measurement(loop_data.timestamp_ms, loop_data.current_weight, loop_data.weight_delta, 
-                                               loop_data.flow_rate, loop_data.motor_is_on, loop_data.phase_id, motor_stop_target_weight);
+        // The raw sample goes in every row alongside the filtered weight, so any filter
+        // can be replayed offline against exactly what the controller saw, and noise can
+        // be split by motor state and phase. Its age places it in time properly: rows
+        // are written at 50Hz but a sample arrives only every 100ms.
+        WeightSensor::RawSampleSnapshot raw = {0, 0, 0};
+        if (weight_sensor) {
+            raw = weight_sensor->get_raw_sample_snapshot();
+        }
+        uint32_t raw_age_ms = (raw.timestamp_ms != 0 && loop_data.now >= raw.timestamp_ms)
+                                  ? (uint32_t)(loop_data.now - raw.timestamp_ms)
+                                  : UINT16_MAX;
+        if (raw_age_ms > UINT16_MAX) raw_age_ms = UINT16_MAX;
+
+        grind_logger.log_continuous_measurement(loop_data.timestamp_ms, loop_data.current_weight, loop_data.weight_delta,
+                                               loop_data.flow_rate, loop_data.motor_is_on, loop_data.phase_id, motor_stop_target_weight,
+                                               raw.raw_adc, (uint16_t)raw.seq, (uint16_t)raw_age_ms);
         
         // Update tracking variables for next measurement
         last_logged_weight = loop_data.current_weight;

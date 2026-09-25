@@ -1856,7 +1856,7 @@ void BluetoothManager::generate_diagnostic_report() {
                         GrindSession session;
 
                         if (sessionFile.read((uint8_t*)&header, sizeof(header)) == sizeof(header) &&
-                            sessionFile.read((uint8_t*)&session, sizeof(session)) == sizeof(session)) {
+                            read_grind_session(sessionFile, header.schema_version, session)) {
 
                             const char* mode_name = (session.grind_mode == 0) ? "WEIGHT" : "TIME";
                             const char* term_names[] = {"COMPLETED", "TIMEOUT", "OVERSHOOT", "MAX_PULSES", "UNKNOWN"};

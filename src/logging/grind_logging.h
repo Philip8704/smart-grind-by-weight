@@ -26,11 +26,18 @@ class Grinder;
 #define GRIND_SESSIONS_DIR "/sessions"                      // Directory for individual session files
 #define SESSION_FILE_FORMAT "/sessions/session_%lu.bin"    // Individual session file naming format
 #define GRIND_LOG_FILE "/grind_sessions.bin"                // Legacy single-file storage (deprecated)
-#define MAX_STORED_SESSIONS_FLASH 10                        // Maximum sessions to keep in flash (configurable)
+// Retention is bounded by free flash, not only by count. A typical weight grind is
+// ~25KB; a 60s timeout is ~100KB. The count cap exists so the session list still fits
+// the BLE transfer comfortably; the free-space floor is what actually protects the
+// partition, since a count alone cannot know how long each grind ran.
+#define MAX_STORED_SESSIONS_FLASH 50                        // Upper bound on sessions kept in flash
+#define SESSION_STORAGE_RESERVE_BYTES (160 * 1024)          // Keep at least this much LittleFS free after each write
 
 #pragma pack(push, 1)
 
-constexpr uint16_t GRIND_LOG_SCHEMA_VERSION = 2;
+// v3: measurements carry the raw HX711 sample; sessions carry the tare and calibration
+// factor needed to turn it back into grams offline.
+constexpr uint16_t GRIND_LOG_SCHEMA_VERSION = 3;
 
 // Time-series session header for flash file
 struct TimeSeriesSessionHeader {
@@ -84,6 +91,15 @@ struct GrindMeasurement {
     uint8_t  motor_is_on;             // Motor state at time of measurement
     uint8_t  phase_id;                // Current grinding phase ID
 
+    // The unfiltered HX711 reading, so filters can be designed and replayed offline and
+    // noise attributed to its source. Rows are written every control cycle (50Hz) but
+    // the HX711 delivers 10 samples a second, so most rows repeat the previous sample:
+    // a row carries a NEW sample only when raw_sample_seq differs from the row before.
+    // A jump of more than one means samples arrived that no row captured.
+    int32_t  raw_adc;                 // Newest HX711 sample, counts
+    uint16_t raw_sample_seq;          // Increments once per HX711 sample (wraps at 65536)
+    uint16_t raw_sample_age_ms;       // How long before this row the sample was taken
+
     GrindMeasurement() {
         memset(this, 0, sizeof(GrindMeasurement));
     }
@@ -128,6 +144,12 @@ struct GrindSession {
     uint8_t  reserved[3];             // Alignment + future expansion
     char     result_status[16];       // Null-terminated status string
 
+    // Scale state during the grind, so the raw samples convert to grams offline:
+    // grams = (raw_adc - tare_offset_raw) / cal_factor. Captured when the grind's tare
+    // completes. cal_factor 0 means no tare happened (sensor-free time mode).
+    int32_t  tare_offset_raw;
+    float    cal_factor;
+
     GrindSession() {
         memset(this, 0, sizeof(GrindSession));
     }
@@ -137,8 +159,34 @@ struct GrindSession {
 
 static_assert(sizeof(TimeSeriesSessionHeader) == 24, "Unexpected TimeSeriesSessionHeader size");
 static_assert(sizeof(GrindEvent) == 44, "Unexpected GrindEvent size");
-static_assert(sizeof(GrindMeasurement) == 24, "Unexpected GrindMeasurement size");
-static_assert(sizeof(GrindSession) == 80, "Unexpected GrindSession size");
+// These sizes are mirrored in tools/ble/grinder-ble.py per schema version - change both
+static_assert(sizeof(GrindMeasurement) == 32, "Unexpected GrindMeasurement size");
+static_assert(sizeof(GrindSession) == 88, "Unexpected GrindSession size");
+
+// Files written before schema 3 hold an 80-byte session and 24-byte measurements, and
+// they stay in flash after an update. Anything reading session files must size records
+// by the file's own header: reading a v2 file with today's sizeof() swallows 8 bytes of
+// the first event into the session and misframes every record after it.
+inline size_t grind_session_size_for_schema(uint16_t schema) {
+    return schema >= 3 ? sizeof(GrindSession) : 80;
+}
+inline size_t grind_measurement_size_for_schema(uint16_t schema) {
+    return schema >= 3 ? sizeof(GrindMeasurement) : 24;
+}
+
+// Fields absent from older schemas read back as zero
+template <typename FileT>
+inline bool read_grind_session(FileT& file, uint16_t schema, GrindSession& out) {
+    memset(&out, 0, sizeof(out));
+    size_t n = grind_session_size_for_schema(schema);
+    return file.read(reinterpret_cast<uint8_t*>(&out), n) == n;
+}
+template <typename FileT>
+inline bool read_grind_measurement(FileT& file, uint16_t schema, GrindMeasurement& out) {
+    memset(&out, 0, sizeof(out));
+    size_t n = grind_measurement_size_for_schema(schema);
+    return file.read(reinterpret_cast<uint8_t*>(&out), n) == n;
+}
 
 // Time-series grind logging manager
 class GrindLogger {
@@ -178,10 +226,15 @@ public:
     
     // Logging methods
     void log_event(GrindEvent& event);       // **MODIFIED**: Takes non-const reference to set sequence ID
-    void log_continuous_measurement(uint32_t timestamp_ms, float weight_grams, float weight_delta, 
-                                  float flow_rate_g_per_s, uint8_t motor_is_on, uint8_t phase_id, 
-                                  float motor_stop_target_weight);
-    
+    void log_continuous_measurement(uint32_t timestamp_ms, float weight_grams, float weight_delta,
+                                  float flow_rate_g_per_s, uint8_t motor_is_on, uint8_t phase_id,
+                                  float motor_stop_target_weight,
+                                  int32_t raw_adc, uint16_t raw_sample_seq, uint16_t raw_sample_age_ms);
+
+    // Called on Core 0 once the grind's tare has completed. Same core and same session
+    // as log_continuous_measurement, which already writes the session buffers from here.
+    void record_scale_state(int32_t tare_offset_raw, float cal_factor);
+
     // Flash storage management
     bool flush_session_to_flash();          // Flush current session to flash
     bool rotate_flash_log_if_needed();      // Remove old sessions if limit exceeded
@@ -228,7 +281,9 @@ private:
     bool write_individual_session_file(uint32_t session_id, const GrindSession& session, const GrindEvent* events, const GrindMeasurement* measurements);
     bool validate_session_file(uint32_t session_id); // Check if session file is valid/readable
     bool remove_session_file(uint32_t session_id);   // Delete specific session file
-    void cleanup_old_session_files(); // Remove old session files to maintain MAX_STORED_SESSIONS_FLASH limit
+    // Removes the oldest sessions until one more fits under MAX_STORED_SESSIONS_FLASH and
+    // incoming_bytes plus SESSION_STORAGE_RESERVE_BYTES of LittleFS stays free
+    void cleanup_old_session_files(size_t incoming_bytes);
     void mark_session_storage_dirty(); // Bump version when session files change
     
     uint32_t session_storage_version;
