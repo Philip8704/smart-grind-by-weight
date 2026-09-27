@@ -104,6 +104,7 @@ void GrindLogger::start_grind_session(const GrindSessionDescriptor& descriptor, 
     current_session->total_time_ms = 0;
     current_session->total_motor_on_time_ms = 0;
     current_session->termination_reason = static_cast<uint8_t>(GrindTerminationReason::UNKNOWN);
+    current_session->session_flags = descriptor.vibration_test ? GRIND_SESSION_FLAG_VIBRATION_TEST : 0;
 
     initialize_session_config();
 
@@ -171,7 +172,11 @@ void GrindLogger::end_grind_session(const char* final_result, float final_weight
     bool is_successful_grind = (termination_reason == GrindTerminationReason::COMPLETED ||
                                 termination_reason == GrindTerminationReason::MAX_PULSES);
 
-    if (is_successful_grind) {
+    // A vibration test runs the motor with an empty hopper; counting it would add a
+    // zero-gram "grind" to every lifetime figure
+    const bool is_vibration_test = (current_session->session_flags & GRIND_SESSION_FLAG_VIBRATION_TEST) != 0;
+
+    if (is_successful_grind && !is_vibration_test) {
         bool is_weight_mode = (mode == GrindMode::WEIGHT);
         statistics_manager.update_grind_session(
             final_weight,
@@ -185,7 +190,9 @@ void GrindLogger::end_grind_session(const char* final_result, float final_weight
     // Check if logging is enabled before saving to flash
     Preferences logging_prefs;
     logging_prefs.begin("logging", true); // read-only
-    bool logging_enabled = logging_prefs.getBool("enabled", false);
+    // A vibration test exists only to be recorded, so it is saved whatever the toggle says
+    bool logging_enabled = logging_prefs.getBool("enabled", GRIND_LOGGING_ENABLED_DEFAULT) ||
+                           is_vibration_test;
     logging_prefs.end();
 
     const char* mode_name = (mode == GrindMode::TIME) ? "TIME" : "WEIGHT";
@@ -309,6 +316,13 @@ void GrindLogger::log_continuous_measurement(uint32_t timestamp_ms, float weight
     last_motor_state = current_motor_state;
     
     measurement_buffer[measurement_count++] = measurement;
+}
+
+void GrindLogger::add_session_flags(uint8_t flags) {
+    if (!logging_active || !current_session) {
+        return;
+    }
+    current_session->session_flags |= flags;
 }
 
 void GrindLogger::record_scale_state(int32_t tare_offset_raw, float cal_factor) {

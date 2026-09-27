@@ -10,4 +10,5 @@ struct GrindSessionDescriptor {
     float tolerance = 0.0f;          // grams
     uint8_t profile_id = 0;          // active profile index
     bool time_use_scale = false;     // time mode: tare + show live weight (standard) vs sensor-free
+    bool vibration_test = false;     // time-mode run with an empty hopper to measure vibration, not a grind
 };

@@ -11,6 +11,7 @@
 #include <Preferences.h>
 #include <LittleFS.h>
 #include <atomic>
+#include <cmath>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 
@@ -111,7 +112,38 @@ enum class GrindPhase {
     PRIME,              // Optional chute priming/purging grind
     PRIME_SETTLING,     // Settling after priming grind
     PURGE_CONFIRM,      // Waiting for user to confirm purge completion
-    TIME_PAUSED         // Time-mode grind paused by user, remaining time preserved
+    TIME_PAUSED,        // Time-mode grind paused by user, remaining time preserved
+    // Appended, not inserted: phase IDs are stored in session logs, so reordering would
+    // relabel every phase in data recorded by earlier firmware.
+    PURGE_CHECK         // After purge confirm: wait for the portafilter to settle, then re-tare or continue
+};
+
+// Result of a vibration test, computed on Core 0 as the samples arrive and read by the
+// UI once the COMPLETED event has been delivered.
+struct VibrationTestResult {
+    bool valid;                 // Enough samples in both conditions to mean anything
+    float floor_sigma_g;        // Motor off, scale loaded: load cell + electrical
+    float vibration_sigma_g;    // Motor running, nothing landing
+    uint16_t floor_samples;
+    uint16_t vibration_samples;
+    bool grounds_detected;      // Weight rose during the run - the hopper was not empty
+    float weight_rise_g;
+};
+
+// Streaming per-sample noise estimate: each sample's deviation from the straight line
+// through its two neighbours, scaled so white noise of sigma s reads as s. Needs only
+// the last two samples, and a run can be broken (reset) at every motor transition.
+struct NoiseAccumulator {
+    double t[2];
+    double y[2];
+    uint8_t n;
+    double sum_sq;
+    uint32_t count;
+
+    void clear() { n = 0; sum_sq = 0.0; count = 0; }
+    void break_run() { n = 0; }
+    void add(double t_ms, double value);
+    float sigma() const { return count ? (float)sqrt(sum_sq / count) : NAN; }
 };
 
 
@@ -269,6 +301,27 @@ private:
     bool grinder_purged_since_boot;      // Tracks if grinder has been used since boot (RAM only)
     uint64_t last_purge_runtime_ms;      // Runtime when last grind completed (persisted)
 
+    // Purge check - see GRIND_PURGE_* in grind_control.h
+    float purge_settled_weight_g_;       // What the purge actually delivered, settled
+    bool retare_after_purge_;            // TARE_CONFIRM continues to PREDICTIVE instead of PRIME
+    unsigned long purge_check_plausible_since_ms_;  // When the portafilter was last seen on the scale (0 = not yet)
+    bool purge_missing_notice_shown_;
+
+    // Vibration test - see VIBRATION_TEST_* in grind_control.h
+    bool pending_vibration_test_;        // Set only across the start_grind() call inside start_vibration_test()
+    NoiseAccumulator vib_floor_;
+    NoiseAccumulator vib_motor_;
+    uint32_t vib_last_seq_;
+    bool vib_last_motor_;
+    uint32_t vib_state_change_ms_;
+    unsigned long vib_baseline_start_ms_;
+    bool vib_run_started_;
+    int32_t vib_run_first_raw_;
+    int32_t vib_run_last_raw_;
+    VibrationTestResult vib_result_;
+    void update_vibration_test(const GrindLoopData& loop_data);
+    void finish_vibration_test();
+
     // Learned coast model - see GRIND_COAST_* in grind_control.h
     CoastWindow coast_window_;           // Measurements for the profile of the running session
     bool coast_window_dirty_;            // A new measurement is waiting to be written to NVS at session end
@@ -326,6 +379,12 @@ private:
 public:
     void init(WeightSensor* lc, Grinder* gr, Preferences* prefs);
     void start_grind(float target_weight, uint32_t target_time_ms, GrindMode grind_mode);
+
+    // Motor on for VIBRATION_TEST_RUN_MS with the hopper empty, recorded like a grind
+    // and flagged as a test. Returns false if it could not start (busy, no scale).
+    bool start_vibration_test();
+    bool is_vibration_test() const { return session_descriptor.vibration_test; }
+    const VibrationTestResult& get_vibration_test_result() const { return vib_result_; }
     void user_tare_request();
     void return_to_idle(); // Called by UI to acknowledge completion/timeout
     void stop_grind();

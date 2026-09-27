@@ -135,6 +135,9 @@ EVENT_STRUCT_SIZE = 44
 SESSION_STRUCT_SIZE_BY_SCHEMA = {2: 80, 3: 88}       # v3 adds tare_offset_raw, cal_factor
 MEASUREMENT_STRUCT_SIZE_BY_SCHEMA = {2: 24, 3: 32}   # v3 adds raw_adc, raw_sample_seq, raw_sample_age_ms
 MIN_SESSION_STRUCT_SIZE = min(SESSION_STRUCT_SIZE_BY_SCHEMA.values())
+# GrindSessionFlags in grind_logging.h
+SESSION_FLAG_VIBRATION_TEST = 0x01        # Motor run with an empty hopper, not a grind
+SESSION_FLAG_RETARED_AFTER_PURGE = 0x02   # Raw samples before the re-tare sit on a different zero
 BLE_OTA_READY = 0x01
 BLE_OTA_RECEIVING = 0x02
 BLE_OTA_SUCCESS = 0x03
@@ -590,21 +593,36 @@ class GrinderBLETool:
             self.safe_print(f"[INFO] Requesting session file {session_id} ({i+1}/{len(session_ids)})")
             
             # Request individual file
-            request_data = bytes([BLE_DATA_CMD_REQUEST_FILE]) + struct.pack('<I', session_id)
-            await self.client.write_gatt_char(BLE_DATA_CONTROL_CHAR_UUID, request_data)
-            
-            # Wait for file transfer
+            # Reset before requesting, not after: the first chunk can arrive before the
+            # write call returns, and clearing afterwards would throw it away
             self.data_chunks = []
             self.receiving_data = True
-            
+
+            request_data = bytes([BLE_DATA_CMD_REQUEST_FILE]) + struct.pack('<I', session_id)
+            await self.client.write_gatt_char(BLE_DATA_CONTROL_CHAR_UUID, request_data)
+
+            # Time out on SILENCE, not total duration. Sessions now carry raw samples and
+            # a 60s grind is ~100KB; on a slow link that outlasts any fixed budget while
+            # data is still arriving perfectly well.
+            idle_timeout_seconds = 15
+            overall_cap_seconds = 300
             file_start_time = time.time()
-            timeout_seconds = 30
-            
-            while self.receiving_data and (time.time() - file_start_time) < timeout_seconds:
+            last_progress_time = file_start_time
+            last_chunk_count = 0
+
+            while self.receiving_data:
                 await asyncio.sleep(0.1)
-            
+                now = time.time()
+                if len(self.data_chunks) != last_chunk_count:
+                    last_chunk_count = len(self.data_chunks)
+                    last_progress_time = now
+                if now - last_progress_time > idle_timeout_seconds or now - file_start_time > overall_cap_seconds:
+                    break
+
             if self.receiving_data:
-                self.safe_print(f"[ERROR] Timeout waiting for session file {session_id}")
+                self.receiving_data = False
+                self.safe_print(f"[ERROR] Timeout waiting for session file {session_id} "
+                                f"({sum(len(c) for c in self.data_chunks)} bytes received before it stalled)")
                 continue
             
             if not self.data_chunks:
@@ -661,7 +679,7 @@ class GrinderBLETool:
             0: "IDLE", 1: "INITIALIZING", 2: "SETUP", 3: "TARING", 4: "TARE_CONFIRM",
             5: "PREDICTIVE", 6: "PULSE_DECISION", 7: "PULSE_EXECUTE", 8: "PULSE_SETTLING",
             9: "FINAL_SETTLING", 10: "TIME_GRINDING", 11: "TIME_ADDITIONAL_PULSE", 12: "COMPLETED", 13: "TIMEOUT",
-            14: "PRIME", 15: "PRIME_SETTLING", 16: "PURGE_CONFIRM",
+            14: "PRIME", 15: "PRIME_SETTLING", 16: "PURGE_CONFIRM", 17: "TIME_PAUSED", 18: "PURGE_CHECK",
         }
         
         offset = 0
@@ -707,6 +725,8 @@ class GrinderBLETool:
         max_pulse_attempts = struct.unpack_from('<B', session_bytes, 58)[0]
         pulse_count = struct.unpack_from('<B', session_bytes, 59)[0]
         termination_reason = struct.unpack_from('<B', session_bytes, 60)[0]
+        # Byte 61 was reserved (always 0) before it became flags, so older files read as none set
+        session_flags = struct.unpack_from('<B', session_bytes, 61)[0]
 
         result_bytes = session_bytes[64:80]
 
@@ -747,6 +767,7 @@ class GrinderBLETool:
             'pulse_count': pulse_count,
             'max_pulse_attempts': max_pulse_attempts,
             'termination_reason': termination_reason,
+            'session_flags': session_flags,
             'latency_to_coast_ratio': latency_to_coast_ratio,
             'flow_rate_threshold': flow_rate_threshold,
             'schema_version': schema_version,
@@ -882,6 +903,7 @@ class GrinderBLETool:
         'file_sha1': 'TEXT',             # Fingerprint of the downloaded file, identifies the grind
         'tare_offset_raw': 'INTEGER',    # grams = (raw_adc - tare_offset_raw) / cal_factor
         'cal_factor': 'REAL',
+        'session_flags': 'INTEGER',      # SESSION_FLAG_* bitmask
     }
     _MEASUREMENT_EXTRA_COLUMNS = {
         'raw_adc': 'INTEGER',            # Unfiltered HX711 sample
@@ -981,7 +1003,7 @@ class GrinderBLETool:
                 "target_weight, target_time_ms, tolerance, final_weight, start_weight, error_grams, "
                 "time_error_ms, total_time_ms, total_motor_on_time_ms, pulse_count, max_pulse_attempts, "
                 "termination_reason, latency_to_coast_ratio, flow_rate_threshold, schema_version, "
-                "result_status, checksum, session_size_bytes, tare_offset_raw, cal_factor"
+                "result_status, checksum, session_size_bytes, tare_offset_raw, cal_factor, session_flags"
             )
             event_columns = (
                 "session_id, event_sequence_id, timestamp_ms, phase_id, phase_name, pulse_attempt_number, "
@@ -1024,7 +1046,7 @@ class GrinderBLETool:
                                     f"already stored under that ID - storing it as session {db_id}")
 
                 cursor.execute(
-                    f"INSERT INTO grind_sessions ({session_columns}) VALUES ({','.join(['?'] * 26)})",
+                    f"INSERT INTO grind_sessions ({session_columns}) VALUES ({','.join(['?'] * 27)})",
                     (
                         db_id, device_id, s['file_sha1'], s['session_timestamp'], s['profile_id'],
                         s.get('grind_mode', 0), s['target_weight'], s.get('target_time_ms', 0), s['tolerance'],
@@ -1034,7 +1056,7 @@ class GrinderBLETool:
                         s.get('latency_to_coast_ratio', 0.0), s.get('flow_rate_threshold', 0.0),
                         s.get('schema_version', LOG_SCHEMA_VERSION), s['result_status'],
                         s.get('checksum', 0), s.get('session_size_bytes', 0),
-                        s.get('tare_offset_raw'), s.get('cal_factor'),
+                        s.get('tare_offset_raw'), s.get('cal_factor'), s.get('session_flags', 0),
                     ))
 
                 cursor.executemany(

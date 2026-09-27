@@ -153,6 +153,23 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     coast_predicted_s_ = 0.0f;
     pending_coast_time_s_ = 0.0f;
     coast_prediction_flow_gps = 0.0f;
+
+    purge_settled_weight_g_ = 0.0f;
+    retare_after_purge_ = false;
+    purge_check_plausible_since_ms_ = 0;
+    purge_missing_notice_shown_ = false;
+
+    pending_vibration_test_ = false;
+    vib_floor_.clear();
+    vib_motor_.clear();
+    vib_last_seq_ = 0;
+    vib_last_motor_ = false;
+    vib_state_change_ms_ = 0;
+    vib_baseline_start_ms_ = 0;
+    vib_run_started_ = false;
+    vib_run_first_raw_ = 0;
+    vib_run_last_raw_ = 0;
+    memset(&vib_result_, 0, sizeof(vib_result_));
     anomaly_count_at_motor_stop_ = 0;
     coast_history_count_ = 0;
     coast_history_next_ = 0;
@@ -268,6 +285,12 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     if (mode == GrindMode::TIME && preferences) {
         time_use_scale = preferences->getBool(PREF_KEY_TIME_USE_SCALE, true);
     }
+    // A vibration test is nothing but scale data, so it always tares and records,
+    // whatever the time-mode display preference says
+    const bool vibration_test = pending_vibration_test_ && mode == GrindMode::TIME;
+    if (vibration_test) {
+        time_use_scale = true;
+    }
 
     if (mode == GrindMode::WEIGHT) {
         if (!weight_sensor) return;
@@ -343,6 +366,26 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     session_descriptor.tolerance = tolerance;
     session_descriptor.profile_id = current_profile_id;
     session_descriptor.time_use_scale = time_use_scale;
+    session_descriptor.vibration_test = vibration_test && time_use_scale;
+
+    purge_settled_weight_g_ = 0.0f;
+    retare_after_purge_ = false;
+    purge_check_plausible_since_ms_ = 0;
+    purge_missing_notice_shown_ = false;
+
+    vib_floor_.clear();
+    vib_motor_.clear();
+    vib_last_seq_ = weight_sensor ? weight_sensor->get_raw_sample_snapshot().seq : 0;
+    vib_last_motor_ = false;
+    vib_state_change_ms_ = millis();
+    vib_baseline_start_ms_ = 0;
+    vib_run_started_ = false;
+    vib_run_first_raw_ = 0;
+    vib_run_last_raw_ = 0;
+    memset(&vib_result_, 0, sizeof(vib_result_));
+    if (session_descriptor.vibration_test) {
+        set_notice_message("Vibration test");
+    }
 
     // Drop any stale stop request so it cannot cancel the grind we are starting
     stop_requested_.store(false, std::memory_order_relaxed);
@@ -391,6 +434,110 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     }
     
     switch_phase(GrindPhase::INITIALIZING, loop_data);
+}
+
+void NoiseAccumulator::add(double t_ms, double value) {
+    if (n < 2) {
+        t[n] = t_ms;
+        y[n] = value;
+        n++;
+        return;
+    }
+    // Deviation of the middle sample from the line joining its neighbours. With
+    // interpolation weights a and b that residual has variance s^2 (1 + a^2 + b^2) for
+    // white noise, so dividing that out makes the estimate read s directly - and
+    // correctly even when the 10 SPS sample spacing jitters.
+    double span = t_ms - t[0];
+    if (span > 0.0f) {
+        double a = (t_ms - t[1]) / span;
+        double b = (t[1] - t[0]) / span;
+        double residual = y[1] - (a * y[0] + b * value);
+        sum_sq += (residual * residual) / (1.0 + a * a + b * b);
+        count++;
+    }
+    t[0] = t[1]; y[0] = y[1];
+    t[1] = t_ms; y[1] = value;
+}
+
+bool GrindController::start_vibration_test() {
+    if (is_active()) {
+        return false;
+    }
+    if (!weight_sensor || weight_sensor->has_hardware_fault()) {
+        LOG_BLE("[%lums CONTROLLER] Vibration test needs a working load cell\n", millis());
+        return false;
+    }
+    // start_grind() reads this to flag the session; it must not outlive the call, or
+    // the next ordinary time grind would be recorded as a test
+    pending_vibration_test_ = true;
+    start_grind(0.0f, VIBRATION_TEST_RUN_MS, GrindMode::TIME);
+    pending_vibration_test_ = false;
+    return is_active();
+}
+
+void GrindController::update_vibration_test(const GrindLoopData& loop_data) {
+    WeightSensor::RawSampleSnapshot sample = weight_sensor->get_raw_sample_snapshot();
+    if (sample.seq == vib_last_seq_) {
+        return;  // Five control cycles per HX711 sample - only act on a new one
+    }
+    vib_last_seq_ = sample.seq;
+
+    // Worked in raw counts, converted once at the end: the tare moves the offset part
+    // way through TARE_CONFIRM, and counts are immune to that where grams are not
+    const bool motor_on = grinder && grinder->is_grinding();
+    if (motor_on != vib_last_motor_) {
+        vib_last_motor_ = motor_on;
+        vib_state_change_ms_ = sample.timestamp_ms;
+        vib_floor_.break_run();
+        vib_motor_.break_run();
+    }
+    // The first moments after a start or stop are a torque step and spin-up, not the
+    // steady vibration the filter has to live with
+    // Signed: the sample current when the session started can predate it, and an
+    // unsigned difference would wrap and wave it through
+    if ((int32_t)(sample.timestamp_ms - vib_state_change_ms_) < (int32_t)VIBRATION_TEST_TRANSIENT_MS) {
+        return;
+    }
+
+    const double t = (double)sample.timestamp_ms;
+    const double raw = (double)sample.raw_adc;
+    if (!motor_on && vib_baseline_start_ms_ != 0 &&
+        (phase == GrindPhase::TARE_CONFIRM || phase == GrindPhase::FINAL_SETTLING)) {
+        vib_floor_.add(t, raw);
+    } else if (motor_on && phase == GrindPhase::TIME_GRINDING) {
+        vib_motor_.add(t, raw);
+        if (!vib_run_started_) {
+            vib_run_started_ = true;
+            vib_run_first_raw_ = sample.raw_adc;
+        }
+        vib_run_last_raw_ = sample.raw_adc;
+    }
+    (void)loop_data;
+}
+
+void GrindController::finish_vibration_test() {
+    memset(&vib_result_, 0, sizeof(vib_result_));
+    float cal = weight_sensor ? fabsf(weight_sensor->get_calibration_factor()) : 0.0f;
+    if (cal <= 0.0f) {
+        return;
+    }
+    vib_result_.floor_samples = (uint16_t)std::min<uint32_t>(vib_floor_.count, UINT16_MAX);
+    vib_result_.vibration_samples = (uint16_t)std::min<uint32_t>(vib_motor_.count, UINT16_MAX);
+    vib_result_.floor_sigma_g = vib_floor_.sigma() / cal;
+    vib_result_.vibration_sigma_g = vib_motor_.sigma() / cal;
+    if (vib_run_started_) {
+        // Sign follows the calibration factor, which is negative on some wirings
+        vib_result_.weight_rise_g = (float)(vib_run_last_raw_ - vib_run_first_raw_) /
+                                    weight_sensor->get_calibration_factor();
+        vib_result_.grounds_detected = vib_result_.weight_rise_g > VIBRATION_TEST_GROUNDS_DETECT_G;
+    }
+    vib_result_.valid = vib_result_.floor_samples >= 10 && vib_result_.vibration_samples >= 10;
+
+    queue_log_message("[VIBRATION] floor %.4fg (%u samples), motor %.4fg (%u samples), rise %+.2fg%s\n",
+                      vib_result_.floor_sigma_g, (unsigned)vib_result_.floor_samples,
+                      vib_result_.vibration_sigma_g, (unsigned)vib_result_.vibration_samples,
+                      vib_result_.weight_rise_g,
+                      vib_result_.grounds_detected ? " - GROUNDS ARRIVED, hopper not empty" : "");
 }
 
 void GrindController::user_tare_request() {
@@ -518,7 +665,7 @@ void GrindController::execute_continue_from_purge() {
         return;
     }
 
-    LOG_BLE("[%lums CONTROLLER] User confirmed purge, continuing to PREDICTIVE\n", millis());
+    LOG_BLE("[%lums CONTROLLER] User confirmed purge, checking whether grounds were kept\n", millis());
 
     // Add time spent in PURGE_CONFIRM to timeout offset (exclude from timeout calculation)
     if (timeout_pause_start > 0) {
@@ -529,21 +676,21 @@ void GrindController::execute_continue_from_purge() {
         timeout_pause_start = 0;
     }
 
-    // Start motor and transition to predictive grinding
-    if (grinder) {
-        grinder->start();
-    }
-    time_grind_start_ms = millis();
+    // The motor stays off: PURGE_CHECK decides, once the portafilter has settled,
+    // whether to re-tare or carry on - the tap on the check mark usually comes while
+    // it is still being seated, and a 600g portafilter settling can swing past 0.5g.
+    purge_check_plausible_since_ms_ = 0;
+    purge_missing_notice_shown_ = false;
 
-    // Supply loop_data so the event bookkeeping starts a fresh record for PREDICTIVE.
-    // Without it switch_phase skips that step, and the whole predictive phase gets
-    // logged under PURGE_CONFIRM - which made the session data read as though 16g had
+    // Supply loop_data so the event bookkeeping starts a fresh record for the next
+    // phase. Without it switch_phase skips that step, and everything after gets logged
+    // under PURGE_CONFIRM - which once made the session data read as though 16g had
     // been ground while waiting for the user to confirm.
     GrindLoopData loop_data = {};
     loop_data.now = millis();
     loop_data.timestamp_ms = loop_data.now - start_time;
     loop_data.current_weight = weight_sensor ? weight_sensor->get_weight_low_latency() : 0.0f;
-    switch_phase(GrindPhase::PREDICTIVE, loop_data);
+    switch_phase(GrindPhase::PURGE_CHECK, loop_data);
 }
 
 void GrindController::execute_pause_time_grind() {
@@ -692,12 +839,37 @@ void GrindController::update() {
             }
 
             if (tare_complete) {
-                // Snapshot the conversion the raw samples need. This is the grind's only
-                // tare, so it holds for every sample from here to the end of the session.
+                // Snapshot the conversion the raw samples need. A re-tare after the purge
+                // overwrites it, so it always describes the zero the dose was ground on;
+                // the session is flagged when that happens.
                 if (weight_sensor) {
                     grind_logger.record_scale_state(weight_sensor->get_zero_offset(),
                                                     weight_sensor->get_calibration_factor());
                 }
+
+                // Vibration test: hold the motor off a while longer with the scale
+                // loaded, to measure the load cell's own floor before the run
+                if (session_descriptor.vibration_test) {
+                    if (vib_baseline_start_ms_ == 0) {
+                        vib_baseline_start_ms_ = loop_data.now;
+                    }
+                    if ((loop_data.now - vib_baseline_start_ms_) < VIBRATION_TEST_BASELINE_MS) {
+                        break;
+                    }
+                }
+
+                // Re-zeroed after discarded purge grounds: the chute is already primed,
+                // so go straight to the main grind instead of purging again
+                if (retare_after_purge_) {
+                    retare_after_purge_ = false;
+                    grind_logger.add_session_flags(GRIND_SESSION_FLAG_RETARED_AFTER_PURGE);
+                    queue_log_message("[PURGE] Re-tared - grinding full dose from zero\n");
+                    grinder->start();
+                    time_grind_start_ms = loop_data.now;
+                    switch_phase(GrindPhase::PREDICTIVE, loop_data);
+                    break;
+                }
+
                 if (!grinder->is_grinding()) {
                     grinder->start();  // Ensure motor is running
                 }
@@ -735,7 +907,9 @@ void GrindController::update() {
                 break;
             }
 
-            bool settled = weight_sensor->check_settling_complete(GRIND_SCALE_PRECISION_SETTLING_TIME_MS);
+            float purge_settled_weight = loop_data.current_weight;
+            bool settled = weight_sensor->check_settling_complete(GRIND_SCALE_PRECISION_SETTLING_TIME_MS,
+                                                                  &purge_settled_weight);
             bool settling_timed_out = (loop_data.now - phase_start_time) >= GRIND_SCALE_SETTLING_TIMEOUT_MS;
             if (settled || settling_timed_out) {
                 if (settling_timed_out && !settled) {
@@ -767,7 +941,12 @@ void GrindController::update() {
 
                 // Determine next phase based on mode AND staleness
                 if (grinder_purge_mode_for_session == GrinderPurgeMode::PURGE && should_show_purge_popup) {
-                    // Purge mode with stale grounds: wait for user confirmation before continuing
+                    // Purge mode with stale grounds: wait for user confirmation before continuing.
+                    // Remember what actually landed - the configured amount is only where
+                    // PRIME stopped, and coast adds to it - so the check after confirm can
+                    // tell kept grounds from discarded ones.
+                    purge_settled_weight_g_ = purge_settled_weight;
+                    queue_log_message("[PURGE] Delivered %.2fg, waiting for confirmation\n", purge_settled_weight);
                     timeout_pause_start = loop_data.now;  // Track when pause started for timeout offset
                     switch_phase(GrindPhase::PURGE_CONFIRM, loop_data);
                 } else {
@@ -784,6 +963,61 @@ void GrindController::update() {
             // This phase waits for UI confirmation
             // The UI will call a method to acknowledge and continue to PREDICTIVE
             // For now, this case just holds the state
+            break;
+        }
+
+        case GrindPhase::PURGE_CHECK: {
+            if (!weight_sensor) {
+                grinder->start();
+                time_grind_start_ms = loop_data.now;
+                switch_phase(GrindPhase::PREDICTIVE, loop_data);
+                break;
+            }
+
+            const float reading = loop_data.current_weight;
+
+            // Portafilter still off the scale. Taring now would zero the empty cradle
+            // and grind onto it, so wait for it to come back; the grind timeout still
+            // applies if it never does.
+            if (reading < GRIND_PURGE_PORTAFILTER_MISSING_G) {
+                purge_check_plausible_since_ms_ = 0;
+                if (!purge_missing_notice_shown_) {
+                    purge_missing_notice_shown_ = true;
+                    set_notice_message("Place portafilter");  // Delivered by this cycle's progress event
+                }
+                break;
+            }
+            if (purge_check_plausible_since_ms_ == 0) {
+                purge_check_plausible_since_ms_ = loop_data.now;
+            }
+
+            // Steady means the whole window lies after the portafilter came back, so a
+            // placement still in progress cannot pass as settled
+            const unsigned long on_scale_ms = loop_data.now - purge_check_plausible_since_ms_;
+            const bool steady = on_scale_ms >= GRIND_PURGE_CHECK_STEADY_WINDOW_MS &&
+                                !weight_sensor->weight_range_exceeds(GRIND_PURGE_CHECK_STEADY_WINDOW_MS,
+                                                                    GRIND_PURGE_CHECK_STEADY_RANGE_G);
+            if (!steady && on_scale_ms < GRIND_PURGE_CHECK_TIMEOUT_MS) {
+                break;
+            }
+
+            const float deviation = fabsf(reading - purge_settled_weight_g_);
+            if (deviation > GRIND_PURGE_RETARE_THRESHOLD_G) {
+                // Grounds discarded: the basket was emptied and re-seated, so zero again
+                // rather than let the seating difference end up in the dose
+                queue_log_message("[PURGE] Reads %.2fg vs %.2fg purged (%.2fg apart%s) - re-taring\n",
+                                  reading, purge_settled_weight_g_, deviation, steady ? "" : ", not steady");
+                retare_after_purge_ = true;
+                set_notice_message("Re-taring");
+                switch_phase(GrindPhase::TARING, loop_data);
+            } else {
+                // Grounds kept: carry on counting them towards the dose, as before
+                queue_log_message("[PURGE] Reads %.2fg vs %.2fg purged - grounds kept, continuing\n",
+                                  reading, purge_settled_weight_g_);
+                grinder->start();
+                time_grind_start_ms = loop_data.now;
+                switch_phase(GrindPhase::PREDICTIVE, loop_data);
+            }
             break;
         }
 
@@ -915,6 +1149,10 @@ void GrindController::update() {
     }
     
     // Unified continuous logging for ALL active phases at the control loop rate
+    if (session_descriptor.vibration_test && weight_sensor) {
+        update_vibration_test(loop_data);
+    }
+
     if (should_log_measurements()) {
         // The raw sample goes in every row alongside the filtered weight, so any filter
         // can be replayed offline against exactly what the controller saw, and noise can
@@ -951,6 +1189,7 @@ void GrindController::update() {
         phase != GrindPhase::IDLE && phase != GrindPhase::INITIALIZING &&
         phase != GrindPhase::SETUP && phase != GrindPhase::TARING &&
         phase != GrindPhase::TARE_CONFIRM && phase != GrindPhase::TIME_PAUSED &&
+        phase != GrindPhase::PURGE_CHECK &&  // Handles a lifted portafilter itself, and ~-1g after dumping is what the re-tare fixes
         grinder->is_motor_settled() &&
         loop_data.current_weight < GRIND_NEGATIVE_WEIGHT_FAILSAFE_G) {
         timeout_phase = phase;
@@ -1166,9 +1405,15 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
         last_session_result_ = session_result;
 
         // Freshness tracking is RAM-only - see the note in init() for why a
-        // since-boot timestamp must not be persisted
-        grinder_purged_since_boot = true;
-        last_purge_runtime_ms = esp_timer_get_time() / 1000;
+        // since-boot timestamp must not be persisted. A vibration test runs the motor
+        // with an empty hopper and moves no coffee, so it must not make stale grounds
+        // look fresh and let the next real grind skip its purge.
+        if (session_descriptor.vibration_test) {
+            finish_vibration_test();
+        } else {
+            grinder_purged_since_boot = true;
+            last_purge_runtime_ms = esp_timer_get_time() / 1000;
+        }
 
         // The grind outcome is settled by this point, so the held coast observation
         // can finally be judged
@@ -1181,7 +1426,7 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
         
         // For time mode, also indicate pulse availability
         if (mode == GrindMode::TIME) {
-            event_data.can_pulse = true;
+            event_data.can_pulse = !session_descriptor.vibration_test;
             event_data.pulse_count = additional_pulse_count;
             event_data.pulse_duration_ms = pulse_duration_ms;
         }
@@ -1257,6 +1502,7 @@ const char* GrindController::get_phase_name(GrindPhase p) const {
         case GrindPhase::FINAL_SETTLING: return "FINAL_SETTLING";
         case GrindPhase::TIME_GRINDING: return "TIME";
         case GrindPhase::TIME_PAUSED: return "PAUSED";
+        case GrindPhase::PURGE_CHECK: return "PURGE_CHECK";
         case GrindPhase::TIME_ADDITIONAL_PULSE: return "PULSE";
         case GrindPhase::COMPLETED: return "COMPLETED";
         case GrindPhase::TIMEOUT: return "TIMEOUT";
@@ -1809,7 +2055,8 @@ void GrindController::execute_additional_pulse() {
 bool GrindController::can_pulse() const {
     // Only allow pulses in time mode when grind is completed and not in pulse phase
     return mode == GrindMode::TIME &&
-           phase == GrindPhase::COMPLETED;
+           phase == GrindPhase::COMPLETED &&
+           !session_descriptor.vibration_test;
 }
 
 //==============================================================================

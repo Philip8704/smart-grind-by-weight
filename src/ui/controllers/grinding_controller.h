@@ -39,6 +39,7 @@ private:
     void enter_menu_state();
 
     void start_grind_complete_timer();
+    void show_vibration_test_result();
     void start_grind_timeout_timer();
     void cancel_timers();
 

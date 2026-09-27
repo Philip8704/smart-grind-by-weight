@@ -550,6 +550,11 @@ void GrindingUIController::handle_grind_event(const GrindEventData& event_data) 
             break;
         }
         case UIGrindEvent::COMPLETED: {
+            if (ui_manager_->grind_controller && ui_manager_->grind_controller->is_vibration_test()) {
+                chart_updates_enabled_ = false;
+                show_vibration_test_result();
+                break;
+            }
             ui_manager_->current_mode = event_data.mode;
             ui_manager_->grinding_screen.set_mode(ui_manager_->current_mode);
             final_grind_weight_ = event_data.final_weight;
@@ -713,6 +718,47 @@ void GrindingUIController::enter_menu_state() {
     if (pulse_button_) {
         lv_obj_add_flag(pulse_button_, LV_OBJ_FLAG_HIDDEN);
     }
+}
+
+void GrindingUIController::show_vibration_test_result() {
+    // Written on Core 0 before the COMPLETED event was queued, so it is complete here
+    const VibrationTestResult& r = ui_manager_->grind_controller->get_vibration_test_result();
+
+    char message[200];
+    if (r.grounds_detected) {
+        snprintf(message, sizeof(message),
+                 "Grounds landed during the run (+%.2fg), so this measured grinding, not vibration."
+                 "\n\n"
+                 "Empty the hopper and run it again.",
+                 r.weight_rise_g);
+    } else if (!r.valid) {
+        snprintf(message, sizeof(message),
+                 "Too few samples to judge (%u motor off, %u running)."
+                 "\n\n"
+                 "Keep the scale still and run it again.",
+                 (unsigned)r.floor_samples, (unsigned)r.vibration_samples);
+    } else {
+        float ratio = (r.floor_sigma_g > 0.0f) ? r.vibration_sigma_g / r.floor_sigma_g : 0.0f;
+        snprintf(message, sizeof(message),
+                 "Load cell: %.4fg"
+                 "\n"
+                 "Vibration: %.4fg"
+                 "\n\n"
+                 "Running adds %.1fx the noise. Saved for export.",
+                 r.floor_sigma_g, r.vibration_sigma_g, ratio);
+    }
+
+    const bool usable = r.valid && !r.grounds_detected;
+    auto done = [this]() {
+        // Leave for the ready screen directly. The controller's STOPPED event lands
+        // there too; going there now avoids the confirm dialog restoring the grinding
+        // screen for the moment in between.
+        ui_manager_->grind_controller->return_to_idle();
+        ui_manager_->switch_to_state(UIState::READY);
+    };
+    ui_manager_->show_confirmation("VIBRATION TEST", message, "OK",
+                                   lv_color_hex(usable ? THEME_COLOR_SUCCESS : THEME_COLOR_WARNING),
+                                   done, "CLOSE", done);
 }
 
 void GrindingUIController::start_grind_complete_timer() {

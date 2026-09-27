@@ -34,6 +34,7 @@ void MenuUIController::register_events() {
     EventBridgeLVGL::register_handler(ET::MENU_RESET, [this](lv_event_t*) { handle_reset(); });
     EventBridgeLVGL::register_handler(ET::MENU_PURGE, [this](lv_event_t*) { handle_purge(); });
     EventBridgeLVGL::register_handler(ET::MENU_MOTOR_TEST, [this](lv_event_t*) { handle_motor_test(); });
+    EventBridgeLVGL::register_handler(ET::MENU_VIBRATION_TEST, [this](lv_event_t*) { handle_vibration_test(); });
     EventBridgeLVGL::register_handler(ET::MENU_SCALE_OPEN, [this](lv_event_t*) { handle_scale_open(); });
     EventBridgeLVGL::register_handler(ET::MENU_SCALE_TARE, [this](lv_event_t*) { handle_scale_tare(); });
     EventBridgeLVGL::register_handler(ET::MENU_AUTOTUNE, [this](lv_event_t*) { handle_autotune(); });
@@ -133,9 +134,9 @@ void MenuUIController::handle_motor_test() {
     if (!ui_manager_) return;
 
     // Checked here, before the confirmation dialog, rather than after the user hits RUN.
-    // Reporting the fault from inside the RUN callback would ask the confirm controller
-    // to show a second dialog while it is still dispatching the first, replacing the
-    // std::function that owns the lambda currently executing.
+    // A dialog raised from inside the RUN callback would not survive: once the callback
+    // returns, the confirm controller restores the state it saved and clears all
+    // callbacks, leaving the new dialog on screen with buttons that do nothing.
     //
     // Worth surfacing at all because the failure is otherwise completely silent: every
     // actuation path returns early on !rmt_initialized, so a grinder whose RMT channel
@@ -175,6 +176,54 @@ void MenuUIController::handle_motor_test() {
         "CANCEL",
         [this]() { return_to_menu(); }
     );
+}
+
+void MenuUIController::handle_vibration_test() {
+    if (!ui_manager_) return;
+
+    // Preconditions are checked here, before any dialog, for the same reason as Motor
+    // Test: a dialog raised from inside the RUN callback has its callbacks cleared as
+    // soon as that callback returns.
+    auto* hardware = ui_manager_->get_hardware_manager();
+    auto* motor = hardware ? hardware->get_grinder() : nullptr;
+    auto* scale = hardware ? hardware->get_weight_sensor() : nullptr;
+    const char* problem = nullptr;
+    if (!ui_manager_->grind_controller || ui_manager_->grind_controller->is_active()) {
+        problem = "A grind is running.";
+    } else if (!motor || !motor->is_initialized() || !motor->is_rmt_ready()) {
+        problem = "The motor is not available.";
+    } else if (!scale || scale->has_hardware_fault()) {
+        problem = "The load cell is not working.";
+    }
+    if (problem) {
+        ui_manager_->show_confirmation("VIBRATION TEST", problem, "OK",
+                                       lv_color_hex(THEME_COLOR_WARNING),
+                                       [this]() { return_to_menu(); },
+                                       "CLOSE", [this]() { return_to_menu(); });
+        return;
+    }
+
+    ui_manager_->show_confirmation(
+        "VIBRATION TEST",
+        "Empty the hopper or close the bean gate, and seat the portafilter."
+        "\n\n"
+        "Measures scale noise with the motor off, then with it running 5s.",
+        "RUN",
+        lv_color_hex(THEME_COLOR_SUCCESS),
+        [this]() { run_vibration_test(); },
+        "CANCEL",
+        [this]() { return_to_menu(); }
+    );
+}
+
+void MenuUIController::run_vibration_test() {
+    if (!ui_manager_ || !ui_manager_->grind_controller) return;
+    // The grind controller's own events move the UI to the grinding screen and back,
+    // exactly as for a time grind; the result dialog is raised on COMPLETED
+    if (!ui_manager_->grind_controller->start_vibration_test()) {
+        LOG_BLE("[VIBRATION] Test did not start\n");
+        return_to_menu();
+    }
 }
 
 void MenuUIController::handle_scale_open() {

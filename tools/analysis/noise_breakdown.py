@@ -154,6 +154,45 @@ def fmt(value):
     return "   n/a" if math.isnan(value) else f"{value:6.4f}"
 
 
+SESSION_FLAG_VIBRATION_TEST = 0x01    # GrindSessionFlags in grind_logging.h
+TEST_TRANSIENT_MS = 500               # Matches VIBRATION_TEST_TRANSIENT_MS on the device
+
+
+def test_residuals(samples):
+    """Residuals for a dedicated vibration test: motor off vs motor on, nothing landing.
+
+    Samples within TEST_TRANSIENT_MS of a motor start or stop are skipped - that is a
+    torque step and spin-up, not the steady vibration a filter has to live with - which
+    is also what the device does when it shows the result on screen.
+    """
+    out = {"load cell": [], "vibration": []}
+    change_time, last_motor = None, None
+    steady = []
+    for s in samples:
+        if s[3] != last_motor:
+            last_motor, change_time = s[3], s[0]
+        steady.append(s if s[0] - change_time >= TEST_TRANSIENT_MS else None)
+
+    def runs(predicate):
+        run = []
+        for s in steady:
+            if s is not None and predicate(s):
+                run.append(s)
+            elif run:
+                yield run
+                run = []
+        if run:
+            yield run
+
+    for run in runs(lambda s: not s[3] and s[4] in QUIET_PHASES):
+        if len(run) >= MIN_SEGMENT_SAMPLES:
+            out["load cell"] += local_residuals([(s[0], s[2]) for s in run])
+    for run in runs(lambda s: s[3]):
+        if len(run) >= MIN_SEGMENT_SAMPLES:
+            out["vibration"] += local_residuals([(s[0], s[2]) for s in run])
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     default_db = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "grinder_data.db")
@@ -169,9 +208,11 @@ def main():
     columns = {row[1] for row in conn.execute("PRAGMA table_info(grind_measurements)")}
     if "raw_adc" not in columns:
         sys.exit("This database has no raw samples - export sessions recorded by schema 3 firmware")
+    session_columns = {row[1] for row in conn.execute("PRAGMA table_info(grind_sessions)")}
+    flags_column = "session_flags" if "session_flags" in session_columns else "0"
 
     sessions = conn.execute(
-        "SELECT session_id, tare_offset_raw, cal_factor, target_weight, final_weight "
+        f"SELECT session_id, tare_offset_raw, cal_factor, {flags_column} "
         "FROM grind_sessions WHERE cal_factor IS NOT NULL AND cal_factor != 0 ORDER BY session_id").fetchall()
     if not sessions:
         sys.exit("No sessions with raw samples and a tare yet - grind a few times on schema 3 firmware")
@@ -180,10 +221,12 @@ def main():
         os.makedirs(args.csv, exist_ok=True)
 
     pooled = {"load cell": [], "vibration": [], "grinding": []}
+    test_pooled = {"load cell": [], "vibration": []}
+    test_count = 0
     total_missed = total_samples = 0
 
-    print(f"{'session':>7}  {'samples':>7}  {'missed':>6}  {'load cell':>9}  {'vibration':>9}  {'grinding':>9}   (sigma, g)")
-    for session_id, tare, cal, target, final in sessions:
+    print(f"{'session':>7}  {'kind':>5}  {'samples':>7}  {'missed':>6}  {'load cell':>9}  {'vibration':>9}  {'grinding':>9}   (sigma, g)")
+    for session_id, tare, cal, flags in sessions:
         rows = conn.execute(
             "SELECT timestamp_ms, raw_adc, raw_sample_seq, raw_sample_age_ms, motor_is_on, phase_id "
             "FROM grind_measurements WHERE session_id = ? ORDER BY sequence_id", (session_id,)).fetchall()
@@ -193,12 +236,20 @@ def main():
         total_missed += missed
         total_samples += len(samples)
 
-        parts = segment_residuals(samples)
-        for key, values in parts.items():
-            pooled[key] += values
-        print(f"{session_id:>7}  {len(samples):>7}  {missed:>6}  "
-              f"{fmt(sigma(parts['load cell'])):>9}  {fmt(sigma(parts['vibration'])):>9}  "
-              f"{fmt(sigma(parts['grinding'])):>9}")
+        if (flags or 0) & SESSION_FLAG_VIBRATION_TEST:
+            test_count += 1
+            parts = test_residuals(samples)
+            for key, values in parts.items():
+                test_pooled[key] += values
+            print(f"{session_id:>7}  {'test':>5}  {len(samples):>7}  {missed:>6}  "
+                  f"{fmt(sigma(parts['load cell'])):>9}  {fmt(sigma(parts['vibration'])):>9}  {'':>9}")
+        else:
+            parts = segment_residuals(samples)
+            for key, values in parts.items():
+                pooled[key] += values
+            print(f"{session_id:>7}  {'grind':>5}  {len(samples):>7}  {missed:>6}  "
+                  f"{fmt(sigma(parts['load cell'])):>9}  {fmt(sigma(parts['vibration'])):>9}  "
+                  f"{fmt(sigma(parts['grinding'])):>9}")
 
         if args.csv:
             path = os.path.join(args.csv, f"session_{session_id}.csv")
@@ -208,15 +259,24 @@ def main():
                 writer.writerows(samples)
 
     print()
-    print("Pooled over all sessions (sigma per HX711 sample):")
+    print("Pooled over grinds (sigma per HX711 sample):")
     for key in ("load cell", "vibration", "grinding"):
         values = pooled[key]
         print(f"  {key:<10} {fmt(sigma(values))} g   from {len(values)} samples")
+    if test_count:
+        print(f"Dedicated vibration tests ({test_count}):")
+        for key in ("load cell", "vibration"):
+            values = test_pooled[key]
+            print(f"  {key:<10} {fmt(sigma(values))} g   from {len(values)} samples")
     if total_samples:
         print(f"  missed samples: {total_missed} of {total_samples + total_missed} "
               f"({100.0 * total_missed / (total_samples + total_missed):.1f}%)")
 
-    base, vib, grind = (sigma(pooled[k]) for k in ("load cell", "vibration", "grinding"))
+    # Prefer the dedicated test for vibration: dozens of clean samples per run, against
+    # the handful per grind between motor start and the first grounds arriving
+    base_values = pooled["load cell"] + test_pooled["load cell"]
+    vib_values = test_pooled["vibration"] if len(test_pooled["vibration"]) >= 30 else pooled["vibration"] + test_pooled["vibration"]
+    base, vib, grind = sigma(base_values), sigma(vib_values), sigma(pooled["grinding"])
     print()
     print("Reading it:")
     if not math.isnan(base):
@@ -231,8 +291,8 @@ def main():
         print(f"  Grounds landing add {extra:.4f} g beyond vibration ({grind / vib:.1f}x vibration alone).")
     if total_samples and total_missed / max(total_samples, 1) > 0.02:
         print("  More than 2% of samples were never logged - the control loop is falling behind the HX711.")
-    if len(pooled["vibration"]) < 30:
-        print("  Fewer than 30 vibration samples so far - the latency window is short; more grinds will firm this up.")
+    if len(vib_values) < 30:
+        print("  Fewer than 30 vibration samples so far - run Menu > Vibration Test for a clean measurement.")
 
 
 if __name__ == "__main__":

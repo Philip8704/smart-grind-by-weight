@@ -153,6 +153,7 @@ void MenuScreen::create_menu_ui() {
     cal_button = create_menu_item(main_page, "Calibrate");
     autotune_button = create_menu_item(main_page, "Tune Pulses");
     motor_test_button = create_menu_item(main_page, "Motor Test");
+    vibration_test_button = create_menu_item(main_page, "Vibration Test");
 
     lv_menu_set_load_page_event(menu, scale_item, scale_page);
 
@@ -160,6 +161,7 @@ void MenuScreen::create_menu_ui() {
     lv_obj_add_flag(cal_button, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_flag(autotune_button, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_flag(motor_test_button, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(vibration_test_button, LV_OBJ_FLAG_CLICKABLE);
 
     using ET = EventBridgeLVGL::EventType;
     if (cal_button) {
@@ -173,6 +175,10 @@ void MenuScreen::create_menu_ui() {
     if (motor_test_button) {
         lv_obj_add_event_cb(motor_test_button, EventBridgeLVGL::dispatch_event, LV_EVENT_CLICKED,
                            reinterpret_cast<void*>(static_cast<intptr_t>(ET::MENU_MOTOR_TEST)));
+    }
+    if (vibration_test_button) {
+        lv_obj_add_event_cb(vibration_test_button, EventBridgeLVGL::dispatch_event, LV_EVENT_CLICKED,
+                           reinterpret_cast<void*>(static_cast<intptr_t>(ET::MENU_VIBRATION_TEST)));
     }
 
     create_separator(main_page, "Settings");
@@ -1035,8 +1041,8 @@ void MenuScreen::update_logging_toggle() {
     Preferences prefs;
     prefs.begin("logging", true); // read-only
 
-    // Load logging enabled value from preferences (default to false)
-    bool logging_enabled = prefs.getBool("enabled", false);
+    // Must match the default the logger applies, or the toggle shows off while saving
+    bool logging_enabled = prefs.getBool("enabled", GRIND_LOGGING_ENABLED_DEFAULT);
     prefs.end();
 
     // Update toggle state

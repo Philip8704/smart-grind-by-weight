@@ -25,6 +25,29 @@ enum class GrinderPurgeMode {
 // Grind freshness tracking
 #define GRIND_FRESHNESS_DEFAULT_HOURS 8.0f
 
+// After confirming a purge, the settled reading is compared with what the purge
+// actually delivered. Still about the purge amount means the grounds were kept, so the
+// grind carries on counting them as now. Far from it means they were discarded - the
+// basket is empty and has been lifted and re-seated - so the scale is re-zeroed rather
+// than letting the seating difference land in the dose.
+#define GRIND_PURGE_RETARE_THRESHOLD_G 0.5f
+#define GRIND_PURGE_CHECK_STEADY_WINDOW_MS 500                        // Reading must hold still this long...
+#define GRIND_PURGE_CHECK_STEADY_RANGE_G 0.2f                         // ...within this peak-to-peak band. At 0.03g noise five samples span ~0.12g, so 0.1 would rarely pass; still well clear of the 0.5g decision
+#define GRIND_PURGE_CHECK_TIMEOUT_MS 3000                             // Decide on the best available reading after this
+#define GRIND_PURGE_PORTAFILTER_MISSING_G -20.0f                      // Below this the portafilter is off the scale - wait, never tare
+
+//------------------------------------------------------------------------------
+// VIBRATION TEST
+//------------------------------------------------------------------------------
+// Runs the motor with an empty hopper and the portafilter in place, recording raw
+// samples, to measure how much vibration the load cell picks up with nothing landing.
+// Grinds only offer the few samples between motor start and the first grounds; this
+// gives dozens in one run. The quiet periods either side give the load-cell floor.
+#define VIBRATION_TEST_BASELINE_MS 3000                               // Motor off, scale loaded, before the run
+#define VIBRATION_TEST_RUN_MS 5000                                    // Motor on
+#define VIBRATION_TEST_TRANSIENT_MS 500                               // Ignored after each motor start/stop
+#define VIBRATION_TEST_GROUNDS_DETECT_G 0.3f                          // Rise during the run that means the hopper was not empty
+
 //------------------------------------------------------------------------------
 // GRIND CONTROL TUNING
 //------------------------------------------------------------------------------

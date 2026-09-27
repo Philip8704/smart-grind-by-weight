@@ -9,7 +9,9 @@ class WeightSensor;
 class Grinder;
 
 // Buffer settings (PSRAM staging area) - Dynamic calculation based on actual timing
-#define MAX_EVENTS_PER_GRIND 50                             // Max discrete events per session (phases, pulses, etc.)
+// A grind that purges, re-tares and uses all ten correction pulses needs ~45 events
+// (three per pulse alone), so 50 left almost no margin before the tail was cut off
+#define MAX_EVENTS_PER_GRIND 64                             // Max discrete events per session (phases, pulses, etc.)
 
 // Core 0 synchronized logging frequency matches the control loop interval
 // Example: 30s * 50Hz = 1500 measurements when control interval is 20ms
@@ -50,6 +52,20 @@ struct TimeSeriesSessionHeader {
     uint16_t schema_version;       // Schema/version so Python tools can adapt
     uint16_t reserved;             // Reserved for future use (alignment + versioned flags)
 };
+
+enum GrindSessionFlags : uint8_t {
+    // Not a grind: the motor ran with an empty hopper to measure vibration. Analysis
+    // should treat it separately, and it is excluded from statistics and freshness.
+    GRIND_SESSION_FLAG_VIBRATION_TEST = 1 << 0,
+    // The scale was re-zeroed after the purge because the grounds were discarded.
+    // tare_offset_raw holds the SECOND tare, so raw samples before the re-tare sit on
+    // a different zero - offsets differ, noise and slopes do not.
+    GRIND_SESSION_FLAG_RETARED_AFTER_PURGE = 1 << 1,
+};
+
+// Sessions are only written to flash while this is on. It defaulted to off, which left
+// nothing to export unless someone had found the toggle.
+#define GRIND_LOGGING_ENABLED_DEFAULT true
 
 enum GrindEventFlags : uint8_t {
     GRIND_EVENT_FLAG_TIME_MODE   = 1 << 0,  // Event recorded while grinding by time
@@ -141,7 +157,8 @@ struct GrindSession {
     uint8_t  max_pulse_attempts;      // Configured max pulse attempts
     uint8_t  pulse_count;             // Pulses executed
     uint8_t  termination_reason;      // See GrindTerminationReason
-    uint8_t  reserved[3];             // Alignment + future expansion
+    uint8_t  session_flags;           // GrindSessionFlags bitmask; was reserved, so older files read 0
+    uint8_t  reserved[2];             // Alignment + future expansion
     char     result_status[16];       // Null-terminated status string
 
     // Scale state during the grind, so the raw samples convert to grams offline:
@@ -234,6 +251,7 @@ public:
     // Called on Core 0 once the grind's tare has completed. Same core and same session
     // as log_continuous_measurement, which already writes the session buffers from here.
     void record_scale_state(int32_t tare_offset_raw, float cal_factor);
+    void add_session_flags(uint8_t flags);   // Core 0, during the session - see GrindSessionFlags
 
     // Flash storage management
     bool flush_session_to_flash();          // Flush current session to flash
