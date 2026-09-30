@@ -805,13 +805,23 @@ if analysis_mode == "Single Session":
         By applying a Fast Fourier Transform (FFT), we can identify the dominant frequencies of vibration from the motor and burrs.
         A strong, clear peak may indicate the primary operational frequency of the motor. This data helps optimize filtering algorithms and understand mechanical characteristics.
         
-        **Technical Details**: Analysis uses detrended weight measurements from PREDICTIVE phase when motor_is_on=1. Sample rate varies based on controller frequency (typically 50Hz).
+        **Technical Details**: Analysis uses detrended weight measurements from PREDICTIVE phase when motor_is_on=1. One row per load-cell sample (10 SPS), so frequencies above 5Hz cannot be resolved.
         """)
 
         predictive_motor_on_df = session_measurements[
             (session_measurements['phase_name'] == 'PREDICTIVE') &
             (session_measurements['motor_is_on'] == 1)
         ].copy()
+
+        # One row per real load-cell sample. Rows used to be written every 20ms control
+        # cycle while the HX711 delivers 10 samples a second, so four in five repeated the
+        # previous sample and the spectrum above 5Hz was an artefact of that. Firmware
+        # with raw samples (log schema 3) also skips rows where nothing changed, which
+        # makes row spacing uneven - either way the FFT needs the actual samples.
+        if ('raw_sample_seq' in predictive_motor_on_df.columns and
+                predictive_motor_on_df['raw_sample_seq'].notna().any()):
+            seq = predictive_motor_on_df['raw_sample_seq']
+            predictive_motor_on_df = predictive_motor_on_df[seq != seq.shift()].copy()
 
         if len(predictive_motor_on_df) < 20:
             st.warning("Not enough data in the predictive phase with the motor on to perform vibration analysis.")

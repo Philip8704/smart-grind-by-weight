@@ -20,9 +20,32 @@
  *    if it was a crash is the surviving content kept and offered for download.
  *    A clean restart discards it.
  *
- * Nothing here writes to flash, so there is no wear and no storage to fill. Both
- * buffers are fixed size and overwrite oldest.
+ * Both of those are lost on a manual restart or power cycle - which is exactly how a
+ * hang gets cleared - so there is also a persistent log:
+ *
+ *  - Every line is staged in a PSRAM ring and the file IO task (Core 1) appends it to
+ *    LittleFS every few seconds. Nothing touches flash from the caller's context.
+ *    Files are fixed-size segments under /logs; the oldest segment is deleted before
+ *    a new one is started, and before any write that would bring free space below a
+ *    floor, so the log can never fill the partition or crowd out grind sessions.
+ *    Each boot starts its own segment behind a marker line with the reset reason.
+ *
+ *  - Task heartbeats (one line per task every 10s) would otherwise be most of it and
+ *    push everything useful out within an hour. They are kept in full while a grind is
+ *    running - the grind heartbeat shows phase and weight, which is what explains a
+ *    stall - and one set every DEBUG_PERSIST_IDLE_HEARTBEAT_INTERVAL_MS otherwise.
  */
+
+// Persistent log (LittleFS)
+#define DEBUG_PERSIST_DIR "/logs"
+#define DEBUG_PERSIST_STAGING_BYTES 16384                  // PSRAM ring awaiting flush
+#define DEBUG_PERSIST_SEGMENT_BYTES (32 * 1024)            // One file
+#define DEBUG_PERSIST_MAX_SEGMENTS 8                       // 256KB total - ~2-3 days of normal use; sessions get the rest
+#define DEBUG_PERSIST_FLUSH_INTERVAL_MS 5000               // Lines reach flash within this
+#define DEBUG_PERSIST_FLUSH_THRESHOLD_BYTES 4096           // ...or sooner once this much is waiting
+#define DEBUG_PERSIST_MIN_FREE_BYTES (64 * 1024)           // Never write the partition below this
+#define DEBUG_PERSIST_IDLE_HEARTBEAT_INTERVAL_MS 600000    // Idle: one heartbeat set per 10 minutes
+#define DEBUG_PREVIOUS_BOOT_TAIL_BYTES 3072                // Shown in the diagnostic report
 
 // Boot window: how long to capture and how much to keep (PSRAM).
 #define DEBUG_BOOT_LOG_WINDOW_MS 10000
@@ -50,3 +73,23 @@ bool debug_log_has_crash_dump();
 const char* debug_log_crash_reason();      // Reset reason that produced the dump
 size_t debug_log_crash_dump_size();
 size_t debug_log_copy_crash_dump(size_t offset, char* out, size_t out_size);
+
+// --- Persistent log ---
+// Call once after LittleFS is mounted, before the file IO task starts: finds the
+// previous boot's segments and picks this boot's.
+void debug_log_persist_begin();
+
+// File IO task only. Appends staged lines to flash when due; cheap when nothing is.
+void debug_log_persist_service();
+
+// Heartbeats are persisted in full while a grind is active (see above)
+void debug_log_set_grind_active(bool active);
+
+// Reset reason of THIS boot, for every reason including power-on and manual reset
+const char* debug_log_reset_reason_name();
+
+// Last bytes the previous boot wrote to the persistent log - what a manual restart
+// after a hang would otherwise have erased. Returns bytes copied (NUL-terminated).
+size_t debug_log_copy_previous_boot_tail(char* out, size_t out_size);
+uint32_t debug_log_persist_segment_count();
+uint32_t debug_log_persist_dropped_bytes();

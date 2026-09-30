@@ -3,6 +3,7 @@
 #include <cstdarg>
 #include <Arduino.h>
 #include <esp_system.h>
+#include <esp_heap_caps.h>
 #include <LittleFS.h>
 #include <nvs_flash.h>
 #include <nvs.h>
@@ -1204,8 +1205,43 @@ void BluetoothManager::generate_diagnostic_report() {
         snprintf(buf, sizeof(buf), "\n");
         send_chunk(buf);
     } else {
-        snprintf(buf, sizeof(buf), "[CRASH DUMP] none - previous shutdown was clean\n\n");
+        // Not "clean": a manual restart or power cycle after a hang also leaves no dump
+        snprintf(buf, sizeof(buf), "[CRASH DUMP] none - previous session did not end in a crash or watchdog reset\n\n");
         send_chunk(buf);
+    }
+
+    // Section 1b1: End of the previous boot's persistent log. The crash dump only
+    // survives a panic or watchdog; this survives anything, including the restart
+    // that clears a hang - which is when it is needed most.
+    snprintf(buf, sizeof(buf),
+             "[PREVIOUS BOOT LOG]\n"
+             "  This boot started by: %s\n"
+             "  Persistent log: %lu segments, %lu bytes lost before reaching flash\n",
+             debug_log_reset_reason_name(),
+             (unsigned long)debug_log_persist_segment_count(),
+             (unsigned long)debug_log_persist_dropped_bytes());
+    send_chunk(buf);
+    {
+        // PSRAM, not stack: the Bluetooth task's stack already carries the report
+        char* tail = static_cast<char*>(heap_caps_malloc(DEBUG_PREVIOUS_BOOT_TAIL_BYTES + 1,
+                                                         MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+        size_t tail_bytes = tail ? debug_log_copy_previous_boot_tail(tail, DEBUG_PREVIOUS_BOOT_TAIL_BYTES + 1) : 0;
+        if (tail_bytes == 0) {
+            snprintf(buf, sizeof(buf), "  (no previous boot recorded yet)\n\n");
+            send_chunk(buf);
+        } else {
+            snprintf(buf, sizeof(buf), "  Last %u bytes before this boot:\n", (unsigned)tail_bytes);
+            send_chunk(buf);
+            for (size_t offset = 0; offset < tail_bytes; offset += sizeof(buf) - 1) {
+                size_t n = std::min(tail_bytes - offset, sizeof(buf) - 1);
+                memcpy(buf, tail + offset, n);
+                buf[n] = '\0';
+                send_chunk(buf);
+            }
+            snprintf(buf, sizeof(buf), "\n\n");
+            send_chunk(buf);
+        }
+        if (tail) free(tail);
     }
 
     // Section 1b2: Motor readiness. Placed this early because a motor that cannot
@@ -1326,20 +1362,23 @@ void BluetoothManager::generate_diagnostic_report() {
 
     int coast_entries = grind_controller.get_coast_history_count();
     if (coast_entries == 0) {
-        snprintf(buf, sizeof(buf), "  No grinds recorded since boot\n\n");
+        snprintf(buf, sizeof(buf), "  No grinds recorded yet\n\n");
         send_chunk(buf);
     } else {
         // Two lines per grind: what the model predicted against what actually happened,
         // then where the dose landed. Splitting them keeps each inside one chunk and
-        // keeps the columns readable on a phone.
-        snprintf(buf, sizeof(buf), "  Last %d grinds, newest first:\n", coast_entries);
+        // keeps the columns readable on a phone. The history survives restarts, so each
+        // entry says which boot it came from - uptime alone is ambiguous across boots.
+        snprintf(buf, sizeof(buf), "  Last %d grinds, newest first (boot %u is this one):\n",
+                 coast_entries, (unsigned)grind_controller.get_boot_seq());
         send_chunk(buf);
         for (int i = 0; i < coast_entries; i++) {
             const CoastObservation* entry = grind_controller.get_coast_history_entry(i);
             if (!entry) continue;
             if (entry->accepted) {
                 snprintf(buf, sizeof(buf),
-                         "   %5lus P%u predicted %.3fs (%.2fg) measured %.3fs (%.2fg @ %.2fg/s)\n",
+                         "   b%u %5lus P%u predicted %.3fs (%.2fg) measured %.3fs (%.2fg @ %.2fg/s)\n",
+                         (unsigned)entry->boot_seq,
                          (unsigned long)entry->uptime_s, (unsigned)entry->profile_id,
                          entry->predicted_s, entry->predicted_weight_g,
                          entry->observed_s, entry->coast_weight_g, entry->flow_rate_gps);
@@ -1351,7 +1390,8 @@ void BluetoothManager::generate_diagnostic_report() {
                          (unsigned)entry->pulse_count);
             } else {
                 snprintf(buf, sizeof(buf),
-                         "   %5lus P%u REJECTED %.3fs (%.2fg @ %.2fg/s) - %s\n",
+                         "   b%u %5lus P%u REJECTED %.3fs (%.2fg @ %.2fg/s) - %s\n",
+                         (unsigned)entry->boot_seq,
                          (unsigned long)entry->uptime_s, (unsigned)entry->profile_id,
                          entry->observed_s, entry->coast_weight_g, entry->flow_rate_gps,
                          entry->reason[0] ? entry->reason : "unknown");
@@ -2046,16 +2086,17 @@ void BluetoothManager::generate_diagnostic_report() {
     send_chunk(buf);
     int error_entries = grind_controller.get_error_history_count();
     if (error_entries == 0) {
-        snprintf(buf, sizeof(buf), "  None this session\n\n");
+        snprintf(buf, sizeof(buf), "  None recorded\n\n");
         send_chunk(buf);
     } else {
         for (int i = 0; i < error_entries; i++) {
             uint32_t uptime_s = 0;
             const char* message = nullptr;
             const char* phase = nullptr;
-            if (grind_controller.get_error_history_entry(i, &uptime_s, &message, &phase)) {
-                snprintf(buf, sizeof(buf), "   %5lus [%s] %s\n",
-                         (unsigned long)uptime_s, phase ? phase : "?",
+            uint16_t boot_seq = 0;
+            if (grind_controller.get_error_history_entry(i, &uptime_s, &message, &phase, &boot_seq)) {
+                snprintf(buf, sizeof(buf), "   b%u %5lus [%s] %s\n",
+                         (unsigned)boot_seq, (unsigned long)uptime_s, phase ? phase : "?",
                          message ? message : "?");
                 send_chunk(buf);
             }

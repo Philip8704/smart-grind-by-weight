@@ -16,8 +16,9 @@ needed - just grinds:
 
 Each is measured as the scatter of individual HX711 samples around a local straight
 line, so the steady rise while grinding and slow drift while settling do not count as
-noise. Only fresh HX711 samples are used: rows are logged at 50Hz, samples arrive at
-10 SPS, and the in-between rows repeat the previous sample.
+noise. Only fresh HX711 samples are used: rows are logged at up to 50Hz, samples
+arrive at 10 SPS, and rows between samples repeat the previous one (newer firmware
+skips exact repeats, older firmware wrote them all).
 
 At 10 SPS the fastest frequency visible is 5Hz. Motor vibration is far faster than
 that and folds down into the samples as broadband noise, so this separates sources by

@@ -699,6 +699,12 @@ void MenuUIController::perform_factory_reset() {
 
     LOG_DEBUG_PRINTLN("Factory reset: clearing NVS preferences and rebooting...");
 
+    // The dialog promises grind history is cleared. The per-grind coast and error
+    // history file is part of that; the persistent log is deliberately kept, since a
+    // reset is often the moment its record of what went wrong is needed.
+    LittleFS.remove(GRIND_HISTORY_FILE);
+    LittleFS.remove(GRIND_HISTORY_TEMP_FILE);
+
     nvs_flash_deinit();
     esp_err_t erase_result = nvs_flash_erase();
 

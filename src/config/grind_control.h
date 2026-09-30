@@ -70,6 +70,7 @@ enum class GrinderPurgeMode {
 
 // Failsafe thresholds
 #define GRIND_NEGATIVE_WEIGHT_FAILSAFE_G -1.0f                            // Weight below this during a weight grind means the cup moved or the scale broke
+#define GRIND_NEGATIVE_WEIGHT_CONFIRM_SAMPLES 4                            // Consecutive raw samples below it before the grind is stopped - one corrupted HX711 read must not abort a grind
 #define GRIND_MIN_TARGET_FOR_DELIVERY_CHECK_G 1.0f                        // Only targets at or above this are checked for "no coffee delivered"
 
 //------------------------------------------------------------------------------

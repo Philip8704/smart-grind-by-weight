@@ -67,6 +67,9 @@ void setup() {
         LOG_BLE("ERROR: LittleFS mount failed - continuing without filesystem\n");
     } else {
         LOG_BLE("✅ LittleFS mounted successfully\n");
+        // Before any task can write: finds the previous boot's log and picks this one's
+        debug_log_persist_begin();
+        LOG_BLE("[STARTUP] Reset reason: %s\n", debug_log_reset_reason_name());
     }
     
     hardware_manager.init();

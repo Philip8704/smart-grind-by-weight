@@ -149,6 +149,9 @@ void FileIOTask::task_impl() {
         extern GrindController grind_controller;
         grind_controller.process_queued_flash_operations();
         grind_controller.process_queued_log_messages();
+
+        // After the log messages above, so a grind's last lines go out in this pass
+        debug_log_persist_service();
         
         // Periodic filesystem health check
         if (cycle_start_time - last_filesystem_check_time >= 30000) { // Every 30 seconds

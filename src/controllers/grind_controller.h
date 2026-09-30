@@ -17,6 +17,10 @@
 
 class DiagnosticsController;
 
+// Coast and error history, persisted across restarts (fixed size, replaced whole)
+#define GRIND_HISTORY_FILE "/history.bin"
+#define GRIND_HISTORY_TEMP_FILE "/history.tmp"
+
 // Forward declaration to avoid circular dependency
 struct GrindEventData;
 
@@ -170,6 +174,7 @@ struct CoastObservation {
     uint8_t profile_id;
     bool accepted;
     char reason[24];           // Why it was rejected, empty when accepted
+    uint16_t boot_seq;         // Which boot recorded it - history now survives restarts
 };
 
 struct PulseReport {
@@ -236,6 +241,14 @@ private:
     unsigned long last_logged_time; // Previous timestamp for relative timing
     bool force_measurement_log;     // Flag to force measurement logging on next update cycle
 
+    // Last logged row, so rows identical to it are skipped (see the logging block in update())
+    bool measurement_row_logged_ = false;
+    uint32_t last_logged_raw_seq_ = 0;
+    uint8_t last_logged_motor_on_ = 0;
+    uint8_t last_logged_phase_id_ = 0;
+    float last_logged_flow_rate_ = 0.0f;
+    float last_logged_stop_target_ = 0.0f;
+
     // UI event system - thread-safe Core 0 → Core 1 communication
     QueueHandle_t ui_event_queue;
     
@@ -301,6 +314,11 @@ private:
     bool grinder_purged_since_boot;      // Tracks if grinder has been used since boot (RAM only)
     uint64_t last_purge_runtime_ms;      // Runtime when last grind completed (persisted)
 
+    // Negative-weight failsafe debounce - see GRIND_NEGATIVE_WEIGHT_CONFIRM_SAMPLES
+    uint8_t neg_weight_run_;             // Consecutive raw samples below the failsafe threshold
+    uint32_t neg_weight_last_seq_;       // Last HX711 sample counted, so each is counted once
+    float neg_weight_last_g_;
+
     // Purge check - see GRIND_PURGE_* in grind_control.h
     float purge_settled_weight_g_;       // What the purge actually delivered, settled
     bool retare_after_purge_;            // TARE_CONFIRM continues to PREDICTIVE instead of PRIME
@@ -353,15 +371,21 @@ private:
 
     // Rolling history of errors, so a fault that has since been acknowledged is still
     // visible in the report
-    static const int ERROR_HISTORY_SIZE = 5;
+    static const int ERROR_HISTORY_SIZE = 10;
     struct ErrorRecord {
         uint32_t uptime_s;
         char message[32];
         char phase[16];
+        uint16_t boot_seq;
     };
     ErrorRecord error_history_[ERROR_HISTORY_SIZE];
     uint8_t error_history_count_;
     uint8_t error_history_next_;
+
+    // Both histories are written on Core 0 and snapshotted for flash by the file IO task
+    // on Core 1. The lock covers only the copies, never logging or flash access.
+    mutable portMUX_TYPE history_mux_ = portMUX_INITIALIZER_UNLOCKED;
+    uint16_t boot_seq_ = 1;              // Increments each boot, from the persisted history file
 
 public:
     enum class GrindSessionResult {
@@ -484,7 +508,15 @@ public:
     const CoastObservation* get_coast_history_entry(int index_from_newest) const;
     int get_error_history_count() const { return error_history_count_; }
     bool get_error_history_entry(int index_from_newest, uint32_t* uptime_s_out,
-                                 const char** message_out, const char** phase_out) const;
+                                 const char** message_out, const char** phase_out,
+                                 uint16_t* boot_seq_out = nullptr) const;
+    uint16_t get_boot_seq() const { return boot_seq_; }
+
+    // Coast and error history survive restarts in GRIND_HISTORY_FILE. Loaded once at
+    // init (LittleFS must already be mounted); saved by the file IO task on Core 1 at
+    // the end of every session, never from the control loop.
+    void load_persistent_history();
+    void persist_history();
     void mark_coast_window_start();             // Motor just stopped - snapshot instability so the settle can be judged
     void observe_coast(float coast_weight_g);   // Record this grind's measured coast as a candidate
     void commit_coast_observation();            // Accept the candidate if the grind finished cleanly

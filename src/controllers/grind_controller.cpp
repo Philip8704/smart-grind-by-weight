@@ -9,6 +9,7 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <esp_heap_caps.h>
 
 #if defined(DEBUG_ENABLE_LOADCELL_MOCK) && (DEBUG_ENABLE_LOADCELL_MOCK != 0)
 #include "../hardware/mock_hx711_driver.h"
@@ -159,6 +160,10 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     purge_check_plausible_since_ms_ = 0;
     purge_missing_notice_shown_ = false;
 
+    neg_weight_run_ = 0;
+    neg_weight_last_seq_ = 0;
+    neg_weight_last_g_ = 0.0f;
+
     pending_vibration_test_ = false;
     vib_floor_.clear();
     vib_motor_.clear();
@@ -238,6 +243,10 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
 
     // Load motor response latency from preferences
     load_motor_latency();
+
+    // After the counters above are zeroed, so restored entries are not wiped again.
+    // main.cpp mounts LittleFS before calling init().
+    load_persistent_history();
 }
 
 void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grind_mode) {
@@ -338,6 +347,7 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     
     // Initialize measurement state tracking for logger
     last_logged_weight = 0.0f;
+    measurement_row_logged_ = false;  // First row of every session is always written
     last_logged_time = millis();
     force_measurement_log = false;
 
@@ -367,6 +377,12 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     session_descriptor.profile_id = current_profile_id;
     session_descriptor.time_use_scale = time_use_scale;
     session_descriptor.vibration_test = vibration_test && time_use_scale;
+
+    // Start counting from the sample current now, so nothing left from before this
+    // grind can count towards its failsafe
+    neg_weight_run_ = 0;
+    neg_weight_last_seq_ = weight_sensor ? weight_sensor->get_raw_sample_snapshot().seq : 0;
+    neg_weight_last_g_ = 0.0f;
 
     purge_settled_weight_g_ = 0.0f;
     retare_after_purge_ = false;
@@ -1167,14 +1183,37 @@ void GrindController::update() {
                                   : UINT16_MAX;
         if (raw_age_ms > UINT16_MAX) raw_age_ms = UINT16_MAX;
 
-        grind_logger.log_continuous_measurement(loop_data.timestamp_ms, loop_data.current_weight, loop_data.weight_delta,
-                                               loop_data.flow_rate, loop_data.motor_is_on, loop_data.phase_id, motor_stop_target_weight,
-                                               raw.raw_adc, (uint16_t)raw.seq, (uint16_t)raw_age_ms);
-        
-        // Update tracking variables for next measurement
-        last_logged_weight = loop_data.current_weight;
-        last_logged_time = loop_data.now;
-        force_measurement_log = false;
+        // Skip rows identical to the last one in everything but the clock. At 50Hz
+        // against a 10 SPS load cell most rows were exact repeats, which made a 30s grind
+        // ~56KB and meant 50 grinds did not fit the filesystem. The test is exact, not a
+        // tolerance: a row is written whenever ANY value the controller acts on differs -
+        // a new sample, a sample ageing out of a filter window, a motor or phase edge, a
+        // new stop target - so what the controller saw each cycle stays reconstructible.
+        const bool row_changed =
+            force_measurement_log || !measurement_row_logged_ ||
+            raw.seq != last_logged_raw_seq_ ||
+            loop_data.motor_is_on != last_logged_motor_on_ ||
+            loop_data.phase_id != last_logged_phase_id_ ||
+            loop_data.current_weight != last_logged_weight ||
+            loop_data.flow_rate != last_logged_flow_rate_ ||
+            motor_stop_target_weight != last_logged_stop_target_;
+
+        if (row_changed) {
+            grind_logger.log_continuous_measurement(loop_data.timestamp_ms, loop_data.current_weight, loop_data.weight_delta,
+                                                   loop_data.flow_rate, loop_data.motor_is_on, loop_data.phase_id, motor_stop_target_weight,
+                                                   raw.raw_adc, (uint16_t)raw.seq, (uint16_t)raw_age_ms);
+
+            // Update tracking variables for next measurement
+            last_logged_weight = loop_data.current_weight;
+            last_logged_time = loop_data.now;
+            last_logged_raw_seq_ = raw.seq;
+            last_logged_motor_on_ = loop_data.motor_is_on;
+            last_logged_phase_id_ = loop_data.phase_id;
+            last_logged_flow_rate_ = loop_data.flow_rate;
+            last_logged_stop_target_ = motor_stop_target_weight;
+            measurement_row_logged_ = true;
+            force_measurement_log = false;
+        }
     }
     
     // Emit progress update events every cycle for responsive UI
@@ -1184,20 +1223,56 @@ void GrindController::update() {
     // Only check after motor has settled to avoid false positives from startup transients.
     // Weight mode only - time mode is driven purely by the clock, so a drifting or
     // untared scale must never abort the grind.
-    if (mode == GrindMode::WEIGHT &&
+    const bool neg_failsafe_armed =
+        mode == GrindMode::WEIGHT &&
         phase != GrindPhase::COMPLETED && phase != GrindPhase::TIMEOUT &&
         phase != GrindPhase::IDLE && phase != GrindPhase::INITIALIZING &&
         phase != GrindPhase::SETUP && phase != GrindPhase::TARING &&
         phase != GrindPhase::TARE_CONFIRM && phase != GrindPhase::TIME_PAUSED &&
         phase != GrindPhase::PURGE_CHECK &&  // Handles a lifted portafilter itself, and ~-1g after dumping is what the re-tare fixes
-        grinder->is_motor_settled() &&
-        loop_data.current_weight < GRIND_NEGATIVE_WEIGHT_FAILSAFE_G) {
+        grinder->is_motor_settled();
+
+    // Counted on raw HX711 samples, not on the filtered weight. The HX711 has no
+    // checksum, and one corrupted read - a relay switching an inductive motor next to
+    // its data lines is enough - used to end the grind with a -400g error on the spot.
+    // Counting the filtered weight would not fix that: the least-squares fit drags a
+    // single bad sample through about three consecutive filtered values. Requiring
+    // GRIND_NEGATIVE_WEIGHT_CONFIRM_SAMPLES consecutive bad samples means a real lift or
+    // a tipped cup (which persist) still stop the grind, ~0.4s later than before.
+    if (!neg_failsafe_armed || !weight_sensor) {
+        neg_weight_run_ = 0;
+    } else {
+        WeightSensor::RawSampleSnapshot sample = weight_sensor->get_raw_sample_snapshot();
+        if (sample.seq != neg_weight_last_seq_) {
+            neg_weight_last_seq_ = sample.seq;
+            float cal = weight_sensor->get_calibration_factor();
+            float sample_g = (cal != 0.0f)
+                                 ? (float)(sample.raw_adc - weight_sensor->get_zero_offset()) / cal
+                                 : 0.0f;
+            if (sample_g < GRIND_NEGATIVE_WEIGHT_FAILSAFE_G) {
+                if (neg_weight_run_ < UINT8_MAX) neg_weight_run_++;
+                neg_weight_last_g_ = sample_g;
+            } else {
+                if (neg_weight_run_ > 0) {
+                    // Worth recording: this is exactly the event that used to abort a grind
+                    queue_log_message("[FAILSAFE] Ignored %u implausible sample(s), last %.1fg, in %s\n",
+                                      (unsigned)neg_weight_run_, neg_weight_last_g_, get_phase_name());
+                }
+                neg_weight_run_ = 0;
+            }
+        }
+    }
+
+    if (neg_failsafe_armed && neg_weight_run_ >= GRIND_NEGATIVE_WEIGHT_CONFIRM_SAMPLES) {
         timeout_phase = phase;
         grinder->stop();
         last_session_result_ = GrindSessionResult::ERROR;
 
-        queue_log_message("--- NEGATIVE WEIGHT FAILSAFE TRIGGERED: %.2fg in phase %s ---\n",
+        // Kept under the 128-byte log message limit with the longest phase name
+        queue_log_message("[FAILSAFE] Neg weight: %u samples < %.1fg, last %.1fg, filtered %.1fg, in %s\n",
+                         (unsigned)neg_weight_run_, GRIND_NEGATIVE_WEIGHT_FAILSAFE_G, neg_weight_last_g_,
                          loop_data.current_weight, get_phase_name(timeout_phase));
+        neg_weight_run_ = 0;
         set_error_message("Err: neg wt");
         switch_phase(GrindPhase::TIMEOUT, loop_data);
     }
@@ -1284,7 +1359,17 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
     // Check if we have valid loop_data (non-zero timestamp indicates valid data)
     bool has_loop_data = (loop_data.now > 0);
     unsigned long now = has_loop_data ? loop_data.now : millis();
-    
+
+    // Always logged, and so always in the persistent log: the one thing a report taken
+    // after a stall has to answer is which phase it stopped in, and with what reading.
+    // A handful of lines per grind.
+    queue_log_message("[PHASE] %s -> %s at %.1fs, %.2fg\n",
+                      get_phase_name(), get_phase_name(new_phase),
+                      (start_time > 0 && now >= start_time) ? (now - start_time) / 1000.0f : 0.0f,
+                      has_loop_data ? loop_data.current_weight
+                                    : (weight_sensor ? weight_sensor->get_weight_low_latency() : 0.0f));
+    debug_log_set_grind_active(new_phase != GrindPhase::IDLE);
+
 #if ENABLE_GRIND_DEBUG
     // DEBUG: Log phase transition with boot time and proper phase duration
     unsigned long phase_duration = (phase_start_time > 0) ? (now - phase_start_time) : 0;
@@ -1679,11 +1764,15 @@ void GrindController::process_queued_flash_operations() {
                         preferences->putBytes(key, &request.coast_window, sizeof(CoastWindow));
                     }
                 }
+                // Session outcome is final by now - coast entry judged, any error recorded
+                persist_history();
                 break;
-                
+
             case FlashOpRequest::DISCARD_GRIND_SESSION:
                 LOG_BLE("[%lums FLASH_OP] Processing DISCARD_GRIND_SESSION on Core 1\n", millis());
                 grind_logger.discard_current_session();
+                // A stopped grind can still have produced a coast entry, now marked discarded
+                persist_history();
                 break;
 
             default:
@@ -1736,18 +1825,23 @@ void GrindController::set_error_message(const char* message) {
 
     // Keep a short history so a fault that has since been acknowledged, and its
     // message overwritten, is still visible in the diagnostic report
-    ErrorRecord& record = error_history_[error_history_next_];
+    ErrorRecord record;
+    memset(&record, 0, sizeof(record));
     record.uptime_s = (uint32_t)(millis() / 1000);
+    record.boot_seq = boot_seq_;
     strncpy(record.message, last_error_message, sizeof(record.message) - 1);
     record.message[sizeof(record.message) - 1] = '\0';
     const char* phase_name = get_phase_name();
     strncpy(record.phase, phase_name ? phase_name : "?", sizeof(record.phase) - 1);
     record.phase[sizeof(record.phase) - 1] = '\0';
 
+    portENTER_CRITICAL(&history_mux_);
+    error_history_[error_history_next_] = record;
     error_history_next_ = (error_history_next_ + 1) % ERROR_HISTORY_SIZE;
     if (error_history_count_ < ERROR_HISTORY_SIZE) {
         error_history_count_++;
     }
+    portEXIT_CRITICAL(&history_mux_);
 }
 
 bool GrindController::read_coast_window(Preferences& prefs, uint8_t profile_id, CoastWindow& out) {
@@ -1836,8 +1930,10 @@ void GrindController::log_coast_window(const char* prefix) {
 void GrindController::record_coast_observation(float observed_s, float coast_weight_g,
                                                float flow_rate_gps, bool accepted,
                                                const char* reason) {
-    CoastObservation& entry = coast_history_[coast_history_next_];
+    CoastObservation entry;
+    memset(&entry, 0, sizeof(entry));
     entry.uptime_s = (uint32_t)(millis() / 1000);
+    entry.boot_seq = boot_seq_;
     entry.predicted_s = coast_predicted_s_;
     entry.predicted_weight_g = motor_stop_target_weight;
     entry.observed_s = observed_s;
@@ -1857,13 +1953,18 @@ void GrindController::record_coast_observation(float observed_s, float coast_wei
         entry.reason[0] = '\0';
     }
 
+    // Built above and published in one step, so the file IO task snapshotting the
+    // history for flash never sees a half-written entry
+    portENTER_CRITICAL(&history_mux_);
+    CoastObservation& slot = coast_history_[coast_history_next_];
+    slot = entry;
     // Only a still-undecided entry may be revisited later; a rejection is final
-    pending_observation_ = accepted ? &entry : nullptr;
-
+    pending_observation_ = accepted ? &slot : nullptr;
     coast_history_next_ = (coast_history_next_ + 1) % COAST_HISTORY_SIZE;
     if (coast_history_count_ < COAST_HISTORY_SIZE) {
         coast_history_count_++;
     }
+    portEXIT_CRITICAL(&history_mux_);
 }
 
 const CoastObservation* GrindController::get_coast_history_entry(int index_from_newest) const {
@@ -1876,7 +1977,8 @@ const CoastObservation* GrindController::get_coast_history_entry(int index_from_
 
 bool GrindController::get_error_history_entry(int index_from_newest, uint32_t* uptime_s_out,
                                               const char** message_out,
-                                              const char** phase_out) const {
+                                              const char** phase_out,
+                                              uint16_t* boot_seq_out) const {
     if (index_from_newest < 0 || index_from_newest >= error_history_count_) {
         return false;
     }
@@ -1884,7 +1986,171 @@ bool GrindController::get_error_history_entry(int index_from_newest, uint32_t* u
     if (uptime_s_out) *uptime_s_out = error_history_[slot].uptime_s;
     if (message_out) *message_out = error_history_[slot].message;
     if (phase_out) *phase_out = error_history_[slot].phase;
+    if (boot_seq_out) *boot_seq_out = error_history_[slot].boot_seq;
     return true;
+}
+
+//------------------------------------------------------------------------------
+// Persistent coast and error history
+//------------------------------------------------------------------------------
+// Both histories used to live only in RAM, so a restart - including the manual kind
+// after a hang - erased exactly the record that would have explained it. One small
+// fixed-size file holds them; it is replaced whole, never grown, so it cannot fill
+// the partition.
+
+namespace {
+constexpr uint32_t kHistoryMagic = 0x48495354;  // "HIST"
+constexpr uint16_t kHistoryVersion = 1;
+
+struct PersistentHistoryHeader {
+    uint32_t magic;
+    uint16_t version;
+    uint16_t boot_seq;            // Boot that last wrote the file
+    uint16_t coast_record_size;   // sizeof(CoastObservation) when written
+    uint16_t error_record_size;
+    uint8_t coast_capacity;
+    uint8_t coast_count;
+    uint8_t coast_next;
+    uint8_t error_capacity;
+    uint8_t error_count;
+    uint8_t error_next;
+    uint8_t reserved[2];
+};
+}  // namespace
+
+void GrindController::load_persistent_history() {
+    boot_seq_ = 1;
+
+    // A save interrupted by power loss can leave only the temporary copy behind
+    const char* path = LittleFS.exists(GRIND_HISTORY_FILE) ? GRIND_HISTORY_FILE
+                     : LittleFS.exists(GRIND_HISTORY_TEMP_FILE) ? GRIND_HISTORY_TEMP_FILE
+                     : nullptr;
+    if (!path) {
+        LOG_BLE("[HISTORY] No saved history - starting at boot 1\n");
+        return;
+    }
+
+    File file = LittleFS.open(path, "r");
+    if (!file) {
+        LOG_BLE("[HISTORY] Could not open %s\n", path);
+        return;
+    }
+
+    PersistentHistoryHeader header;
+    bool header_ok = file.read(reinterpret_cast<uint8_t*>(&header), sizeof(header)) == sizeof(header) &&
+                     header.magic == kHistoryMagic;
+    if (header_ok) {
+        // The boot counter is worth keeping even if the records are unusable
+        boot_seq_ = (uint16_t)(header.boot_seq + 1);
+        if (boot_seq_ == 0) boot_seq_ = 1;
+    }
+
+    // Records are only restored if they match today's layout exactly. After a firmware
+    // change to either struct they are dropped rather than misread.
+    bool layout_ok = header_ok && header.version == kHistoryVersion &&
+                     header.coast_record_size == sizeof(CoastObservation) &&
+                     header.error_record_size == sizeof(ErrorRecord) &&
+                     header.coast_capacity == COAST_HISTORY_SIZE &&
+                     header.error_capacity == ERROR_HISTORY_SIZE &&
+                     header.coast_count <= COAST_HISTORY_SIZE && header.coast_next < COAST_HISTORY_SIZE &&
+                     header.error_count <= ERROR_HISTORY_SIZE && header.error_next < ERROR_HISTORY_SIZE;
+
+    CoastObservation coast[COAST_HISTORY_SIZE];
+    ErrorRecord errors[ERROR_HISTORY_SIZE];
+    bool records_ok = layout_ok &&
+                      file.read(reinterpret_cast<uint8_t*>(coast), sizeof(coast)) == sizeof(coast) &&
+                      file.read(reinterpret_cast<uint8_t*>(errors), sizeof(errors)) == sizeof(errors);
+    file.close();
+
+    if (!records_ok) {
+        LOG_BLE("[HISTORY] Saved history unusable (%s) - kept boot counter only, now boot %u\n",
+                header_ok ? "layout changed" : "bad header", (unsigned)boot_seq_);
+        return;
+    }
+
+    // Strings came from flash: terminate them regardless of what was stored
+    for (int i = 0; i < COAST_HISTORY_SIZE; i++) {
+        coast[i].reason[sizeof(coast[i].reason) - 1] = '\0';
+    }
+    for (int i = 0; i < ERROR_HISTORY_SIZE; i++) {
+        errors[i].message[sizeof(errors[i].message) - 1] = '\0';
+        errors[i].phase[sizeof(errors[i].phase) - 1] = '\0';
+    }
+
+    portENTER_CRITICAL(&history_mux_);
+    memcpy(coast_history_, coast, sizeof(coast));
+    coast_history_count_ = header.coast_count;
+    coast_history_next_ = header.coast_next;
+    memcpy(error_history_, errors, sizeof(errors));
+    error_history_count_ = header.error_count;
+    error_history_next_ = header.error_next;
+    pending_observation_ = nullptr;
+    portEXIT_CRITICAL(&history_mux_);
+
+    LOG_BLE("[HISTORY] Restored %u grinds and %u errors - now boot %u\n",
+            (unsigned)header.coast_count, (unsigned)header.error_count, (unsigned)boot_seq_);
+}
+
+void GrindController::persist_history() {
+    // Core 1 only: snapshot under the lock, then write with the lock released
+    PersistentHistoryHeader header;
+    memset(&header, 0, sizeof(header));
+    // Snapshot buffers in PSRAM, allocated once - file IO task is the only caller.
+    // Kept off its stack and out of internal RAM, which is what runs out first.
+    const size_t coast_bytes = sizeof(CoastObservation) * COAST_HISTORY_SIZE;
+    const size_t error_bytes = sizeof(ErrorRecord) * ERROR_HISTORY_SIZE;
+    static uint8_t* snapshot = nullptr;
+    if (!snapshot) {
+        snapshot = static_cast<uint8_t*>(heap_caps_malloc_prefer(coast_bytes + error_bytes, 2,
+                                         MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, MALLOC_CAP_8BIT));
+        if (!snapshot) {
+            LOG_BLE("[HISTORY] No memory for snapshot - not saved\n");
+            return;
+        }
+    }
+    CoastObservation* coast = reinterpret_cast<CoastObservation*>(snapshot);
+    ErrorRecord* errors = reinterpret_cast<ErrorRecord*>(snapshot + coast_bytes);
+
+    portENTER_CRITICAL(&history_mux_);
+    memcpy(coast, coast_history_, coast_bytes);
+    memcpy(errors, error_history_, error_bytes);
+    header.coast_count = coast_history_count_;
+    header.coast_next = coast_history_next_;
+    header.error_count = error_history_count_;
+    header.error_next = error_history_next_;
+    portEXIT_CRITICAL(&history_mux_);
+
+    header.magic = kHistoryMagic;
+    header.version = kHistoryVersion;
+    header.boot_seq = boot_seq_;
+    header.coast_record_size = sizeof(CoastObservation);
+    header.error_record_size = sizeof(ErrorRecord);
+    header.coast_capacity = COAST_HISTORY_SIZE;
+    header.error_capacity = ERROR_HISTORY_SIZE;
+
+    // Write a complete copy, then swap it in. Power lost mid-write leaves the previous
+    // file intact; lost between remove and rename leaves the temporary copy, which
+    // load_persistent_history() falls back to.
+    File file = LittleFS.open(GRIND_HISTORY_TEMP_FILE, "w");
+    if (!file) {
+        LOG_BLE("[HISTORY] Could not write %s\n", GRIND_HISTORY_TEMP_FILE);
+        return;
+    }
+    size_t written = file.write(reinterpret_cast<const uint8_t*>(&header), sizeof(header));
+    written += file.write(snapshot, coast_bytes + error_bytes);
+    file.close();
+
+    const size_t expected = sizeof(header) + coast_bytes + error_bytes;
+    if (written != expected) {
+        LittleFS.remove(GRIND_HISTORY_TEMP_FILE);
+        LOG_BLE("[HISTORY] Short write (%u of %u bytes) - previous history kept\n",
+                (unsigned)written, (unsigned)expected);
+        return;
+    }
+    LittleFS.remove(GRIND_HISTORY_FILE);
+    if (!LittleFS.rename(GRIND_HISTORY_TEMP_FILE, GRIND_HISTORY_FILE)) {
+        LOG_BLE("[HISTORY] Rename failed - history left in %s\n", GRIND_HISTORY_TEMP_FILE);
+    }
 }
 
 void GrindController::mark_coast_window_start() {
@@ -1943,6 +2209,7 @@ void GrindController::discard_coast_observation(const char* reason) {
     if (pending_coast_time_s_ > 0.0f) {
         queue_log_message("[COAST] Discarded candidate %.3fs - %s\n",
                           pending_coast_time_s_, reason ? reason : "grind did not complete");
+        portENTER_CRITICAL(&history_mux_);
         if (pending_observation_) {
             pending_observation_->accepted = false;
             strncpy(pending_observation_->reason, reason ? reason : "not completed",
@@ -1950,6 +2217,7 @@ void GrindController::discard_coast_observation(const char* reason) {
             pending_observation_->reason[sizeof(pending_observation_->reason) - 1] = '\0';
             pending_observation_ = nullptr;
         }
+        portEXIT_CRITICAL(&history_mux_);
         pending_coast_time_s_ = 0.0f;
     }
 }
@@ -1974,12 +2242,14 @@ void GrindController::commit_coast_observation() {
 
     float observed_s = pending_coast_time_s_;
     pending_coast_time_s_ = 0.0f;
+    portENTER_CRITICAL(&history_mux_);
     if (pending_observation_) {
         pending_observation_->final_weight_g = final_weight;
         pending_observation_->error_g = error;
         pending_observation_->pulse_count = (uint8_t)pulse_attempts;
         pending_observation_ = nullptr;
     }
+    portEXIT_CRITICAL(&history_mux_);
 
     // The measurement simply joins the window; nothing is averaged and no rate decides
     // how far the model moves. What the next grind predicts is whichever of the stored
