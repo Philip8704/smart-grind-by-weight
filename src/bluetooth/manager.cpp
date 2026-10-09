@@ -1437,6 +1437,40 @@ void BluetoothManager::generate_diagnostic_report() {
         send_chunk(buf);
     }
 
+    // Section 1f: Burst model - what the main run stops short by, and why
+    {
+        PulseWindow bursts;
+        pulse_window_reset(bursts);
+        Preferences burst_prefs;
+        if (burst_prefs.begin("grinder", true)) {
+            GrindController::read_burst_window(burst_prefs, bursts);
+            burst_prefs.end();
+        }
+        snprintf(buf, sizeof(buf),
+                 "[BURST MODEL]\n"
+                 "  %s: %u jolts of the learned latency, %ums apart, straight after the main run\n"
+                 "  Main run aims at target - burst %.3fg - margin %.3fg %s\n",
+                 GRIND_BURST_ENABLED ? "On" : "Off", (unsigned)GRIND_BURST_PULSES, (unsigned)GRIND_BURST_OFF_MS,
+                 burst_window_expected_g(bursts), GRIND_BURST_MARGIN_G,
+                 bursts.count ? "(median of knock tests)" : "- seed, run the Chute Knock Test to measure");
+        send_chunk(buf);
+        if (bursts.count) {
+            float sorted[PulseWindow::CAPACITY];
+            int n = pulse_window_sorted(bursts, sorted, PulseWindow::CAPACITY);
+            char list[128];
+            int offset = snprintf(list, sizeof(list), "    %d measured, sorted:", n);
+            for (int s = 0; s < n && offset > 0 && (size_t)offset < sizeof(list); s++) {
+                int written = snprintf(list + offset, sizeof(list) - offset, " %+.3f", sorted[s]);
+                if (written < 0 || (size_t)written >= sizeof(list) - offset) break;
+                offset += written;
+            }
+            snprintf(buf, sizeof(buf), "%s\n", list);
+            send_chunk(buf);
+        }
+        snprintf(buf, sizeof(buf), "\n");
+        send_chunk(buf);
+    }
+
     // Section 2: System Runtime
     size_t heap_free = ESP.getFreeHeap();
     size_t heap_total = ESP.getHeapSize();
@@ -1965,13 +1999,13 @@ void BluetoothManager::generate_diagnostic_report() {
                                     "PREDICTIVE", "PULSE_DECISION", "PULSE_EXECUTE", "PULSE_SETTLING",
                                     "FINAL_SETTLING", "TIME_GRINDING", "TIME_ADDITIONAL_PULSE", "COMPLETED", "TIMEOUT",
                                     "PRIME", "PRIME_SETTLING", "PURGE_CONFIRM", "TIME_PAUSED", "PURGE_CHECK",
-                                    "KNOCK_TEST"
+                                    "KNOCK_TEST", "BURST"
                                 };
                                 const size_t phase_name_count = sizeof(phase_names) / sizeof(phase_names[0]);
                                 // Indexed by stored phase id: fails to build if a phase is appended to
                                 // GrindPhase without a name here, instead of printing UNKNOWN
                                 static_assert(sizeof(phase_names) / sizeof(phase_names[0]) ==
-                                                  static_cast<size_t>(GrindPhase::KNOCK_TEST) + 1,
+                                                  static_cast<size_t>(GrindPhase::BURST) + 1,
                                               "phase_names must cover every GrindPhase");
 
                                 for (uint16_t e = 0; e < header.event_count; e++) {

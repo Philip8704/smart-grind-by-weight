@@ -81,6 +81,11 @@ float pulse_window_expected_extra_g(const PulseWindow& window);
 // so a pulse tends to come out short rather than too large
 float pulse_window_planning_extra_g(const PulseWindow& window);
 
+// The burst model has the same shape: the last few measured deliveries, in grams, here
+// from knock tests. What a burst is expected to deliver - the median, never below zero,
+// or GRIND_BURST_SEED_G while nothing is measured. See GRIND_BURST_* in grind_control.h.
+float burst_window_expected_g(const PulseWindow& window);
+
 // Flash operation request structure for Core 0 → Core 1 communication
 struct FlashOpRequest {
     enum Type {
@@ -103,6 +108,8 @@ struct FlashOpRequest {
     CoastWindow coast_window;
     bool persist_pulse_window;
     PulseWindow pulse_window;
+    bool persist_burst_window;
+    PulseWindow burst_window;
 };
 
 // Log message structure for Core 0 → Core 1 communication
@@ -146,7 +153,8 @@ enum class GrindPhase {
     // Appended, not inserted: phase IDs are stored in session logs, so reordering would
     // relabel every phase in data recorded by earlier firmware.
     PURGE_CHECK,        // After purge confirm: wait for the portafilter to settle, then re-tare or continue
-    KNOCK_TEST          // Knock test only: jolts at the knock point, then a settle - see KNOCK_TEST_* in grind_control.h
+    KNOCK_TEST,         // Knock test only: the burst at the knock point, then a settle - see KNOCK_TEST_* in grind_control.h
+    BURST               // Jolts straight after the predictive stop - see GRIND_BURST_* in grind_control.h
 };
 
 // Result of a chute knock test, written on Core 0 and read by the UI after COMPLETED
@@ -161,6 +169,8 @@ struct KnockTestResult {
     float final_g;          // Where the dose finished
     float target_g;
     uint8_t corrections;    // Correction pulses fired after the knock
+    float burst_model_g;    // What the burst model expects now, this measurement included
+    bool learned;           // The measurement was added to the burst model
 };
 
 // Result of a vibration test, computed on Core 0 as the samples arrive and read by the
@@ -362,6 +372,16 @@ private:
     bool pulse_window_dirty_ = false;    // New observation waiting to be written to NVS at session end
     int pulse_anomaly_at_start_ = 0;     // Instability count when the last pulse fired
 
+    // Burst before target - see GRIND_BURST_* in grind_control.h
+    PulseWindow burst_window_;           // Knock-test measurements of what a burst delivers
+    bool burst_window_dirty_ = false;    // New measurement waiting to be written to NVS at session end
+    bool burst_planned_ = false;         // This grind fires a burst straight after its main run
+    float burst_expected_g_ = 0.0f;      // What that burst is expected to deliver - the main run leaves room for it
+    bool burst_started_ = false;         // This grind's burst has been sent to the motor
+    bool burst_fired_ = false;           // ...and ran, so the first settle includes what it brought
+    // Jolt length for the burst and the knock: the latency learned by Tune Pulses
+    uint16_t get_jolt_ms() const;
+
     // Negative-weight failsafe debounce - see GRIND_NEGATIVE_WEIGHT_CONFIRM_SAMPLES
     uint8_t neg_weight_run_;             // Consecutive raw samples below the failsafe threshold
     uint32_t neg_weight_last_seq_;       // Last HX711 sample counted, so each is counted once
@@ -396,8 +416,16 @@ private:
     KnockTestResult knock_result_ = {};
     // Before the knock, the predictive stop and the first settle belong to the knock point
     bool knock_pending() const { return session_descriptor.knock_test && knock_stage_ == KnockStage::PENDING; }
+    // Where the main run aims: short of the dose by the burst it leaves room for, or by
+    // the knock point in a knock test (which has no burst of its own)
     float get_predictive_target_g() const {
-        return knock_pending() ? target_weight - KNOCK_TEST_STOP_SHORT_G : target_weight;
+        if (knock_pending()) {
+            return target_weight - KNOCK_TEST_STOP_SHORT_G;
+        }
+        if (burst_planned_) {
+            return target_weight - burst_expected_g_ - GRIND_BURST_MARGIN_G;
+        }
+        return target_weight;
     }
     void begin_knock(float settled_weight, const GrindLoopData& loop_data);
     void update_knock_test(const GrindLoopData& loop_data);
@@ -525,6 +553,7 @@ public:
     static constexpr const char* PREF_KEY_COAST_TIME_PREFIX = "coast";    // Legacy single-value key, read once to migrate
     static constexpr const char* PREF_KEY_COAST_WINDOW_PREFIX = "coastw"; // Suffixed with the profile id, e.g. "coastw1"
     static constexpr const char* PREF_KEY_PULSE_WINDOW = "pulsew";        // One for the grinder
+    static constexpr const char* PREF_KEY_BURST_WINDOW = "burstw";        // One for the grinder
     GrindMode get_mode() const { return mode; }
     const GrindSessionDescriptor& get_session_descriptor() const { return session_descriptor; }
     
@@ -585,6 +614,11 @@ public:
     void load_pulse_window();
     // Called when the settle after a pulse is in: records what it actually delivered
     void observe_pulse(int index, float settled_after_g);
+
+    // Burst model. One for the grinder, like the pulse model: what a burst shakes loose
+    // comes from the chute. Measured only by the knock test.
+    float get_burst_expected_g() const { return burst_window_expected_g(burst_window_); }
+    static bool read_burst_window(Preferences& prefs, PulseWindow& out);
 
     // Diagnostic accessors - newest first
     int get_coast_history_count() const { return coast_history_count_; }

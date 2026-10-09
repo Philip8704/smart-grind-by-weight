@@ -210,6 +210,16 @@ float pulse_window_planning_extra_g(const PulseWindow& window) {
     return pulse_window_quantile_g(window, GRIND_PULSE_PLANNING_QUANTILE);
 }
 
+float burst_window_expected_g(const PulseWindow& window) {
+    // Median of the knock tests so far: what a burst typically shakes loose. The coast
+    // model absorbs the rest of the tail, so the median is enough - an overestimate
+    // only stops the main run earlier, an underestimate is caught by the coast window.
+    if (window.count == 0) {
+        return GRIND_BURST_SEED_G;
+    }
+    return pulse_window_quantile_g(window, 0.5f);
+}
+
 void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     weight_sensor = lc;
     grinder = gr;
@@ -253,6 +263,13 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     pulse_window_reset(pulse_window_);
     pulse_window_dirty_ = false;
     pulse_anomaly_at_start_ = 0;
+
+    pulse_window_reset(burst_window_);
+    burst_window_dirty_ = false;
+    burst_planned_ = false;
+    burst_expected_g_ = 0.0f;
+    burst_started_ = false;
+    burst_fired_ = false;
 
     pending_vibration_test_ = false;
     vib_floor_.clear();
@@ -511,9 +528,24 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     coast_predicted_s_ = 0.0f;
     anomaly_count_at_motor_stop_ = 0;
     pending_observation_ = nullptr;
+    burst_planned_ = false;
+    burst_expected_g_ = 0.0f;
+    burst_started_ = false;
+    burst_fired_ = false;
+    pulse_window_reset(burst_window_);
+    burst_window_dirty_ = false;
     if (mode == GrindMode::WEIGHT) {
         load_coast_time(current_profile_id);
         load_pulse_window();
+        if (preferences) {
+            read_burst_window(*preferences, burst_window_);
+        }
+        // Every weight grind ends its main run with a burst - except the knock test,
+        // which fires its burst at the knock point to measure it
+        burst_planned_ = GRIND_BURST_ENABLED && !session_descriptor.knock_test;
+        if (burst_planned_) {
+            burst_expected_g_ = get_burst_expected_g();
+        }
     } else {
         coast_window_reset(coast_window_);
         coast_window_dirty_ = false;
@@ -660,6 +692,15 @@ void GrindController::finish_vibration_test() {
 // Chute knock test
 //------------------------------------------------------------------------------
 
+uint16_t GrindController::get_jolt_ms() const {
+    // The motor latency learned by Tune Pulses: the start-up kick, without the grinding
+    // that would follow it
+    float on_ms = motor_response_latency_ms;
+    if (!(on_ms >= GRIND_AUTOTUNE_LATENCY_MIN_MS)) on_ms = GRIND_AUTOTUNE_LATENCY_MIN_MS;  // Also catches NaN
+    if (on_ms > GRIND_AUTOTUNE_LATENCY_MAX_MS) on_ms = GRIND_AUTOTUNE_LATENCY_MAX_MS;
+    return (uint16_t)on_ms;
+}
+
 bool GrindController::start_knock_test() {
     if (is_active()) {
         return false;
@@ -681,28 +722,24 @@ bool GrindController::start_knock_test() {
 }
 
 void GrindController::begin_knock(float settled_weight, const GrindLoopData& loop_data) {
-    // Each jolt is as long as the motor latency learned by Tune Pulses: the start-up
-    // kick, without the grinding that would follow it
-    float on_ms = motor_response_latency_ms;
-    if (!(on_ms >= GRIND_AUTOTUNE_LATENCY_MIN_MS)) on_ms = GRIND_AUTOTUNE_LATENCY_MIN_MS;  // Also catches NaN
-    if (on_ms > GRIND_AUTOTUNE_LATENCY_MAX_MS) on_ms = GRIND_AUTOTUNE_LATENCY_MAX_MS;
-    knock_result_.on_ms = (uint16_t)on_ms;
-    knock_result_.pulses = KNOCK_TEST_PULSES;
+    // Exactly the burst an ordinary grind fires after its main run, so this measures it
+    knock_result_.on_ms = get_jolt_ms();
+    knock_result_.pulses = GRIND_BURST_PULSES;
     knock_result_.before_g = settled_weight;
 
-    if (!grinder->start_pulse_train(knock_result_.on_ms, KNOCK_TEST_OFF_MS, KNOCK_TEST_PULSES)) {
+    if (!grinder->start_pulse_train(knock_result_.on_ms, GRIND_BURST_OFF_MS, GRIND_BURST_PULSES)) {
         // Staying in PULSE_DECISION finishes the dose without the knock, rather than
         // leaving it half a gram short
         knock_result_.aborted = true;
         knock_stage_ = KnockStage::DONE;
         queue_log_message("[KNOCK] %u jolts of %ums could not start - finishing without\n",
-                          (unsigned)KNOCK_TEST_PULSES, (unsigned)knock_result_.on_ms);
+                          (unsigned)GRIND_BURST_PULSES, (unsigned)knock_result_.on_ms);
         return;
     }
     knock_stage_ = KnockStage::TRAIN;
     queue_log_message("[KNOCK] At %.2fg of %.1fg: %u jolts of %ums, %ums apart\n",
-                      settled_weight, target_weight, (unsigned)KNOCK_TEST_PULSES,
-                      (unsigned)knock_result_.on_ms, (unsigned)KNOCK_TEST_OFF_MS);
+                      settled_weight, target_weight, (unsigned)GRIND_BURST_PULSES,
+                      (unsigned)knock_result_.on_ms, (unsigned)GRIND_BURST_OFF_MS);
     set_notice_message("Knocking");
     switch_phase(GrindPhase::KNOCK_TEST, loop_data);
 }
@@ -744,6 +781,20 @@ void GrindController::update_knock_test(const GrindLoopData& loop_data) {
             queue_log_message("[KNOCK] %u x %ums released %+.3fg (%.2fg -> %.2fg)\n",
                               (unsigned)knock_result_.pulses, (unsigned)knock_result_.on_ms,
                               knock_result_.released_g, knock_result_.before_g, knock_result_.after_g);
+
+            // What the test is for: the burst model learns it, unless no burst could
+            // have produced it
+            const float released = knock_result_.released_g;
+            if (isfinite(released) && released >= GRIND_PULSE_DELIVERED_MIN_G &&
+                released <= GRIND_PULSE_DELIVERED_MAX_G) {
+                pulse_window_push(burst_window_, released);
+                burst_window_dirty_ = true;
+                knock_result_.learned = true;
+            }
+            knock_result_.burst_model_g = get_burst_expected_g();
+            queue_log_message("[BURST] Knock test measured %+.3fg%s -> model now %+.3fg from %u test(s)\n",
+                              released, knock_result_.learned ? "" : " - implausible, not learned",
+                              knock_result_.burst_model_g, (unsigned)burst_window_.count);
 
             char notice[sizeof(last_notice_message)];
             snprintf(notice, sizeof(notice), "Knock %+.2fg", knock_result_.released_g);
@@ -1276,6 +1327,12 @@ void GrindController::update() {
             }
             break;
 
+        case GrindPhase::BURST:
+            if (mode == GrindMode::WEIGHT && active_strategy) {
+                active_strategy->update(session_descriptor, strategy_context, loop_data);
+            }
+            break;
+
         case GrindPhase::FINAL_SETTLING: {
             // Require the reading to have stopped rising, not merely gone quiet, so the
             // final weight is not captured mid-trickle. Falls back to the variance-only
@@ -1349,6 +1406,9 @@ void GrindController::update() {
                 request.persist_pulse_window = pulse_window_dirty_;
                 request.pulse_window = pulse_window_;
                 pulse_window_dirty_ = false;
+                request.persist_burst_window = burst_window_dirty_;
+                request.burst_window = burst_window_;
+                burst_window_dirty_ = false;
 
                 queue_flash_operation(request);
                 
@@ -1370,6 +1430,9 @@ void GrindController::update() {
                 request.persist_pulse_window = pulse_window_dirty_;
                 request.pulse_window = pulse_window_;
                 pulse_window_dirty_ = false;
+                request.persist_burst_window = burst_window_dirty_;
+                request.burst_window = burst_window_;
+                burst_window_dirty_ = false;
                 queue_flash_operation(request);
                 
                 // Mark flash operation as queued to prevent repeated calls
@@ -1526,9 +1589,10 @@ void GrindController::reset_mechanical_anomaly_count() {
 }
 
 void GrindController::monitor_mechanical_instability(const GrindLoopData& loop_data) {
-    // Only monitor during active grinding with motor running. Not during a knock: shaking
-    // the grinder is the point, and it would raise the instability warning.
-    bool grinding_active = grinder && grinder->is_grinding() && phase != GrindPhase::KNOCK_TEST;
+    // Only monitor during active grinding with motor running. Not during a burst or a
+    // knock: shaking the grinder is the point, and it would raise the instability warning.
+    bool grinding_active = grinder && grinder->is_grinding() &&
+                           phase != GrindPhase::KNOCK_TEST && phase != GrindPhase::BURST;
     if (!grinding_active) {
         mechanical_monitor_initialized_ = false;
         return;
@@ -1660,6 +1724,7 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
             case GrindPhase::PREDICTIVE:
             case GrindPhase::TIME_GRINDING:
             case GrindPhase::KNOCK_TEST:
+            case GrindPhase::BURST:
                 event_in_progress.event_flags |= GRIND_EVENT_FLAG_MOTOR_ACTIVE;
                 break;
             case GrindPhase::PULSE_EXECUTE:
@@ -1815,6 +1880,7 @@ const char* GrindController::get_phase_name(GrindPhase p) const {
         case GrindPhase::TIME_PAUSED: return "PAUSED";
         case GrindPhase::PURGE_CHECK: return "PURGE_CHECK";
         case GrindPhase::KNOCK_TEST: return "KNOCK_TEST";
+        case GrindPhase::BURST: return "BURST";
         case GrindPhase::TIME_ADDITIONAL_PULSE: return "PULSE";
         case GrindPhase::COMPLETED: return "COMPLETED";
         case GrindPhase::TIMEOUT: return "TIMEOUT";
@@ -1993,6 +2059,9 @@ void GrindController::process_queued_flash_operations() {
                     if (request.persist_pulse_window && pulse_window_is_valid(request.pulse_window)) {
                         preferences->putBytes(PREF_KEY_PULSE_WINDOW, &request.pulse_window, sizeof(PulseWindow));
                     }
+                    if (request.persist_burst_window && pulse_window_is_valid(request.burst_window)) {
+                        preferences->putBytes(PREF_KEY_BURST_WINDOW, &request.burst_window, sizeof(PulseWindow));
+                    }
                 }
                 // Session outcome is final by now - coast entry judged, any error recorded
                 persist_history();
@@ -2104,6 +2173,19 @@ bool GrindController::read_coast_window(Preferences& prefs, uint8_t profile_id, 
     if (isfinite(legacy) && legacy >= GRIND_COAST_TIME_MIN_S && legacy <= GRIND_COAST_TIME_MAX_S) {
         coast_window_push(out, legacy);
         return true;
+    }
+    return false;
+}
+
+bool GrindController::read_burst_window(Preferences& prefs, PulseWindow& out) {
+    pulse_window_reset(out);
+    PulseWindow scratch;
+    pulse_window_reset(scratch);
+    // Exact-size read into a scratch copy, as for the pulse window
+    size_t read = prefs.getBytes(PREF_KEY_BURST_WINDOW, &scratch, sizeof(PulseWindow));
+    if (read == sizeof(PulseWindow) && pulse_window_is_valid(scratch)) {
+        out = scratch;
+        return out.count > 0;
     }
     return false;
 }
@@ -2455,6 +2537,17 @@ void GrindController::observe_coast(float coast_weight_g) {
         return;
     }
     coast_observed_ = true;
+
+    // A burst fired straight after the stop lands in this same settle. Take out what it
+    // was expected to bring so the window keeps holding coast: the next prediction adds
+    // the expected burst back, so the total it stops short by is still a tail this
+    // grinder really produced, even when the burst figure is off.
+    if (burst_fired_) {
+        const float tail_g = coast_weight_g;
+        coast_weight_g -= burst_expected_g_;
+        queue_log_message("[BURST] Tail %+.3fg = coast %+.3fg + expected burst %+.3fg\n",
+                          tail_g, coast_weight_g, burst_expected_g_);
+    }
 
     // Convert the observed coast weight into a time using the SAME flow figure the
     // prediction was built on, so the multiply and divide cancel. Using pulse_flow_rate

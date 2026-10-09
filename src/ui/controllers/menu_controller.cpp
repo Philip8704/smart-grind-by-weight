@@ -244,9 +244,9 @@ void MenuUIController::handle_knock_test() {
     snprintf(message, sizeof(message),
              "Grinds %.1fg: beans in the hopper, portafilter on the scale."
              "\n\n"
-             "Stops at %.1fg, knocks the chute with %u short jolts, weighs what fell, then finishes.",
+             "Stops at %.1fg, fires the %u-jolt burst, weighs what fell for the burst model, then finishes.",
              KNOCK_TEST_TARGET_G, KNOCK_TEST_TARGET_G - KNOCK_TEST_STOP_SHORT_G,
-             (unsigned)KNOCK_TEST_PULSES);
+             (unsigned)GRIND_BURST_PULSES);
     ui_manager_->show_confirmation(
         "KNOCK TEST",
         message,

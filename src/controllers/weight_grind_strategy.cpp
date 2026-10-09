@@ -23,6 +23,9 @@ bool WeightGrindStrategy::update(const GrindSessionDescriptor&,
         case GrindPhase::PREDICTIVE:
             run_predictive_phase(*controller, loop_data);
             return true;
+        case GrindPhase::BURST:
+            run_burst_phase(*controller, loop_data);
+            return true;
         case GrindPhase::PULSE_DECISION:
             run_pulse_decision_phase(*controller, loop_data);
             return true;
@@ -132,13 +135,47 @@ void WeightGrindStrategy::run_predictive_phase(GrindController& controller,
     }
 
     // Only allow motor stop decision after motor has settled to avoid startup transients.
-    // The predictive target is the dose itself, except in a knock test before its knock.
+    // The predictive target is short of the dose by the burst that follows (or by the
+    // knock point in a knock test) - see get_predictive_target_g().
     if (controller.grinder->is_motor_settled() &&
         loop_data.current_weight >= (controller.get_predictive_target_g() - controller.motor_stop_target_weight)) {
         controller.grinder->stop();
         controller.predictive_end_weight = loop_data.current_weight;
         controller.pulse_flow_rate = controller.weight_sensor->get_flow_rate_95th_percentile(GRIND_PULSE_FLOW_RATE_WINDOW_MS);
         controller.mark_coast_window_start();
+        // Straight into the burst, with no settle in between, when this grind has one
+        controller.switch_phase(controller.burst_planned_ ? GrindPhase::BURST : GrindPhase::PULSE_SETTLING,
+                                loop_data);
+    }
+}
+
+void WeightGrindStrategy::run_burst_phase(GrindController& controller,
+                                          const GrindLoopData& loop_data) const {
+    if (!controller.burst_started_) {
+        // The motor has only just stopped. Give the rotor the same pause it gets between
+        // jolts, so the first one is a jolt rather than a few more ms of grinding.
+        if (loop_data.now - controller.phase_start_time < GRIND_BURST_OFF_MS) {
+            return;
+        }
+        controller.burst_started_ = true;
+        const uint16_t jolt_ms = controller.get_jolt_ms();
+        if (!controller.grinder->start_pulse_train(jolt_ms, GRIND_BURST_OFF_MS, GRIND_BURST_PULSES)) {
+            // The main run already stopped short, so this lands light and the correction
+            // pulses make up the difference
+            controller.queue_log_message("[BURST] %u jolts of %ums could not start - settling without\n",
+                                         (unsigned)GRIND_BURST_PULSES, (unsigned)jolt_ms);
+            controller.switch_phase(GrindPhase::PULSE_SETTLING, loop_data);
+            return;
+        }
+        controller.burst_fired_ = true;
+        controller.queue_log_message("[BURST] %u x %ums from %.2fg, expects %+.3fg\n",
+                                     (unsigned)GRIND_BURST_PULSES, (unsigned)jolt_ms,
+                                     loop_data.current_weight, controller.burst_expected_g_);
+        return;
+    }
+
+    // The usual settle follows: the first decision after it reads coast + burst
+    if (controller.grinder->is_pulse_train_done()) {
         controller.switch_phase(GrindPhase::PULSE_SETTLING, loop_data);
     }
 }

@@ -776,12 +776,13 @@ void GrindingUIController::show_knock_test_result() {
     char message[240];
     if (r.knocked) {
         snprintf(message, sizeof(message),
-                 "Knock at %.2fg released %+.2fg"
+                 "Burst at %.2fg released %+.2fg (%u x %ums)"
                  "\n"
-                 "(%u jolts of %ums)"
+                 "%s %+.2fg"
                  "\n\n"
-                 "Finished %.2fg of %.1fg, %u correction%s. Saved for export.",
+                 "Finished %.2fg of %.1fg, %u correction%s.",
                  r.before_g, r.released_g, (unsigned)r.pulses, (unsigned)r.on_ms,
+                 r.learned ? "Burst model now" : "Not learned - model stays", r.burst_model_g,
                  r.final_g, r.target_g, corrections, corrections == 1 ? "" : "s");
     } else {
         snprintf(message, sizeof(message),
