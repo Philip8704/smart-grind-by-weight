@@ -237,78 +237,14 @@ void Grinder::start_pulse_rmt(uint32_t duration_ms) {
 #endif
     if (!initialized || !rmt_initialized) return;
 
-    motor_start_time = millis();
-
-    // Clean up any existing encoder
-    if (current_encoder) {
-        rmt_del_encoder(current_encoder);
-        current_encoder = nullptr;
-    }
-    
-    // Create copy encoder for raw symbol data
-    rmt_copy_encoder_config_t encoder_config = {};
-    
-    if (rmt_new_copy_encoder(&encoder_config, &current_encoder) != ESP_OK) {
-        // Counted rather than logged every time: this sits on the grind control loop,
-        // and a repeating fault would bury the 3KB crash ring in its own noise. The
-        // count is reported, and callers that fire once (motor test) log it directly.
-        encoder_fail_count++;
-        last_transmit_err = ESP_ERR_NO_MEM;
-        if (encoder_fail_count == 1) {
-            LOG_BLE("[MOTOR] Encoder creation FAILED - motor will not actuate\n");
-        }
-        return;
-    }
-    
-    // Create RMT symbols for HIGH pulse + LOW end
-    rmt_symbol_word_t pulse_symbols[2];
-    uint32_t duration_us = duration_ms * 1000;
-    
-    // Handle long durations by using maximum duration and remainder
-    if (duration_us <= 32767) {
-        // Single symbol for short durations
-        pulse_symbols[0].level0 = 1;
-        pulse_symbols[0].duration0 = duration_us;
-        pulse_symbols[0].level1 = 0;
-        pulse_symbols[0].duration1 = 1; // Minimal LOW to end pulse
-        
-        rmt_transmit_config_t tx_config = {.loop_count = 0};
-        pulse_active = true;
-        grinding = true;
-        
-        last_transmit_err = rmt_transmit(rmt_channel, current_encoder, pulse_symbols,
-                                         sizeof(rmt_symbol_word_t), &tx_config);
-        if (last_transmit_err != ESP_OK) {
-            transmit_fail_count++;
-        }
-        emit_background_change(true);
-    } else {
-        // For longer durations, use loop_count to repeat
-        uint32_t base_duration = 32767; // Max single symbol duration
-        uint32_t loop_count = (duration_us / base_duration) - 1; // -1 because first isn't a loop
-        uint32_t remainder = duration_us % base_duration;
-        
-        pulse_symbols[0].level0 = 1;
-        pulse_symbols[0].duration0 = base_duration;
-        pulse_symbols[0].level1 = 1;
-        pulse_symbols[0].duration1 = remainder > 0 ? remainder : 1;
-        
-        pulse_symbols[1].level0 = 0;
-        pulse_symbols[1].duration0 = 1; // Minimal LOW to end
-        pulse_symbols[1].level1 = 0;
-        pulse_symbols[1].duration1 = 0;
-        
-        rmt_transmit_config_t tx_config = {.loop_count = (int)loop_count};
-        pulse_active = true;
-        grinding = true;
-        
-        last_transmit_err = rmt_transmit(rmt_channel, current_encoder, pulse_symbols,
-                                         sizeof(pulse_symbols), &tx_config);
-        if (last_transmit_err != ESP_OK) {
-            transmit_fail_count++;
-        }
-        emit_background_change(true);
-    }
+    // A single pulse is a train of one with no gap. This used to build its own symbols,
+    // and for anything over 65.5ms got the length wrong: it put a 32767us chunk plus
+    // the remainder into one symbol and looped it duration/32767 - 1 times, but the
+    // driver treats loop_count 0 and 1 alike as one transmission and repeats the whole
+    // symbol, remainder included. A 72ms correction pulse went out as 39ms and a 190ms
+    // one as 236ms. build_pulse_train() splits every period exactly, so the commanded
+    // length is what is sent - which the pulse delivery model depends on.
+    start_pulse_train(duration_ms, 0, 1);
 }
 
 bool Grinder::is_pulse_complete() {
@@ -327,9 +263,13 @@ bool Grinder::is_pulse_complete() {
     // For simplicity, we'll use a transmission done callback approach
     // Since RMT handles the pulse timing in hardware, we can check the GPIO state
     // as a simple completion indicator
+    // Known to fire on the first call: the RMT drives this pin without its input buffer
+    // enabled, so digitalRead() sees LOW while the pulse is still running. Left as is
+    // for now because changing it moves when settling starts - see CLAUDE.md.
     if (digitalRead(motor_pin) == LOW) {
         pulse_active = false;
         grinding = false;
+        train_active_ = false;  // Pulses are sent as one-pulse trains
         emit_background_change(false);
         return true;
     }

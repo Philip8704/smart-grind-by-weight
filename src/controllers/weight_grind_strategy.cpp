@@ -63,16 +63,18 @@ float WeightGrindStrategy::calculate_productive_pulse_ms(const GrindController& 
                                                          float error_grams) const {
     float clamped_flow_rate = get_clamped_pulse_flow_rate(controller);
 
-    // Grinding time needed to close the error, excluding startup latency
-    float productive_duration_ms = (error_grams / clamped_flow_rate) * 1000.0f;
+    // Grinding time needed to close the error, excluding startup latency. The pulse
+    // model's expected extra - grounds the pulse shakes loose on top of what it grinds,
+    // learned from past pulses - is subtracted first, taken at the upper quartile so
+    // the pulse tends to come out short. If that alone covers the error the productive
+    // part is zero and the pulse is the minimum: the latency.
+    float grams_to_grind = error_grams - controller.get_pulse_planning_extra_g();
+    if (grams_to_grind <= 0.0f) {
+        return 0.0f;
+    }
+    float productive_duration_ms = (grams_to_grind / clamped_flow_rate) * 1000.0f;
 
     return max(0.0f, min(productive_duration_ms, GRIND_MOTOR_MAX_PULSE_DURATION_MS));
-}
-
-float WeightGrindStrategy::calculate_pulse_duration_ms(const GrindController& controller,
-                                                       float error_grams) const {
-    // Total pulse = latency (startup, delivers nothing) + productive grinding time
-    return controller.get_motor_response_latency() + calculate_productive_pulse_ms(controller, error_grams);
 }
 
 void WeightGrindStrategy::run_predictive_phase(GrindController& controller,
@@ -166,6 +168,10 @@ void WeightGrindStrategy::run_pulse_decision_phase(GrindController& controller,
     // Later settles follow pulses, which have their own latency and are not coast.
     if (controller.pulse_attempts == 0) {
         controller.observe_coast(settled_weight - controller.predictive_end_weight);
+    } else {
+        // Every later settle follows a pulse: what that pulse actually delivered is what
+        // the pulse model learns from
+        controller.observe_pulse(controller.pulse_attempts - 1, settled_weight);
     }
 
     float conservative_target = controller.target_weight - GRIND_ACCURACY_TOLERANCE_G;
@@ -188,14 +194,42 @@ void WeightGrindStrategy::run_pulse_decision_phase(GrindController& controller,
         return;
     }
 
-    controller.pulse_history[controller.pulse_attempts].start_weight = settled_weight;
-    controller.pulse_history[controller.pulse_attempts].end_weight = settled_weight;
+    // The shortest pulse allowed is the motor latency learned by Tune Pulses, and the
+    // model expects even that one to bring `extra` grams. If that alone would carry the
+    // grind past target + tolerance, finish where it is: a pulse cannot be made smaller,
+    // and an undershoot can be topped up by hand where an overshoot cannot be undone.
+    const float extra = controller.get_pulse_expected_extra_g();
+    if (settled_weight + extra > controller.target_weight + GRIND_ACCURACY_TOLERANCE_G) {
+        controller.queue_log_message("[PULSE] Shortest pulse (%.0fms) expected to add %.3fg - would pass %.2fg, finishing at %.2fg\n",
+                                     controller.get_motor_response_latency(), extra,
+                                     controller.target_weight + GRIND_ACCURACY_TOLERANCE_G, settled_weight);
+        controller.switch_phase(GrindPhase::FINAL_SETTLING, loop_data);
+        return;
+    }
 
-    controller.current_pulse_duration_ms = calculate_pulse_duration_ms(controller, error);
-    controller.pulse_history[controller.pulse_attempts].duration_ms = controller.current_pulse_duration_ms;
+    PulseReport& pulse = controller.pulse_history[controller.pulse_attempts];
+    const float flow = get_clamped_pulse_flow_rate(controller);
+    const float productive_ms = calculate_productive_pulse_ms(controller, error);
+    pulse.start_weight = settled_weight;
+    pulse.end_weight = settled_weight;
+    pulse.flow_gps = flow;
+    pulse.expected_g = extra + flow * productive_ms / 1000.0f;
+
+    // Never below the learned latency: productive_ms is >= 0, so the pulse is at least
+    // it. Whole milliseconds are what get sent, so that is what the observation of this
+    // pulse is computed from - the same figure on both sides.
+    const uint32_t sent_ms = static_cast<uint32_t>(controller.get_motor_response_latency() + productive_ms);
+    controller.current_pulse_duration_ms = (float)sent_ms;
+    pulse.duration_ms = (float)sent_ms;
+    controller.pulse_anomaly_at_start_ = controller.mechanical_anomaly_count_;
+
+    controller.queue_log_message("[PULSE] #%d plan: need %.3fg -> %lums (latency %.0f + %.0f), expects %+.3fg (extra %.3f, sized %.3f)\n",
+                                 controller.pulse_attempts + 1, error, (unsigned long)sent_ms,
+                                 controller.get_motor_response_latency(), productive_ms,
+                                 pulse.expected_g, extra, controller.get_pulse_planning_extra_g());
 
     controller.switch_phase(GrindPhase::PULSE_EXECUTE, loop_data);
-    controller.grinder->start_pulse_rmt(static_cast<uint32_t>(controller.current_pulse_duration_ms));
+    controller.grinder->start_pulse_rmt(sent_ms);
 
     controller.pulse_attempts++;
 }

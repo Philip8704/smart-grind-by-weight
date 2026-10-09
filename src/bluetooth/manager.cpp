@@ -1402,6 +1402,41 @@ void BluetoothManager::generate_diagnostic_report() {
         send_chunk(buf);
     }
 
+    // Section 1e: Pulse delivery model - what the correction pulses are planned from
+    {
+        PulseWindow pulses;
+        pulse_window_reset(pulses);
+        Preferences pulse_prefs;
+        if (pulse_prefs.begin("grinder", true)) {
+            GrindController::read_pulse_window(pulse_prefs, pulses);
+            pulse_prefs.end();
+        }
+        snprintf(buf, sizeof(buf),
+                 "[PULSE MODEL]\n"
+                 "  Pulse = latency %.0fms + max(0, needed - extra) / flow, never shorter than the latency\n"
+                 "  Extra per pulse: %.3fg typical (median), pulses sized for %.3fg (upper quartile) %s\n",
+                 grind_controller.get_motor_response_latency(),
+                 pulse_window_expected_extra_g(pulses),
+                 pulse_window_planning_extra_g(pulses),
+                 pulses.count ? "" : "- seed, no pulse measured yet");
+        send_chunk(buf);
+        if (pulses.count) {
+            float sorted[PulseWindow::CAPACITY];
+            int n = pulse_window_sorted(pulses, sorted, PulseWindow::CAPACITY);
+            char list[128];
+            int offset = snprintf(list, sizeof(list), "    %d measured, sorted:", n);
+            for (int s = 0; s < n && offset > 0 && (size_t)offset < sizeof(list); s++) {
+                int written = snprintf(list + offset, sizeof(list) - offset, " %+.3f", sorted[s]);
+                if (written < 0 || (size_t)written >= sizeof(list) - offset) break;
+                offset += written;
+            }
+            snprintf(buf, sizeof(buf), "%s\n", list);
+            send_chunk(buf);
+        }
+        snprintf(buf, sizeof(buf), "\n");
+        send_chunk(buf);
+    }
+
     // Section 2: System Runtime
     size_t heap_free = ESP.getFreeHeap();
     size_t heap_total = ESP.getHeapSize();

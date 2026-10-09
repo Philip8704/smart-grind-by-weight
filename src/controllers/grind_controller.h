@@ -57,6 +57,30 @@ int coast_window_sorted(const CoastWindow& window, float* out, int out_capacity)
 // True if the blob read back from NVS is self-consistent and every sample is in range
 bool coast_window_is_valid(const CoastWindow& window);
 
+// The last few correction pulses' "extra" - grams delivered beyond what the pulse's
+// grinding time (its length past the motor latency) should produce at the measured
+// flow. On this grinder a pulse also shakes retained grounds out of the chute, so
+// pulses deliver more than grinding time alone predicts; this is that difference.
+// See GRIND_PULSE_* in grind_control.h. Small and POD, like CoastWindow.
+struct PulseWindow {
+    enum : int { CAPACITY = GRIND_PULSE_WINDOW_SIZE };
+    float extra_g[CAPACITY];
+    uint8_t count;
+    uint8_t next;
+};
+
+void pulse_window_reset(PulseWindow& window);
+void pulse_window_push(PulseWindow& window, float extra_g);
+bool pulse_window_is_valid(const PulseWindow& window);
+int pulse_window_sorted(const PulseWindow& window, float* out, int out_capacity);
+// Grams a pulse is expected to deliver on top of its grinding time: the median of the
+// window, never below zero, or the seed while the window is empty. Judges whether even
+// the shortest pulse would overshoot.
+float pulse_window_expected_extra_g(const PulseWindow& window);
+// The same at GRIND_PULSE_PLANNING_QUANTILE, used to size pulses - deliberately high,
+// so a pulse tends to come out short rather than too large
+float pulse_window_planning_extra_g(const PulseWindow& window);
+
 // Flash operation request structure for Core 0 → Core 1 communication
 struct FlashOpRequest {
     enum Type {
@@ -77,6 +101,8 @@ struct FlashOpRequest {
     bool persist_coast_window;
     uint8_t coast_profile_id;
     CoastWindow coast_window;
+    bool persist_pulse_window;
+    PulseWindow pulse_window;
 };
 
 // Log message structure for Core 0 → Core 1 communication
@@ -195,6 +221,8 @@ struct PulseReport {
     float start_weight;
     float end_weight;
     float duration_ms;
+    float expected_g;   // What the pulse model planned it to deliver
+    float flow_gps;     // Flow figure the plan used - the observation must use the same one
 };
 
 
@@ -327,6 +355,11 @@ private:
     // Grind freshness tracking
     bool grinder_purged_since_boot;      // Tracks if grinder has been used since boot (RAM only)
     uint64_t last_purge_runtime_ms;      // Runtime when last grind completed (persisted)
+
+    // Pulse delivery model - see GRIND_PULSE_* in grind_control.h
+    PulseWindow pulse_window_;
+    bool pulse_window_dirty_ = false;    // New observation waiting to be written to NVS at session end
+    int pulse_anomaly_at_start_ = 0;     // Instability count when the last pulse fired
 
     // Negative-weight failsafe debounce - see GRIND_NEGATIVE_WEIGHT_CONFIRM_SAMPLES
     uint8_t neg_weight_run_;             // Consecutive raw samples below the failsafe threshold
@@ -489,6 +522,7 @@ public:
     static constexpr const char* PREF_KEY_GRIND_FRESHNESS_HOURS = "freshness_hrs";
     static constexpr const char* PREF_KEY_COAST_TIME_PREFIX = "coast";    // Legacy single-value key, read once to migrate
     static constexpr const char* PREF_KEY_COAST_WINDOW_PREFIX = "coastw"; // Suffixed with the profile id, e.g. "coastw1"
+    static constexpr const char* PREF_KEY_PULSE_WINDOW = "pulsew";        // One for the grinder
     GrindMode get_mode() const { return mode; }
     const GrindSessionDescriptor& get_session_descriptor() const { return session_descriptor; }
     
@@ -538,6 +572,17 @@ public:
     // Reads one profile's window straight from NVS, for callers that need a profile
     // other than the running session's. Returns false if nothing valid is stored.
     static bool read_coast_window(Preferences& prefs, uint8_t profile_id, CoastWindow& out);
+
+    // Pulse delivery model. One window for the grinder, not per profile: the extra a
+    // pulse brings comes from the chute, and the flow-dependent part is computed from
+    // each grind's own measured flow.
+    float get_pulse_expected_extra_g() const { return pulse_window_expected_extra_g(pulse_window_); }
+    float get_pulse_planning_extra_g() const { return pulse_window_planning_extra_g(pulse_window_); }
+    const PulseWindow& get_pulse_window() const { return pulse_window_; }
+    static bool read_pulse_window(Preferences& prefs, PulseWindow& out);
+    void load_pulse_window();
+    // Called when the settle after a pulse is in: records what it actually delivered
+    void observe_pulse(int index, float settled_after_g);
 
     // Diagnostic accessors - newest first
     int get_coast_history_count() const { return coast_history_count_; }

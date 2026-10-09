@@ -124,6 +124,92 @@ bool coast_window_is_valid(const CoastWindow& window) {
     return true;
 }
 
+//------------------------------------------------------------------------------
+// Pulse delivery window - see GRIND_PULSE_* in grind_control.h
+//------------------------------------------------------------------------------
+
+void pulse_window_reset(PulseWindow& window) {
+    memset(&window, 0, sizeof(PulseWindow));  // Padding too: written to NVS as a blob
+}
+
+void pulse_window_push(PulseWindow& window, float extra_g) {
+    if (!isfinite(extra_g) || extra_g < GRIND_PULSE_EXTRA_VALID_MIN_G || extra_g > GRIND_PULSE_EXTRA_VALID_MAX_G) {
+        return;
+    }
+    if (window.next >= PulseWindow::CAPACITY) {
+        window.next = 0;
+    }
+    window.extra_g[window.next] = extra_g;
+    window.next = (uint8_t)((window.next + 1) % PulseWindow::CAPACITY);
+    if (window.count < PulseWindow::CAPACITY) {
+        window.count++;
+    }
+}
+
+bool pulse_window_is_valid(const PulseWindow& window) {
+    if (window.count > PulseWindow::CAPACITY || window.next >= PulseWindow::CAPACITY) {
+        return false;
+    }
+    for (int i = 0; i < window.count; i++) {
+        float v = window.extra_g[i];
+        if (!isfinite(v) || v < GRIND_PULSE_EXTRA_VALID_MIN_G || v > GRIND_PULSE_EXTRA_VALID_MAX_G) {
+            return false;
+        }
+    }
+    return true;
+}
+
+int pulse_window_sorted(const PulseWindow& window, float* out, int out_capacity) {
+    if (!out || out_capacity <= 0) {
+        return 0;
+    }
+    int n = window.count;
+    if (n > PulseWindow::CAPACITY) n = PulseWindow::CAPACITY;
+    if (n > out_capacity) n = out_capacity;
+    for (int i = 0; i < n; i++) {
+        out[i] = window.extra_g[i];
+    }
+    for (int i = 1; i < n; i++) {
+        float key = out[i];
+        int j = i - 1;
+        while (j >= 0 && out[j] > key) {
+            out[j + 1] = out[j];
+            j--;
+        }
+        out[j + 1] = key;
+    }
+    return n;
+}
+
+// Linearly interpolated quantile of the window, or the seed while it is empty. Never
+// below zero: the model may only shorten a pulse relative to the flow-only plan.
+static float pulse_window_quantile_g(const PulseWindow& window, float fraction) {
+    float sorted[PulseWindow::CAPACITY];
+    int n = pulse_window_sorted(window, sorted, PulseWindow::CAPACITY);
+    if (n <= 0) {
+        return GRIND_PULSE_EXTRA_SEED_G;
+    }
+    float position = fraction * (float)(n - 1);
+    int lower = (int)position;
+    int upper = (lower + 1 < n) ? lower + 1 : lower;
+    float value = sorted[lower] + (sorted[upper] - sorted[lower]) * (position - (float)lower);
+    return value > 0.0f ? value : 0.0f;
+}
+
+float pulse_window_expected_extra_g(const PulseWindow& window) {
+    // Median: what a pulse typically brings, robust to the odd one that caught a clump
+    // or delivered nothing. Used to judge whether even the shortest pulse would overshoot.
+    return pulse_window_quantile_g(window, 0.5f);
+}
+
+float pulse_window_planning_extra_g(const PulseWindow& window) {
+    // Upper quartile: pulses are sized as if they bring more than usual, so most come
+    // out a little short and a second correction finishes the job - rather than one
+    // too large. Simulated against this grinder's measured pulses, sizing from the
+    // median overshot 6% of grinds and this 5%, for ~0.15 more pulses per grind.
+    return pulse_window_quantile_g(window, GRIND_PULSE_PLANNING_QUANTILE);
+}
+
 void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     weight_sensor = lc;
     grinder = gr;
@@ -163,6 +249,10 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     neg_weight_run_ = 0;
     neg_weight_last_seq_ = 0;
     neg_weight_last_g_ = 0.0f;
+
+    pulse_window_reset(pulse_window_);
+    pulse_window_dirty_ = false;
+    pulse_anomaly_at_start_ = 0;
 
     pending_vibration_test_ = false;
     vib_floor_.clear();
@@ -425,6 +515,7 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     pending_observation_ = nullptr;
     if (mode == GrindMode::WEIGHT) {
         load_coast_time(current_profile_id);
+        load_pulse_window();
     } else {
         coast_window_reset(coast_window_);
         coast_window_dirty_ = false;
@@ -1320,6 +1411,9 @@ void GrindController::update() {
                 request.coast_profile_id = session_descriptor.profile_id;
                 request.coast_window = coast_window_;
                 coast_window_dirty_ = false;
+                request.persist_pulse_window = pulse_window_dirty_;
+                request.pulse_window = pulse_window_;
+                pulse_window_dirty_ = false;
 
                 queue_flash_operation(request);
                 
@@ -1336,6 +1430,11 @@ void GrindController::update() {
                 strncpy(request.result_string, "TIMEOUT", sizeof(request.result_string) - 1);
                 request.final_weight = final_weight;
                 request.pulse_count = pulse_attempts;
+                // Pulses measured before the timeout were measured at a clean settle and
+                // stay valid; the coast candidate does not, and is discarded elsewhere
+                request.persist_pulse_window = pulse_window_dirty_;
+                request.pulse_window = pulse_window_;
+                pulse_window_dirty_ = false;
                 queue_flash_operation(request);
                 
                 // Mark flash operation as queued to prevent repeated calls
@@ -1948,6 +2047,9 @@ void GrindController::process_queued_flash_operations() {
                                  (unsigned)request.coast_profile_id);
                         preferences->putBytes(key, &request.coast_window, sizeof(CoastWindow));
                     }
+                    if (request.persist_pulse_window && pulse_window_is_valid(request.pulse_window)) {
+                        preferences->putBytes(PREF_KEY_PULSE_WINDOW, &request.pulse_window, sizeof(PulseWindow));
+                    }
                 }
                 // Session outcome is final by now - coast entry judged, any error recorded
                 persist_history();
@@ -2061,6 +2163,63 @@ bool GrindController::read_coast_window(Preferences& prefs, uint8_t profile_id, 
         return true;
     }
     return false;
+}
+
+bool GrindController::read_pulse_window(Preferences& prefs, PulseWindow& out) {
+    pulse_window_reset(out);
+    PulseWindow scratch;
+    pulse_window_reset(scratch);
+    // Exact-size read into a scratch copy, as for the coast window: a short or
+    // mismatched blob must be rejected, not half-applied
+    size_t read = prefs.getBytes(PREF_KEY_PULSE_WINDOW, &scratch, sizeof(PulseWindow));
+    if (read == sizeof(PulseWindow) && pulse_window_is_valid(scratch)) {
+        out = scratch;
+        return out.count > 0;
+    }
+    return false;
+}
+
+void GrindController::load_pulse_window() {
+    pulse_window_reset(pulse_window_);
+    pulse_window_dirty_ = false;
+    if (preferences) {
+        read_pulse_window(*preferences, pulse_window_);
+    }
+}
+
+void GrindController::observe_pulse(int index, float settled_after_g) {
+    if (index < 0 || index >= GRIND_MAX_PULSE_ATTEMPTS) {
+        return;
+    }
+    PulseReport& pulse = pulse_history[index];
+    pulse.end_weight = settled_after_g;
+
+    const float delivered = settled_after_g - pulse.start_weight;
+    const float grinding_ms = pulse.duration_ms - motor_response_latency_ms;
+    const float from_flow = pulse.flow_gps * (grinding_ms > 0.0f ? grinding_ms : 0.0f) / 1000.0f;
+    const float extra = delivered - from_flow;
+
+    // Same gates as a coast measurement: a disturbed settle, or a delivery no pulse
+    // could produce, says nothing about pulses
+    const char* reject = nullptr;
+    if (mechanical_anomaly_count_ != pulse_anomaly_at_start_) {
+        reject = "scale disturbed";
+    } else if (!isfinite(delivered) || delivered < GRIND_PULSE_DELIVERED_MIN_G ||
+               delivered > GRIND_PULSE_DELIVERED_MAX_G) {
+        reject = "implausible delivery";
+    }
+
+    if (reject) {
+        queue_log_message("[PULSE] #%d %.0fms: delivered %+.3fg - not learned (%s)\n",
+                          index + 1, pulse.duration_ms, delivered, reject);
+        return;
+    }
+
+    pulse_window_push(pulse_window_, extra);
+    pulse_window_dirty_ = true;
+    queue_log_message("[PULSE] #%d %.0fms: delivered %+.3fg, planned %+.3fg, extra %+.3fg -> model now %+.3fg\n",
+                      index + 1, pulse.duration_ms, delivered, pulse.expected_g, extra,
+                      pulse_window_expected_extra_g(pulse_window_));
 }
 
 void GrindController::load_coast_time(uint8_t profile_id) {

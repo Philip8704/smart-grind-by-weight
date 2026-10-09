@@ -190,6 +190,31 @@ enum class GrinderPurgeMode {
                                                                                   // instead of burning attempts. Expressed as a weight rather than a duration so
                                                                                   // the worst-case undershoot stays at tolerance + this, whatever the flow rate.
 
+// Pulse delivery model. A correction pulse delivers more than its grinding time
+// (length past the motor latency) times the flow rate: the start-up jolt also shakes
+// retained grounds out of the chute. Measured on this grinder, pulses delivered
+// 0.04-0.10g beyond that, and a pulse planned from flow alone overshoots.
+//
+// So each pulse is planned as   length = latency + max(0, needed - extra) / flow
+// where `extra` comes from what recent pulses delivered beyond their grinding time.
+// Three rules keep it on the safe side:
+//  - `needed` is measured to (target - tolerance), as before, and pulses are sized from
+//    the UPPER QUARTILE of the measured extra rather than the median, so most pulses
+//    come out a little short. Two small corrections are preferred to one too large.
+//  - `extra` is never taken below zero, so the model can only shorten a pulse relative
+//    to the flow-only plan, never lengthen it.
+//  - No pulse is ever shorter than the learned motor latency from Tune Pulses. If even
+//    that shortest pulse is expected (median extra) to carry the grind past target +
+//    tolerance, the grind finishes where it is rather than overshoot. The median, not
+//    the upper quartile, so this does not stop grinds short more often than needed.
+#define GRIND_PULSE_WINDOW_SIZE 8                                                 // Pulse observations kept (one window for the grinder)
+#define GRIND_PULSE_PLANNING_QUANTILE 0.75f                                       // Extra assumed when sizing a pulse: upper quartile of the window
+#define GRIND_PULSE_EXTRA_SEED_G 0.06f                                            // Used until a pulse has been measured: the median measured on this grinder
+#define GRIND_PULSE_EXTRA_VALID_MIN_G -0.5f                                       // Observations outside this are measurement faults, not pulses
+#define GRIND_PULSE_EXTRA_VALID_MAX_G 1.0f
+#define GRIND_PULSE_DELIVERED_MIN_G -0.05f                                        // A pulse cannot remove coffee - more negative means the scale was disturbed
+#define GRIND_PULSE_DELIVERED_MAX_G 1.0f                                          // More than this from one pulse means something else landed on the scale
+
 // Motor timing
 #define GRIND_MOTOR_SETTLING_TIME_MS 200                                          // Motor vibration settling time
 
