@@ -88,6 +88,9 @@ private:
     // Written by the BLE host task, read by the Bluetooth task - see manager.cpp
     std::atomic<bool> device_connected;
     bool ble_enabled;
+    // The stack and GATT server are built on the first enable and kept for the rest of
+    // the boot; see enable() for why turning Bluetooth off must not deinit them
+    bool stack_ready;
     std::atomic<bool> debug_stream_active;
     unsigned long enable_time;
     unsigned long timeout_ms;
@@ -125,6 +128,7 @@ private:
     bool diagnostic_report_in_progress;
 
     // Private methods
+    void build_gatt_server();
     void update_ui_status(const char* status);
     void enqueue_ui_status(const char* status);
     void set_ota_status(BLEOTAStatus status);

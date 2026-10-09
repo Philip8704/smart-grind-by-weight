@@ -188,7 +188,7 @@ enum class GrinderPurgeMode {
 //------------------------------------------------------------------------------
 // FLOW RATE PARAMETERS
 //------------------------------------------------------------------------------
-#define GRIND_FLOW_RATE_MIN_SANE_GPS 1.0f                                         // Minimum reasonable flow rate
+#define GRIND_FLOW_RATE_MIN_SANE_GPS 0.8f                                         // Minimum reasonable flow rate. 1.0 rejected real coasts: this grinder runs ~1.2g/s and dips below 1.0 near the stop
 #define GRIND_FLOW_RATE_MAX_SANE_GPS 3.0f                                         // Maximum reasonable flow rate
 #define GRIND_PULSE_FLOW_RATE_FALLBACK_GPS 1.5f                                   // Fallback pulse flow rate when measured rate is invalid or too low
 

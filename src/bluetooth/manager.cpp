@@ -41,7 +41,7 @@ BluetoothManager::BluetoothManager()
     , sysinfo_sessions_characteristic(nullptr)
     , sysinfo_diagnostics_characteristic(nullptr)
     , device_connected(false)
-    , ble_enabled(false), debug_stream_active(false)
+    , ble_enabled(false), stack_ready(false), debug_stream_active(false)
     , enable_time(0)
     , timeout_ms(BLE_AUTO_DISABLE_TIMEOUT_MS)
     , last_disconnect_time(0)
@@ -105,7 +105,7 @@ bool BluetoothManager::dequeue_ui_status(char* out, size_t out_len) {
 
 void BluetoothManager::enable(unsigned long timeout_ms) {
     if (ble_enabled) return;
-    
+
     // Use default timeout if none specified
     if (timeout_ms == 0) {
         timeout_ms = BLE_AUTO_DISABLE_TIMEOUT_MS;
@@ -113,12 +113,36 @@ void BluetoothManager::enable(unsigned long timeout_ms) {
     this->timeout_ms = timeout_ms;
     unsigned long timeout_minutes = timeout_ms / 60000;
     log("Bluetooth: Enabling BLE with reduced power settings (%lum timeout)\n", timeout_minutes);
-    
+
     // Enable reduced power mode for BLE
     ota_handler.enable_ble_power_mode();
     enable_time = millis();
     last_disconnect_time = enable_time; // Start disconnected timeout from enable time
-    
+
+    // Built once per boot. This BLE library cannot be shut down and started again:
+    // deinit() stops NimBLE but keeps its static server, so the next init() hands that
+    // stale server back - already marked started, its GATT tables registered with a
+    // host that no longer exists - and skips the GATT reset a fresh host needs.
+    // Re-enabling after the auto-disable timeout panicked the grinder that way.
+    if (!stack_ready) {
+        build_gatt_server();
+        stack_ready = true;
+    } else {
+        log("Bluetooth: Stack already up - resuming advertising\n");
+    }
+
+    ble_enabled = true;
+    set_ota_status(BLE_OTA_READY);
+
+    // Initialize system information
+    refresh_system_info();
+    sessions_info_dirty = true;
+
+    start_advertising();
+    log("Bluetooth: Ready - device is advertising (%lum timeout)\n", timeout_minutes);
+}
+
+void BluetoothManager::build_gatt_server() {
     // Initialize BLE with delays for power stability
     BLEDevice::init(BLE_DEVICE_NAME);
     
@@ -269,16 +293,6 @@ void BluetoothManager::enable(unsigned long timeout_ms) {
     advertising->setScanResponseData(sr);
     
     delay(BLE_INIT_ADVERTISING_DELAY_MS);
-    
-    ble_enabled = true;
-    set_ota_status(BLE_OTA_READY);
-    
-    // Initialize system information
-    refresh_system_info();
-    sessions_info_dirty = true;
-    
-    start_advertising();
-    log("Bluetooth: Ready - device is advertising (%lum timeout)\n", timeout_minutes);
 }
 
 void BluetoothManager::enable_during_bootup() {
@@ -292,46 +306,34 @@ void BluetoothManager::enable_during_bootup() {
 
 void BluetoothManager::disable() {
     if (!ble_enabled) return;
-    
+
     log("Bluetooth: Disabling BLE and restoring normal power...\n");
-    
+
     if (ota_handler.is_ota_active()) {
         ota_handler.abort_ota();
     }
-    
+
     if (data_export_in_progress) {
         stop_data_export();
     }
-    
+
     stop_advertising();
     delay(BLE_SHUTDOWN_ADVERTISING_DELAY_MS);
-    
-    log("Bluetooth: Deinitializing BLE stack...\n");
-    BLEDevice::deinit(false);
-    delay(BLE_SHUTDOWN_DEINIT_DELAY_MS);
-    
+
+    // Off means no advertising and no connection - the stack itself stays up (see
+    // enable()). A client still connected is dropped; its disconnect event lands on
+    // the host task, and onDisconnect() does not advertise again while disabled.
+    // Scalars rather than the server's peer map: the host task edits that map on every
+    // connect and disconnect, and copying it from here would race. One client at a time
+    // is all this device serves.
+    if (ble_server && ble_server->getConnectedCount() > 0) {
+        ble_server->disconnect(ble_server->getConnId());
+    }
+
     ble_enabled = false;
     device_connected = false;
-    ble_server = nullptr;
-    ota_service = nullptr;
-    data_service = nullptr;
-    debug_service = nullptr;
-    sysinfo_service = nullptr;
-    ota_data_characteristic = nullptr;
-    ota_control_characteristic = nullptr;
-    ota_status_characteristic = nullptr;
-    build_number_characteristic = nullptr;
-    data_control_characteristic = nullptr;
-    data_transfer_characteristic = nullptr;
-    data_status_characteristic = nullptr;
-    debug_rx_characteristic = nullptr;
-    debug_tx_characteristic = nullptr;
-    sysinfo_system_characteristic = nullptr;
-    sysinfo_performance_characteristic = nullptr;
-    sysinfo_hardware_characteristic = nullptr;
-    sysinfo_sessions_characteristic = nullptr;
     debug_stream_active = false;
-    
+
     // Restore normal power settings
     ota_handler.restore_normal_power_mode();
     log("Bluetooth: Disable complete\n");
@@ -655,8 +657,10 @@ void BluetoothManager::log(const char* format, ...) {
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
 
-    // Note: This is the log method itself, so we print to Serial directly
-    Serial.print(buffer);
+    // Through the debug log, which prints to Serial as before and also keeps the line
+    // in the crash ring and the persistent log - BLE start and stop used to leave no
+    // trace there, so a panic during either looked like it came from nowhere
+    debug_log_printf("%s", buffer);
 
     // is_debug_stream_active() is the same as debug_stream_active
     if (debug_stream_active) {
