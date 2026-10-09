@@ -156,7 +156,7 @@ def fmt(value):
 
 
 SESSION_FLAG_VIBRATION_TEST = 0x01    # GrindSessionFlags in grind_logging.h
-SESSION_FLAG_KNOCK_TEST = 0x04        # Pulse trains, not a grind and not a steady run - skipped
+SESSION_FLAG_KNOCK_TEST = 0x04        # Grind interrupted by motor jolts, not a steady run - skipped
 TEST_TRANSIENT_MS = 500               # Matches VIBRATION_TEST_TRANSIENT_MS on the device
 
 

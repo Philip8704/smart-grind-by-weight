@@ -173,8 +173,9 @@ void GrindLogger::end_grind_session(const char* final_result, float final_weight
     bool is_successful_grind = (termination_reason == GrindTerminationReason::COMPLETED ||
                                 termination_reason == GrindTerminationReason::MAX_PULSES);
 
-    // Vibration and knock tests run the motor with an empty hopper; counting them would add a
-    // zero-gram "grind" to every lifetime figure
+    // A vibration test runs the motor with an empty hopper and would add a zero-gram
+    // "grind" to every lifetime figure; a knock test interrupts its grind on purpose and
+    // would skew the accuracy figures
     const bool is_test_session = (current_session->session_flags & GRIND_SESSION_FLAGS_TEST) != 0;
 
     if (is_successful_grind && !is_test_session) {

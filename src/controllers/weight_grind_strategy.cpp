@@ -131,9 +131,10 @@ void WeightGrindStrategy::run_predictive_phase(GrindController& controller,
         }
     }
 
-    // Only allow motor stop decision after motor has settled to avoid startup transients
+    // Only allow motor stop decision after motor has settled to avoid startup transients.
+    // The predictive target is the dose itself, except in a knock test before its knock.
     if (controller.grinder->is_motor_settled() &&
-        loop_data.current_weight >= (controller.target_weight - controller.motor_stop_target_weight)) {
+        loop_data.current_weight >= (controller.get_predictive_target_g() - controller.motor_stop_target_weight)) {
         controller.grinder->stop();
         controller.predictive_end_weight = loop_data.current_weight;
         controller.pulse_flow_rate = controller.weight_sensor->get_flow_rate_95th_percentile(GRIND_PULSE_FLOW_RATE_WINDOW_MS);
@@ -172,6 +173,13 @@ void WeightGrindStrategy::run_pulse_decision_phase(GrindController& controller,
         // Every later settle follows a pulse: what that pulse actually delivered is what
         // the pulse model learns from
         controller.observe_pulse(controller.pulse_attempts - 1, settled_weight);
+    }
+
+    // Knock test only (Tools menu): this first settle is the knock point, short of the
+    // dose. The controller knocks the chute and comes back here to finish it.
+    if (controller.knock_pending()) {
+        controller.begin_knock(settled_weight, loop_data);
+        return;
     }
 
     float conservative_target = controller.target_weight - GRIND_ACCURACY_TOLERANCE_G;

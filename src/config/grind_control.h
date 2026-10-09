@@ -51,21 +51,18 @@ enum class GrinderPurgeMode {
 //------------------------------------------------------------------------------
 // CHUTE KNOCK TEST
 //------------------------------------------------------------------------------
-// Grounds retained in the chute trickle out late, which varies coast and slows
-// settling. This test fires short motor pulses after a grind - hopper EMPTY, so
-// nothing new can be ground - and weighs what falls, to find out whether start-up
-// jolts shake retained grounds loose and which pulse length the grinder responds to.
-// The ESP only drives the Eureka's control input, and its board may ignore or stretch
-// short pulses, so on-times are swept rather than assumed.
-#define KNOCK_TEST_STEPS 4
-#define KNOCK_TEST_ON_MS_LIST {20, 40, 60, 80}                        // One train per entry, shortest first
-#define KNOCK_TEST_OFF_MS 250                                         // Long enough for the rotor to slow, so each start is a fresh jolt
-#define KNOCK_TEST_CYCLES 8                                           // Pulses per train
-#define KNOCK_TEST_BASELINE_MS 3000                                   // Quiet after the tare, before the first train
-#define KNOCK_TEST_DROP_WAIT_MS 2500                                  // After each train, for released grounds to land
-#define KNOCK_TEST_MEASURE_WINDOW_MS 1000                             // Weight is an outlier-rejected average over this, at the end of each quiet period
-#define KNOCK_TEST_RESPONSE_RATIO 1.5f                                // Scale noise during a train this many times the floor = motor reacted
-#define KNOCK_TEST_GRINDING_SUSPECT_G 1.0f                            // More than this in total means beans were ground, not grounds released
+// Grounds pile up in the chute as a mound and trickle out late, which varies coast and
+// slows settling. The knock test is a real weight grind that stops short of its target:
+// the predictive stop aims KNOCK_TEST_STOP_SHORT_G low, and at that first settle a few
+// jolts - pulses as long as the motor latency learned by Tune Pulses, so the start-up
+// kick without the grinding after it - shake the mound loose. Once the scale settles
+// again, normal pulse correction finishes the dose. What the knock released is the
+// difference between the two settles. Nothing from the session is learned.
+#define KNOCK_TEST_TARGET_G 18.5f                                     // Dose the test grinds
+#define KNOCK_TEST_STOP_SHORT_G 0.5f                                  // The predictive stop aims this far below target: the knock point
+#define KNOCK_TEST_PULSES 3                                           // Jolts per knock
+#define KNOCK_TEST_OFF_MS 250                                         // Between jolts: long enough for the rotor to slow, so each start is a fresh jolt
+#define KNOCK_TEST_DROP_WAIT_MS 1000                                  // After the last jolt, for released grounds to land before the scale is read
 
 //------------------------------------------------------------------------------
 // GRIND CONTROL TUNING

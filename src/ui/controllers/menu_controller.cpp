@@ -240,11 +240,16 @@ void MenuUIController::handle_knock_test() {
         return;
     }
 
+    char message[200];
+    snprintf(message, sizeof(message),
+             "Grinds %.1fg: beans in the hopper, portafilter on the scale."
+             "\n\n"
+             "Stops at %.1fg, knocks the chute with %u short jolts, weighs what fell, then finishes.",
+             KNOCK_TEST_TARGET_G, KNOCK_TEST_TARGET_G - KNOCK_TEST_STOP_SHORT_G,
+             (unsigned)KNOCK_TEST_PULSES);
     ui_manager_->show_confirmation(
         "KNOCK TEST",
-        "Right after a grind: hopper EMPTY, portafilter on the scale."
-        "\n\n"
-        "Short motor pulses shake grounds out of the chute and weigh what falls. ~30s.",
+        message,
         "RUN",
         lv_color_hex(THEME_COLOR_SUCCESS),
         [this]() { run_knock_test(); },
@@ -256,7 +261,11 @@ void MenuUIController::handle_knock_test() {
 void MenuUIController::run_knock_test() {
     if (!ui_manager_ || !ui_manager_->grind_controller) return;
     // The grind controller's events take the UI to the grinding screen and back; the
-    // result dialog is raised on COMPLETED
+    // result dialog is raised on COMPLETED. It grinds with the active profile's coast
+    // model, as a grind started from the ready screen would.
+    if (ui_manager_->profile_controller) {
+        ui_manager_->grind_controller->set_grind_profile_id(ui_manager_->profile_controller->get_current_profile());
+    }
     if (!ui_manager_->grind_controller->start_knock_test()) {
         LOG_BLE("[KNOCK] Test did not start\n");
         return_to_menu();

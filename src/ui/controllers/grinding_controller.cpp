@@ -757,7 +757,9 @@ void GrindingUIController::show_vibration_test_result() {
     auto done = [this]() {
         // Leave for the ready screen directly. The controller's STOPPED event lands
         // there too; going there now avoids the confirm dialog restoring the grinding
-        // screen for the moment in between.
+        // screen for the moment in between. The test ran in time mode; the ready
+        // screen goes back to the profile's own.
+        ui_manager_->current_mode = ui_manager_->profile_controller->get_grind_mode();
         ui_manager_->grind_controller->return_to_idle();
         ui_manager_->switch_to_state(UIState::READY);
     };
@@ -769,43 +771,36 @@ void GrindingUIController::show_vibration_test_result() {
 void GrindingUIController::show_knock_test_result() {
     // Written on Core 0 before the COMPLETED event was queued, so it is complete here
     const KnockTestResult& r = ui_manager_->grind_controller->get_knock_test_result();
+    const unsigned corrections = r.corrections;
 
     char message[240];
-    int used = 0;
-    if (r.aborted) {
-        used = snprintf(message, sizeof(message), "Stopped: a pulse train could not start. See the log.");
-    } else if (r.grinding_suspected) {
-        used = snprintf(message, sizeof(message),
-                        "+%.2fg is too much for retention - beans were ground."
-                        "\n\n"
-                        "Empty the hopper and run it again.",
-                        r.total_released_g);
+    if (r.knocked) {
+        snprintf(message, sizeof(message),
+                 "Knock at %.2fg released %+.2fg"
+                 "\n"
+                 "(%u jolts of %ums)"
+                 "\n\n"
+                 "Finished %.2fg of %.1fg, %u correction%s. Saved for export.",
+                 r.before_g, r.released_g, (unsigned)r.pulses, (unsigned)r.on_ms,
+                 r.final_g, r.target_g, corrections, corrections == 1 ? "" : "s");
     } else {
-        // One line per pulse length: grams released, and whether the motor reacted
-        // at all (scale noise during the train against noise at rest)
-        for (uint8_t i = 0; i < r.steps && used >= 0 && (size_t)used < sizeof(message); i++) {
-            const bool reacted = r.vibration_ratio[i] >= KNOCK_TEST_RESPONSE_RATIO;
-            int n = snprintf(message + used, sizeof(message) - used, "%ums  %+.2fg  %s"
-                             "\n",
-                             (unsigned)r.on_ms[i], r.released_g[i],
-                             reacted ? "moved" : "no reaction");
-            if (n < 0) break;
-            used += n;
-        }
-        if (used >= 0 && (size_t)used < sizeof(message)) {
-            snprintf(message + used, sizeof(message) - used, "Total %+.2fg. Saved for export.",
-                     r.total_released_g);
-        }
+        snprintf(message, sizeof(message),
+                 "%s"
+                 "\n\n"
+                 "Finished %.2fg of %.1fg, %u correction%s.",
+                 r.aborted ? "The knock could not start, so the dose was finished without it."
+                           : "The grind ended before the knock point.",
+                 r.final_g, r.target_g, corrections, corrections == 1 ? "" : "s");
     }
-    (void)used;
 
-    const bool usable = r.valid && !r.grinding_suspected;
     auto done = [this]() {
+        // The test ran in weight mode; the ready screen goes back to the profile's own
+        ui_manager_->current_mode = ui_manager_->profile_controller->get_grind_mode();
         ui_manager_->grind_controller->return_to_idle();
         ui_manager_->switch_to_state(UIState::READY);
     };
     ui_manager_->show_confirmation("KNOCK TEST", message, "OK",
-                                   lv_color_hex(usable ? THEME_COLOR_SUCCESS : THEME_COLOR_WARNING),
+                                   lv_color_hex(r.knocked ? THEME_COLOR_SUCCESS : THEME_COLOR_WARNING),
                                    done, "CLOSE", done);
 }
 

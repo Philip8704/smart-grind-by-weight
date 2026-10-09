@@ -138,7 +138,7 @@ MIN_SESSION_STRUCT_SIZE = min(SESSION_STRUCT_SIZE_BY_SCHEMA.values())
 # GrindSessionFlags in grind_logging.h
 SESSION_FLAG_VIBRATION_TEST = 0x01        # Motor run with an empty hopper, not a grind
 SESSION_FLAG_RETARED_AFTER_PURGE = 0x02   # Raw samples before the re-tare sit on a different zero
-SESSION_FLAG_KNOCK_TEST = 0x04            # Motor pulse trains with an empty hopper, not a grind
+SESSION_FLAG_KNOCK_TEST = 0x04            # Grind stopped short of target to knock the chute (KNOCK_TEST phase), then finished
 BLE_OTA_READY = 0x01
 BLE_OTA_RECEIVING = 0x02
 BLE_OTA_SUCCESS = 0x03
