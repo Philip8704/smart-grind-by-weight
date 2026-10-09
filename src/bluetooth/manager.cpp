@@ -1929,9 +1929,15 @@ void BluetoothManager::generate_diagnostic_report() {
                                     "IDLE", "INITIALIZING", "SETUP", "TARING", "TARE_CONFIRM",
                                     "PREDICTIVE", "PULSE_DECISION", "PULSE_EXECUTE", "PULSE_SETTLING",
                                     "FINAL_SETTLING", "TIME_GRINDING", "TIME_ADDITIONAL_PULSE", "COMPLETED", "TIMEOUT",
-                                    "PRIME", "PRIME_SETTLING", "PURGE_CONFIRM"
+                                    "PRIME", "PRIME_SETTLING", "PURGE_CONFIRM", "TIME_PAUSED", "PURGE_CHECK",
+                                    "KNOCK_TEST"
                                 };
                                 const size_t phase_name_count = sizeof(phase_names) / sizeof(phase_names[0]);
+                                // Indexed by stored phase id: fails to build if a phase is appended to
+                                // GrindPhase without a name here, instead of printing UNKNOWN
+                                static_assert(sizeof(phase_names) / sizeof(phase_names[0]) ==
+                                                  static_cast<size_t>(GrindPhase::KNOCK_TEST) + 1,
+                                              "phase_names must cover every GrindPhase");
 
                                 for (uint16_t e = 0; e < header.event_count; e++) {
                                     GrindEvent event;
