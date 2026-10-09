@@ -154,6 +154,7 @@ void MenuScreen::create_menu_ui() {
     autotune_button = create_menu_item(main_page, "Tune Pulses");
     motor_test_button = create_menu_item(main_page, "Motor Test");
     vibration_test_button = create_menu_item(main_page, "Vibration Test");
+    knock_test_button = create_menu_item(main_page, "Chute Knock Test");
 
     lv_menu_set_load_page_event(menu, scale_item, scale_page);
 
@@ -162,6 +163,7 @@ void MenuScreen::create_menu_ui() {
     lv_obj_add_flag(autotune_button, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_flag(motor_test_button, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_flag(vibration_test_button, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(knock_test_button, LV_OBJ_FLAG_CLICKABLE);
 
     using ET = EventBridgeLVGL::EventType;
     if (cal_button) {
@@ -179,6 +181,10 @@ void MenuScreen::create_menu_ui() {
     if (vibration_test_button) {
         lv_obj_add_event_cb(vibration_test_button, EventBridgeLVGL::dispatch_event, LV_EVENT_CLICKED,
                            reinterpret_cast<void*>(static_cast<intptr_t>(ET::MENU_VIBRATION_TEST)));
+    }
+    if (knock_test_button) {
+        lv_obj_add_event_cb(knock_test_button, EventBridgeLVGL::dispatch_event, LV_EVENT_CLICKED,
+                           reinterpret_cast<void*>(static_cast<intptr_t>(ET::MENU_KNOCK_TEST)));
     }
 
     create_separator(main_page, "Settings");

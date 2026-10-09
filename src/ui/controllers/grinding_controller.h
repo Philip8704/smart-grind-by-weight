@@ -40,6 +40,7 @@ private:
 
     void start_grind_complete_timer();
     void show_vibration_test_result();
+    void show_knock_test_result();
     void start_grind_timeout_timer();
     void cancel_timers();
 

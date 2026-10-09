@@ -23,6 +23,7 @@ public:
         MENU_PURGE,
         MENU_MOTOR_TEST,
         MENU_VIBRATION_TEST,
+        MENU_KNOCK_TEST,
         MENU_SCALE_OPEN,
         MENU_SCALE_TARE,
         MENU_AUTOTUNE,

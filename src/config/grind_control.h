@@ -49,6 +49,25 @@ enum class GrinderPurgeMode {
 #define VIBRATION_TEST_GROUNDS_DETECT_G 0.3f                          // Rise during the run that means the hopper was not empty
 
 //------------------------------------------------------------------------------
+// CHUTE KNOCK TEST
+//------------------------------------------------------------------------------
+// Grounds retained in the chute trickle out late, which varies coast and slows
+// settling. This test fires short motor pulses after a grind - hopper EMPTY, so
+// nothing new can be ground - and weighs what falls, to find out whether start-up
+// jolts shake retained grounds loose and which pulse length the grinder responds to.
+// The ESP only drives the Eureka's control input, and its board may ignore or stretch
+// short pulses, so on-times are swept rather than assumed.
+#define KNOCK_TEST_STEPS 4
+#define KNOCK_TEST_ON_MS_LIST {20, 40, 60, 80}                        // One train per entry, shortest first
+#define KNOCK_TEST_OFF_MS 250                                         // Long enough for the rotor to slow, so each start is a fresh jolt
+#define KNOCK_TEST_CYCLES 8                                           // Pulses per train
+#define KNOCK_TEST_BASELINE_MS 3000                                   // Quiet after the tare, before the first train
+#define KNOCK_TEST_DROP_WAIT_MS 2500                                  // After each train, for released grounds to land
+#define KNOCK_TEST_MEASURE_WINDOW_MS 1000                             // Weight is an outlier-rejected average over this, at the end of each quiet period
+#define KNOCK_TEST_RESPONSE_RATIO 1.5f                                // Scale noise during a train this many times the floor = motor reacted
+#define KNOCK_TEST_GRINDING_SUSPECT_G 1.0f                            // More than this in total means beans were ground, not grounds released
+
+//------------------------------------------------------------------------------
 // GRIND CONTROL TUNING
 //------------------------------------------------------------------------------
 // Main accuracy and timeout settings

@@ -11,4 +11,5 @@ struct GrindSessionDescriptor {
     uint8_t profile_id = 0;          // active profile index
     bool time_use_scale = false;     // time mode: tare + show live weight (standard) vs sensor-free
     bool vibration_test = false;     // time-mode run with an empty hopper to measure vibration, not a grind
+    bool knock_test = false;         // time-mode run firing short motor pulses to shake grounds out of the chute
 };

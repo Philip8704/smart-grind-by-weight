@@ -297,7 +297,8 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     // A vibration test is nothing but scale data, so it always tares and records,
     // whatever the time-mode display preference says
     const bool vibration_test = pending_vibration_test_ && mode == GrindMode::TIME;
-    if (vibration_test) {
+    const bool knock_test = pending_knock_test_ && mode == GrindMode::TIME;
+    if (vibration_test || knock_test) {
         time_use_scale = true;
     }
 
@@ -377,6 +378,14 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     session_descriptor.profile_id = current_profile_id;
     session_descriptor.time_use_scale = time_use_scale;
     session_descriptor.vibration_test = vibration_test && time_use_scale;
+    session_descriptor.knock_test = knock_test && time_use_scale;
+
+    knock_stage_ = KnockStage::BASELINE;
+    knock_step_ = 0;
+    knock_stage_start_ms_ = 0;
+    knock_last_seq_ = weight_sensor ? weight_sensor->get_raw_sample_snapshot().seq : 0;
+    knock_reference_g_ = 0.0f;
+    memset(&knock_result_, 0, sizeof(knock_result_));
 
     // Start counting from the sample current now, so nothing left from before this
     // grind can count towards its failsafe
@@ -401,6 +410,8 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     memset(&vib_result_, 0, sizeof(vib_result_));
     if (session_descriptor.vibration_test) {
         set_notice_message("Vibration test");
+    } else if (session_descriptor.knock_test) {
+        set_notice_message("Knock test");
     }
 
     // Drop any stale stop request so it cannot cancel the grind we are starting
@@ -554,6 +565,164 @@ void GrindController::finish_vibration_test() {
                       vib_result_.vibration_sigma_g, (unsigned)vib_result_.vibration_samples,
                       vib_result_.weight_rise_g,
                       vib_result_.grounds_detected ? " - GROUNDS ARRIVED, hopper not empty" : "");
+}
+
+//------------------------------------------------------------------------------
+// Chute knock test
+//------------------------------------------------------------------------------
+
+namespace {
+constexpr uint16_t kKnockOnMs[] = KNOCK_TEST_ON_MS_LIST;
+static_assert(sizeof(kKnockOnMs) / sizeof(kKnockOnMs[0]) == KNOCK_TEST_STEPS,
+              "KNOCK_TEST_ON_MS_LIST must have KNOCK_TEST_STEPS entries");
+
+constexpr uint32_t knock_test_estimated_ms() {
+    uint32_t total = KNOCK_TEST_BASELINE_MS;
+    for (uint32_t i = 0; i < KNOCK_TEST_STEPS; i++) {
+        total += KNOCK_TEST_CYCLES * (kKnockOnMs[i] + KNOCK_TEST_OFF_MS) + KNOCK_TEST_DROP_WAIT_MS;
+    }
+    return total;
+}
+}  // namespace
+
+bool GrindController::start_knock_test() {
+    if (is_active()) {
+        return false;
+    }
+    if (!weight_sensor || weight_sensor->has_hardware_fault()) {
+        LOG_BLE("[%lums CONTROLLER] Knock test needs a working load cell\n", millis());
+        return false;
+    }
+    if (!grinder || !grinder->is_rmt_ready()) {
+        LOG_BLE("[%lums CONTROLLER] Knock test needs the motor\n", millis());
+        return false;
+    }
+    // The countdown on screen covers the test itself, not the tare before it. Clamped
+    // to what start_grind() accepts for a time grind.
+    uint32_t estimate = knock_test_estimated_ms();
+    uint32_t cap = (uint32_t)(USER_MAX_TARGET_TIME_S * 1000.0f);
+    // start_grind() reads this to flag the session; it must not outlive the call
+    pending_knock_test_ = true;
+    start_grind(0.0f, estimate < cap ? estimate : cap, GrindMode::TIME);
+    pending_knock_test_ = false;
+    return is_active();
+}
+
+float GrindController::knock_measure_weight_g() {
+    if (!weight_sensor) {
+        return 0.0f;
+    }
+    float cal = weight_sensor->get_calibration_factor();
+    if (cal == 0.0f) {
+        return 0.0f;
+    }
+    // An outlier-rejected average rather than the control filter: this is a weighing
+    // between trains, not a reading the motor acts on, and a stray sample must not
+    // become "grounds released"
+    int32_t raw = weight_sensor->get_raw_adc_smoothed(KNOCK_TEST_MEASURE_WINDOW_MS);
+    return (float)(raw - weight_sensor->get_zero_offset()) / cal;
+}
+
+bool GrindController::start_knock_train(unsigned long now) {
+    const uint16_t on_ms = kKnockOnMs[knock_step_];
+    knock_result_.on_ms[knock_step_] = on_ms;
+    vib_motor_.clear();
+    if (!grinder->start_pulse_train(on_ms, KNOCK_TEST_OFF_MS, KNOCK_TEST_CYCLES)) {
+        knock_result_.aborted = true;
+        queue_log_message("[KNOCK] %ums train could not start - test stopped\n", (unsigned)on_ms);
+        return false;
+    }
+    knock_stage_ = KnockStage::TRAIN;
+    knock_stage_start_ms_ = now;
+    return true;
+}
+
+void GrindController::update_knock_test(const GrindLoopData& loop_data) {
+    if (!weight_sensor || !grinder) {
+        knock_result_.aborted = true;
+        finish_knock_test(loop_data);
+        return;
+    }
+    const unsigned long now = loop_data.now;
+    if (knock_stage_start_ms_ == 0) {
+        knock_stage_start_ms_ = now;  // First cycle in this phase
+    }
+    const unsigned long elapsed = now - knock_stage_start_ms_;
+
+    // Noise is accumulated in raw counts from fresh samples only - five control cycles
+    // per HX711 sample, and counts are immune to the tare offset
+    WeightSensor::RawSampleSnapshot sample = weight_sensor->get_raw_sample_snapshot();
+    const bool fresh = sample.seq != knock_last_seq_;
+    if (fresh) {
+        knock_last_seq_ = sample.seq;
+    }
+
+    switch (knock_stage_) {
+        case KnockStage::BASELINE:
+            // Skip the first half second: that is the tare's own settling, not the floor
+            if (fresh && elapsed >= 500) {
+                vib_floor_.add((double)sample.timestamp_ms, (double)sample.raw_adc);
+            }
+            if (elapsed >= KNOCK_TEST_BASELINE_MS) {
+                knock_reference_g_ = knock_measure_weight_g();
+                if (!start_knock_train(now)) {
+                    finish_knock_test(loop_data);
+                }
+            }
+            break;
+
+        case KnockStage::TRAIN:
+            if (fresh) {
+                vib_motor_.add((double)sample.timestamp_ms, (double)sample.raw_adc);
+            }
+            if (grinder->is_pulse_train_done()) {
+                knock_stage_ = KnockStage::DROP;
+                knock_stage_start_ms_ = now;
+            }
+            break;
+
+        case KnockStage::DROP:
+            if (elapsed >= KNOCK_TEST_DROP_WAIT_MS) {
+                const uint8_t i = knock_step_;
+                const float after = knock_measure_weight_g();
+                const float floor = vib_floor_.sigma();
+                const float vib = vib_motor_.sigma();
+                knock_result_.released_g[i] = after - knock_reference_g_;
+                knock_result_.vibration_ratio[i] = (floor > 0.0f && isfinite(vib)) ? vib / floor : 0.0f;
+                knock_result_.steps = i + 1;
+                queue_log_message("[KNOCK] %ums x%u: released %+.2fg, scale noise %.1fx rest%s\n",
+                                  (unsigned)knock_result_.on_ms[i], (unsigned)KNOCK_TEST_CYCLES,
+                                  knock_result_.released_g[i], knock_result_.vibration_ratio[i],
+                                  knock_result_.vibration_ratio[i] < KNOCK_TEST_RESPONSE_RATIO ? " - no motor reaction" : "");
+                knock_reference_g_ = after;  // Each train is weighed against the one before
+                knock_step_++;
+                if (knock_step_ >= KNOCK_TEST_STEPS || !start_knock_train(now)) {
+                    finish_knock_test(loop_data);
+                }
+            }
+            break;
+    }
+}
+
+void GrindController::finish_knock_test(const GrindLoopData& loop_data) {
+    if (grinder) {
+        grinder->stop();  // Only does anything if a train is cut short
+    }
+    float total = 0.0f;
+    for (uint8_t i = 0; i < knock_result_.steps; i++) {
+        total += knock_result_.released_g[i];
+    }
+    float cal = weight_sensor ? fabsf(weight_sensor->get_calibration_factor()) : 0.0f;
+    knock_result_.floor_sigma_g = cal > 0.0f ? vib_floor_.sigma() / cal : NAN;
+    knock_result_.total_released_g = total;
+    knock_result_.grinding_suspected = total > KNOCK_TEST_GRINDING_SUSPECT_G;
+    knock_result_.valid = !knock_result_.aborted && knock_result_.steps == KNOCK_TEST_STEPS;
+    final_weight = total;  // What the session record and completion event report
+
+    queue_log_message("[KNOCK] Total %+.2fg over %u trains, motor latency %.0fms%s\n",
+                      total, (unsigned)knock_result_.steps, motor_response_latency_ms,
+                      knock_result_.grinding_suspected ? " - too much for retention, beans in the hopper?" : "");
+    switch_phase(GrindPhase::COMPLETED, loop_data);
 }
 
 void GrindController::user_tare_request() {
@@ -874,6 +1043,16 @@ void GrindController::update() {
                     }
                 }
 
+                // Knock test: the motor is driven only by its pulse trains, never started
+                // continuously. The countdown runs from here so it covers the test itself.
+                if (session_descriptor.knock_test) {
+                    time_grind_start_ms = loop_data.now;
+                    knock_stage_ = KnockStage::BASELINE;
+                    knock_stage_start_ms_ = loop_data.now;
+                    switch_phase(GrindPhase::KNOCK_TEST, loop_data);
+                    break;
+                }
+
                 // Re-zeroed after discarded purge grounds: the chute is already primed,
                 // so go straight to the main grind instead of purging again
                 if (retare_after_purge_) {
@@ -1036,6 +1215,10 @@ void GrindController::update() {
             }
             break;
         }
+
+        case GrindPhase::KNOCK_TEST:
+            update_knock_test(loop_data);
+            break;
 
         case GrindPhase::TIME_GRINDING:
             if (mode == GrindMode::TIME && active_strategy) {
@@ -1441,6 +1624,7 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
             case GrindPhase::PRIME:
             case GrindPhase::PREDICTIVE:
             case GrindPhase::TIME_GRINDING:
+            case GrindPhase::KNOCK_TEST:
                 event_in_progress.event_flags |= GRIND_EVENT_FLAG_MOTOR_ACTIVE;
                 break;
             case GrindPhase::PULSE_EXECUTE:
@@ -1495,7 +1679,7 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
         // look fresh and let the next real grind skip its purge.
         if (session_descriptor.vibration_test) {
             finish_vibration_test();
-        } else {
+        } else if (!session_descriptor.knock_test) {  // Knock test result is built before COMPLETED
             grinder_purged_since_boot = true;
             last_purge_runtime_ms = esp_timer_get_time() / 1000;
         }
@@ -1511,7 +1695,7 @@ void GrindController::switch_phase(GrindPhase new_phase, const GrindLoopData& lo
         
         // For time mode, also indicate pulse availability
         if (mode == GrindMode::TIME) {
-            event_data.can_pulse = !session_descriptor.vibration_test;
+            event_data.can_pulse = !is_test_session();
             event_data.pulse_count = additional_pulse_count;
             event_data.pulse_duration_ms = pulse_duration_ms;
         }
@@ -1588,6 +1772,7 @@ const char* GrindController::get_phase_name(GrindPhase p) const {
         case GrindPhase::TIME_GRINDING: return "TIME";
         case GrindPhase::TIME_PAUSED: return "PAUSED";
         case GrindPhase::PURGE_CHECK: return "PURGE_CHECK";
+        case GrindPhase::KNOCK_TEST: return "KNOCK_TEST";
         case GrindPhase::TIME_ADDITIONAL_PULSE: return "PULSE";
         case GrindPhase::COMPLETED: return "COMPLETED";
         case GrindPhase::TIMEOUT: return "TIMEOUT";
@@ -2326,7 +2511,7 @@ bool GrindController::can_pulse() const {
     // Only allow pulses in time mode when grind is completed and not in pulse phase
     return mode == GrindMode::TIME &&
            phase == GrindPhase::COMPLETED &&
-           !session_descriptor.vibration_test;
+           !is_test_session();
 }
 
 //==============================================================================

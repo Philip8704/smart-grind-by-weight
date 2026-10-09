@@ -156,6 +156,7 @@ def fmt(value):
 
 
 SESSION_FLAG_VIBRATION_TEST = 0x01    # GrindSessionFlags in grind_logging.h
+SESSION_FLAG_KNOCK_TEST = 0x04        # Pulse trains, not a grind and not a steady run - skipped
 TEST_TRANSIENT_MS = 500               # Matches VIBRATION_TEST_TRANSIENT_MS on the device
 
 
@@ -234,6 +235,8 @@ def main():
         samples, missed = fresh_samples(rows, tare, cal)
         if not samples:
             continue
+        if (flags or 0) & SESSION_FLAG_KNOCK_TEST:
+            continue  # Its motor periods are 20-80ms jolts, which none of the segments describe
         total_missed += missed
         total_samples += len(samples)
 

@@ -1,6 +1,7 @@
 #include "grinder.h"
 #include "../controllers/grind_events.h"
 #include "../config/constants.h"
+#include "pulse_train.h"
 #if DEBUG_ENABLE_LOADCELL_MOCK
 #include "mock_hx711_driver.h"
 #endif
@@ -122,6 +123,7 @@ void Grinder::stop() {
     MockHX711Driver::notify_grinder_stop();
     grinding = false;
     pulse_active = false;
+    train_active_ = false;
     emit_background_change(false);
     return;
 #endif
@@ -139,7 +141,88 @@ void Grinder::stop() {
     
     grinding = false;
     pulse_active = false;
+    train_active_ = false;
     emit_background_change(false);
+}
+
+bool Grinder::start_pulse_train(uint32_t on_ms, uint32_t off_ms, uint8_t count) {
+    if (on_ms == 0 || count == 0) {
+        return false;
+    }
+#if DEBUG_ENABLE_LOADCELL_MOCK
+    if (!initialized) return false;
+    train_end_ms_ = millis() + (unsigned long)(on_ms + off_ms) * count;
+    train_active_ = true;
+    pulse_active = true;
+    grinding = true;
+    motor_start_time = millis();
+    emit_background_change(true);
+    return true;
+#endif
+    if (!initialized || !rmt_initialized) return false;
+
+    size_t symbols = build_pulse_train(train_symbols_, TRAIN_SYMBOL_CAPACITY,
+                                       on_ms * 1000, off_ms * 1000, count);
+    if (symbols == 0) {
+        LOG_BLE("[MOTOR] Pulse train %lums x%u does not fit %u symbols\n",
+                (unsigned long)on_ms, (unsigned)count, (unsigned)TRAIN_SYMBOL_CAPACITY);
+        return false;
+    }
+
+    if (current_encoder) {
+        rmt_del_encoder(current_encoder);
+        current_encoder = nullptr;
+    }
+    rmt_copy_encoder_config_t encoder_config = {};
+    if (rmt_new_copy_encoder(&encoder_config, &current_encoder) != ESP_OK) {
+        encoder_fail_count++;
+        last_transmit_err = ESP_ERR_NO_MEM;
+        LOG_BLE("[MOTOR] Encoder creation FAILED - pulse train not started\n");
+        return false;
+    }
+
+    // One transmission, no hardware loop: looping repeats the whole symbol, so it can
+    // only make trains of identical symbols, and the timing is exact as built
+    rmt_transmit_config_t tx_config = {.loop_count = 0};
+    last_transmit_err = rmt_transmit(rmt_channel, current_encoder, train_symbols_,
+                                     symbols * sizeof(rmt_symbol_word_t), &tx_config);
+    if (last_transmit_err != ESP_OK) {
+        transmit_fail_count++;
+        LOG_BLE("[MOTOR] Pulse train transmit FAILED: %s\n", esp_err_to_name(last_transmit_err));
+        return false;
+    }
+
+    unsigned long now = millis();
+    train_end_ms_ = now + (unsigned long)(pulse_train_duration_us(on_ms * 1000, off_ms * 1000, count) / 1000) + 1;
+    train_active_ = true;
+    pulse_active = true;
+    grinding = true;
+    motor_start_time = now;
+    emit_background_change(true);
+    return true;
+}
+
+bool Grinder::is_pulse_train_done() {
+    if (!train_active_) {
+        return true;
+    }
+    if ((long)(millis() - train_end_ms_) < 0) {
+        return false;
+    }
+#if !DEBUG_ENABLE_LOADCELL_MOCK
+    // Due by the clock; confirm with the driver once, with a timeout, so a stuck
+    // transmission is noticed instead of assumed finished
+    if (rmt_initialized && rmt_tx_wait_all_done(rmt_channel, 50) != ESP_OK) {
+        LOG_BLE("[MOTOR] Pulse train did not finish on time - stopping the motor\n");
+        stop();
+        return true;
+    }
+#endif
+    train_active_ = false;
+    pulse_active = false;
+    grinding = false;
+    emit_background_change(false);
+    return true;
 }
 
 void Grinder::start_pulse_rmt(uint32_t duration_ms) {

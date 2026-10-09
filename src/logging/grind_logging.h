@@ -61,6 +61,10 @@ enum GrindSessionFlags : uint8_t {
     // tare_offset_raw holds the SECOND tare, so raw samples before the re-tare sit on
     // a different zero - offsets differ, noise and slopes do not.
     GRIND_SESSION_FLAG_RETARED_AFTER_PURGE = 1 << 1,
+    // Not a grind: short motor pulse trains with an empty hopper, weighing what falls out
+    // of the chute. Excluded from statistics and freshness like the vibration test.
+    GRIND_SESSION_FLAG_KNOCK_TEST = 1 << 2,
+    GRIND_SESSION_FLAGS_TEST = GRIND_SESSION_FLAG_VIBRATION_TEST | GRIND_SESSION_FLAG_KNOCK_TEST,
 };
 
 // Sessions are only written to flash while this is on. It defaulted to off, which left

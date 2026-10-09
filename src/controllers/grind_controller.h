@@ -119,7 +119,21 @@ enum class GrindPhase {
     TIME_PAUSED,        // Time-mode grind paused by user, remaining time preserved
     // Appended, not inserted: phase IDs are stored in session logs, so reordering would
     // relabel every phase in data recorded by earlier firmware.
-    PURGE_CHECK         // After purge confirm: wait for the portafilter to settle, then re-tare or continue
+    PURGE_CHECK,        // After purge confirm: wait for the portafilter to settle, then re-tare or continue
+    KNOCK_TEST          // Chute knock test: pulse trains and weighing, see KNOCK_TEST_* in grind_control.h
+};
+
+// Result of a chute knock test, computed on Core 0 and read by the UI after COMPLETED
+struct KnockTestResult {
+    bool valid;                              // Every train ran and was weighed
+    bool aborted;                            // A train could not be started
+    uint8_t steps;                           // Trains completed
+    uint16_t on_ms[KNOCK_TEST_STEPS];
+    float released_g[KNOCK_TEST_STEPS];      // Weight gained after each train
+    float vibration_ratio[KNOCK_TEST_STEPS]; // Scale noise during the train / noise at rest
+    float floor_sigma_g;
+    float total_released_g;
+    bool grinding_suspected;                 // Too much weight for retention - beans in the hopper?
 };
 
 // Result of a vibration test, computed on Core 0 as the samples arrive and read by the
@@ -340,6 +354,20 @@ private:
     void update_vibration_test(const GrindLoopData& loop_data);
     void finish_vibration_test();
 
+    // Chute knock test - see KNOCK_TEST_* in grind_control.h
+    enum class KnockStage : uint8_t { BASELINE, TRAIN, DROP };
+    bool pending_knock_test_ = false;    // Set only across the start_grind() call in start_knock_test()
+    KnockStage knock_stage_ = KnockStage::BASELINE;
+    uint8_t knock_step_ = 0;
+    unsigned long knock_stage_start_ms_ = 0;
+    uint32_t knock_last_seq_ = 0;
+    float knock_reference_g_ = 0.0f;     // Weight before the current train
+    KnockTestResult knock_result_ = {};
+    void update_knock_test(const GrindLoopData& loop_data);
+    bool start_knock_train(unsigned long now);
+    void finish_knock_test(const GrindLoopData& loop_data);
+    float knock_measure_weight_g();        // Outlier-rejected average over KNOCK_TEST_MEASURE_WINDOW_MS, in grams
+
     // Learned coast model - see GRIND_COAST_* in grind_control.h
     CoastWindow coast_window_;           // Measurements for the profile of the running session
     bool coast_window_dirty_;            // A new measurement is waiting to be written to NVS at session end
@@ -409,6 +437,14 @@ public:
     bool start_vibration_test();
     bool is_vibration_test() const { return session_descriptor.vibration_test; }
     const VibrationTestResult& get_vibration_test_result() const { return vib_result_; }
+
+    // Pulse trains with the hopper empty, weighing what falls out of the chute.
+    // Returns false if it could not start (busy, no scale, motor unavailable).
+    bool start_knock_test();
+    bool is_knock_test() const { return session_descriptor.knock_test; }
+    const KnockTestResult& get_knock_test_result() const { return knock_result_; }
+    // Either test: not a grind, so kept out of statistics, freshness and extra pulses
+    bool is_test_session() const { return session_descriptor.vibration_test || session_descriptor.knock_test; }
     void user_tare_request();
     void return_to_idle(); // Called by UI to acknowledge completion/timeout
     void stop_grind();

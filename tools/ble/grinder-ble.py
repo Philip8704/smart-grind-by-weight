@@ -138,6 +138,7 @@ MIN_SESSION_STRUCT_SIZE = min(SESSION_STRUCT_SIZE_BY_SCHEMA.values())
 # GrindSessionFlags in grind_logging.h
 SESSION_FLAG_VIBRATION_TEST = 0x01        # Motor run with an empty hopper, not a grind
 SESSION_FLAG_RETARED_AFTER_PURGE = 0x02   # Raw samples before the re-tare sit on a different zero
+SESSION_FLAG_KNOCK_TEST = 0x04            # Motor pulse trains with an empty hopper, not a grind
 BLE_OTA_READY = 0x01
 BLE_OTA_RECEIVING = 0x02
 BLE_OTA_SUCCESS = 0x03
@@ -679,7 +680,7 @@ class GrinderBLETool:
             0: "IDLE", 1: "INITIALIZING", 2: "SETUP", 3: "TARING", 4: "TARE_CONFIRM",
             5: "PREDICTIVE", 6: "PULSE_DECISION", 7: "PULSE_EXECUTE", 8: "PULSE_SETTLING",
             9: "FINAL_SETTLING", 10: "TIME_GRINDING", 11: "TIME_ADDITIONAL_PULSE", 12: "COMPLETED", 13: "TIMEOUT",
-            14: "PRIME", 15: "PRIME_SETTLING", 16: "PURGE_CONFIRM", 17: "TIME_PAUSED", 18: "PURGE_CHECK",
+            14: "PRIME", 15: "PRIME_SETTLING", 16: "PURGE_CONFIRM", 17: "TIME_PAUSED", 18: "PURGE_CHECK", 19: "KNOCK_TEST",
         }
         
         offset = 0

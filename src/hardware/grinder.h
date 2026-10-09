@@ -35,6 +35,13 @@ private:
     uint32_t transmit_fail_count;    // Transmits that returned anything but ESP_OK
     uint32_t encoder_fail_count;     // Times an encoder could not be created
 
+    // Pulse train (chute knock test). Symbols must outlive the transmission, so they
+    // live here rather than on the caller's stack.
+    static constexpr size_t TRAIN_SYMBOL_CAPACITY = 96;
+    rmt_symbol_word_t train_symbols_[TRAIN_SYMBOL_CAPACITY];
+    bool train_active_ = false;
+    unsigned long train_end_ms_ = 0;     // When the train's last LOW period ends
+
     // Background indicator state (always compiled in)
     bool background_active;
     std::function<void(const GrindEventData&)> ui_event_callback;
@@ -49,6 +56,14 @@ public:
     // RMT-based precise pulse control
     void start_pulse_rmt(uint32_t duration_ms);
     bool is_pulse_complete();
+
+    // `count` pulses of on_ms with off_ms between, timed entirely by the RMT in one
+    // transmission so every period is exact. Core 0 only, like every motor call.
+    // Returns false (motor untouched) if it could not be started.
+    bool start_pulse_train(uint32_t on_ms, uint32_t off_ms, uint8_t count);
+    // True once the train has finished. Time-based: the train's length is exact, and
+    // polling the driver with no timeout logs an error on every call until it is done.
+    bool is_pulse_train_done();
     
     bool is_grinding() const { return grinding; }
     bool is_initialized() const { return initialized; }

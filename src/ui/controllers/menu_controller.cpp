@@ -35,6 +35,7 @@ void MenuUIController::register_events() {
     EventBridgeLVGL::register_handler(ET::MENU_PURGE, [this](lv_event_t*) { handle_purge(); });
     EventBridgeLVGL::register_handler(ET::MENU_MOTOR_TEST, [this](lv_event_t*) { handle_motor_test(); });
     EventBridgeLVGL::register_handler(ET::MENU_VIBRATION_TEST, [this](lv_event_t*) { handle_vibration_test(); });
+    EventBridgeLVGL::register_handler(ET::MENU_KNOCK_TEST, [this](lv_event_t*) { handle_knock_test(); });
     EventBridgeLVGL::register_handler(ET::MENU_SCALE_OPEN, [this](lv_event_t*) { handle_scale_open(); });
     EventBridgeLVGL::register_handler(ET::MENU_SCALE_TARE, [this](lv_event_t*) { handle_scale_tare(); });
     EventBridgeLVGL::register_handler(ET::MENU_AUTOTUNE, [this](lv_event_t*) { handle_autotune(); });
@@ -214,6 +215,52 @@ void MenuUIController::handle_vibration_test() {
         "CANCEL",
         [this]() { return_to_menu(); }
     );
+}
+
+void MenuUIController::handle_knock_test() {
+    if (!ui_manager_) return;
+
+    // Preconditions before any dialog, as for the other motor tools
+    auto* hardware = ui_manager_->get_hardware_manager();
+    auto* motor = hardware ? hardware->get_grinder() : nullptr;
+    auto* scale = hardware ? hardware->get_weight_sensor() : nullptr;
+    const char* problem = nullptr;
+    if (!ui_manager_->grind_controller || ui_manager_->grind_controller->is_active()) {
+        problem = "A grind is running.";
+    } else if (!motor || !motor->is_initialized() || !motor->is_rmt_ready()) {
+        problem = "The motor is not available.";
+    } else if (!scale || scale->has_hardware_fault()) {
+        problem = "The load cell is not working.";
+    }
+    if (problem) {
+        ui_manager_->show_confirmation("KNOCK TEST", problem, "OK",
+                                       lv_color_hex(THEME_COLOR_WARNING),
+                                       [this]() { return_to_menu(); },
+                                       "CLOSE", [this]() { return_to_menu(); });
+        return;
+    }
+
+    ui_manager_->show_confirmation(
+        "KNOCK TEST",
+        "Right after a grind: hopper EMPTY, portafilter on the scale."
+        "\n\n"
+        "Short motor pulses shake grounds out of the chute and weigh what falls. ~30s.",
+        "RUN",
+        lv_color_hex(THEME_COLOR_SUCCESS),
+        [this]() { run_knock_test(); },
+        "CANCEL",
+        [this]() { return_to_menu(); }
+    );
+}
+
+void MenuUIController::run_knock_test() {
+    if (!ui_manager_ || !ui_manager_->grind_controller) return;
+    // The grind controller's events take the UI to the grinding screen and back; the
+    // result dialog is raised on COMPLETED
+    if (!ui_manager_->grind_controller->start_knock_test()) {
+        LOG_BLE("[KNOCK] Test did not start\n");
+        return_to_menu();
+    }
 }
 
 void MenuUIController::run_vibration_test() {

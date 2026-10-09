@@ -555,6 +555,11 @@ void GrindingUIController::handle_grind_event(const GrindEventData& event_data) 
                 show_vibration_test_result();
                 break;
             }
+            if (ui_manager_->grind_controller && ui_manager_->grind_controller->is_knock_test()) {
+                chart_updates_enabled_ = false;
+                show_knock_test_result();
+                break;
+            }
             ui_manager_->current_mode = event_data.mode;
             ui_manager_->grinding_screen.set_mode(ui_manager_->current_mode);
             final_grind_weight_ = event_data.final_weight;
@@ -757,6 +762,49 @@ void GrindingUIController::show_vibration_test_result() {
         ui_manager_->switch_to_state(UIState::READY);
     };
     ui_manager_->show_confirmation("VIBRATION TEST", message, "OK",
+                                   lv_color_hex(usable ? THEME_COLOR_SUCCESS : THEME_COLOR_WARNING),
+                                   done, "CLOSE", done);
+}
+
+void GrindingUIController::show_knock_test_result() {
+    // Written on Core 0 before the COMPLETED event was queued, so it is complete here
+    const KnockTestResult& r = ui_manager_->grind_controller->get_knock_test_result();
+
+    char message[240];
+    int used = 0;
+    if (r.aborted) {
+        used = snprintf(message, sizeof(message), "Stopped: a pulse train could not start. See the log.");
+    } else if (r.grinding_suspected) {
+        used = snprintf(message, sizeof(message),
+                        "+%.2fg is too much for retention - beans were ground."
+                        "\n\n"
+                        "Empty the hopper and run it again.",
+                        r.total_released_g);
+    } else {
+        // One line per pulse length: grams released, and whether the motor reacted
+        // at all (scale noise during the train against noise at rest)
+        for (uint8_t i = 0; i < r.steps && used >= 0 && (size_t)used < sizeof(message); i++) {
+            const bool reacted = r.vibration_ratio[i] >= KNOCK_TEST_RESPONSE_RATIO;
+            int n = snprintf(message + used, sizeof(message) - used, "%ums  %+.2fg  %s"
+                             "\n",
+                             (unsigned)r.on_ms[i], r.released_g[i],
+                             reacted ? "moved" : "no reaction");
+            if (n < 0) break;
+            used += n;
+        }
+        if (used >= 0 && (size_t)used < sizeof(message)) {
+            snprintf(message + used, sizeof(message) - used, "Total %+.2fg. Saved for export.",
+                     r.total_released_g);
+        }
+    }
+    (void)used;
+
+    const bool usable = r.valid && !r.grinding_suspected;
+    auto done = [this]() {
+        ui_manager_->grind_controller->return_to_idle();
+        ui_manager_->switch_to_state(UIState::READY);
+    };
+    ui_manager_->show_confirmation("KNOCK TEST", message, "OK",
                                    lv_color_hex(usable ? THEME_COLOR_SUCCESS : THEME_COLOR_WARNING),
                                    done, "CLOSE", done);
 }

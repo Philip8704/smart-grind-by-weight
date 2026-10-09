@@ -16,6 +16,7 @@ public:
     void handle_purge();
     void handle_motor_test();
     void handle_vibration_test();
+    void handle_knock_test();
     void handle_scale_open();
     void handle_scale_tare();
     void handle_autotune();
@@ -53,6 +54,7 @@ private:
     void execute_purge_operation();
     void run_motor_test();
     void run_vibration_test();
+    void run_knock_test();
     void stop_motor_timer();
     void motor_timer_cb(lv_timer_t* timer);
     static void static_motor_timer_cb(lv_timer_t* timer);

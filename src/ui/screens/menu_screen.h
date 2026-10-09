@@ -75,6 +75,7 @@ private:
     lv_obj_t* cal_button;
     lv_obj_t* motor_test_button;
     lv_obj_t* vibration_test_button = nullptr;
+    lv_obj_t* knock_test_button = nullptr;
     lv_obj_t* autotune_button;
     lv_obj_t* scale_weight_label;
     lv_obj_t* scale_tare_button;
