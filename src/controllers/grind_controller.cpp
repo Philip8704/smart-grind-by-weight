@@ -211,13 +211,20 @@ float pulse_window_planning_extra_g(const PulseWindow& window) {
 }
 
 float burst_window_expected_g(const PulseWindow& window) {
-    // Median of the knock tests so far: what a burst typically shakes loose. The coast
-    // model absorbs the rest of the tail, so the median is enough - an overestimate
-    // only stops the main run earlier, an underestimate is caught by the coast window.
+    // Median of the bursts measured so far: what one typically shakes loose
     if (window.count == 0) {
         return GRIND_BURST_SEED_G;
     }
     return pulse_window_quantile_g(window, 0.5f);
+}
+
+float burst_window_planning_g(const PulseWindow& window) {
+    // Upper quartile, as for pulses: the main run stops as if the burst brings more than
+    // usual, so the dose tends to land short and a correction finishes it
+    if (window.count == 0) {
+        return GRIND_BURST_SEED_G;
+    }
+    return pulse_window_quantile_g(window, GRIND_BURST_PLANNING_QUANTILE);
 }
 
 void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
@@ -267,9 +274,10 @@ void GrindController::init(WeightSensor* lc, Grinder* gr, Preferences* prefs) {
     pulse_window_reset(burst_window_);
     burst_window_dirty_ = false;
     burst_planned_ = false;
-    burst_expected_g_ = 0.0f;
-    burst_started_ = false;
-    burst_fired_ = false;
+    burst_planning_g_ = 0.0f;
+    burst_stage_ = BurstStage::PENDING;
+    burst_before_g_ = 0.0f;
+    burst_drop_start_ms_ = 0;
 
     pending_vibration_test_ = false;
     vib_floor_.clear();
@@ -487,8 +495,6 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     session_descriptor.vibration_test = vibration_test && time_use_scale;
     session_descriptor.knock_test = knock_test;
 
-    knock_stage_ = KnockStage::PENDING;
-    knock_drop_start_ms_ = 0;
     memset(&knock_result_, 0, sizeof(knock_result_));
 
     // Start counting from the sample current now, so nothing left from before this
@@ -529,9 +535,10 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
     anomaly_count_at_motor_stop_ = 0;
     pending_observation_ = nullptr;
     burst_planned_ = false;
-    burst_expected_g_ = 0.0f;
-    burst_started_ = false;
-    burst_fired_ = false;
+    burst_planning_g_ = 0.0f;
+    burst_stage_ = BurstStage::PENDING;
+    burst_before_g_ = 0.0f;
+    burst_drop_start_ms_ = 0;
     pulse_window_reset(burst_window_);
     burst_window_dirty_ = false;
     if (mode == GrindMode::WEIGHT) {
@@ -540,11 +547,11 @@ void GrindController::start_grind(float target, uint32_t time_ms, GrindMode grin
         if (preferences) {
             read_burst_window(*preferences, burst_window_);
         }
-        // Every weight grind ends its main run with a burst - except the knock test,
-        // which fires its burst at the knock point to measure it
-        burst_planned_ = GRIND_BURST_ENABLED && !session_descriptor.knock_test;
-        if (burst_planned_) {
-            burst_expected_g_ = get_burst_expected_g();
+        // Every weight grind fires a burst at its first settle. The knock test always
+        // does, at its fixed knock point; the others leave room for it in the main run.
+        burst_planned_ = GRIND_BURST_ENABLED || session_descriptor.knock_test;
+        if (burst_planned_ && !session_descriptor.knock_test) {
+            burst_planning_g_ = get_burst_planning_g();
         }
     } else {
         coast_window_reset(coast_window_);
@@ -721,84 +728,108 @@ bool GrindController::start_knock_test() {
     return is_active();
 }
 
-void GrindController::begin_knock(float settled_weight, const GrindLoopData& loop_data) {
-    // Exactly the burst an ordinary grind fires after its main run, so this measures it
-    knock_result_.on_ms = get_jolt_ms();
-    knock_result_.pulses = GRIND_BURST_PULSES;
-    knock_result_.before_g = settled_weight;
+bool GrindController::begin_burst(float settled_weight, const GrindLoopData& loop_data) {
+    const bool knock_test = session_descriptor.knock_test;
+    const uint16_t jolt_ms = get_jolt_ms();
+    const float expected_g = get_burst_expected_g();
 
-    if (!grinder->start_pulse_train(knock_result_.on_ms, GRIND_BURST_OFF_MS, GRIND_BURST_PULSES)) {
-        // Staying in PULSE_DECISION finishes the dose without the knock, rather than
-        // leaving it half a gram short
-        knock_result_.aborted = true;
-        knock_stage_ = KnockStage::DONE;
-        queue_log_message("[KNOCK] %u jolts of %ums could not start - finishing without\n",
-                          (unsigned)GRIND_BURST_PULSES, (unsigned)knock_result_.on_ms);
-        return;
+    // Already so close that even a typical burst would carry the dose past target +
+    // tolerance: skip it, as a pulse is skipped in the same case. A light dose can be
+    // topped up, coffee cannot be taken back out. The knock test always fires - measuring
+    // the burst is what it is for.
+    if (!knock_test && settled_weight + expected_g > target_weight + GRIND_ACCURACY_TOLERANCE_G) {
+        burst_stage_ = BurstStage::DONE;
+        queue_log_message("[BURST] Skipped at %.2fg - expected %+.3fg would pass %.2fg\n",
+                          settled_weight, expected_g, target_weight + GRIND_ACCURACY_TOLERANCE_G);
+        return false;
     }
-    knock_stage_ = KnockStage::TRAIN;
-    queue_log_message("[KNOCK] At %.2fg of %.1fg: %u jolts of %ums, %ums apart\n",
+
+    burst_before_g_ = settled_weight;
+    if (knock_test) {
+        knock_result_.on_ms = jolt_ms;
+        knock_result_.pulses = GRIND_BURST_PULSES;
+        knock_result_.before_g = settled_weight;
+    }
+
+    if (!grinder->start_pulse_train(jolt_ms, GRIND_BURST_OFF_MS, GRIND_BURST_PULSES)) {
+        // The main run stopped short for this burst, so the dose lands light without it
+        // and the correction pulses make up the difference
+        burst_stage_ = BurstStage::DONE;
+        if (knock_test) {
+            knock_result_.aborted = true;
+        }
+        queue_log_message("[BURST] %u jolts of %ums could not start - finishing without\n",
+                          (unsigned)GRIND_BURST_PULSES, (unsigned)jolt_ms);
+        return false;
+    }
+
+    burst_stage_ = BurstStage::TRAIN;
+    queue_log_message("[BURST] At %.2fg of %.1fg: %u x %ums, %ums apart, expects %+.3fg\n",
                       settled_weight, target_weight, (unsigned)GRIND_BURST_PULSES,
-                      (unsigned)knock_result_.on_ms, (unsigned)GRIND_BURST_OFF_MS);
-    set_notice_message("Knocking");
-    switch_phase(GrindPhase::KNOCK_TEST, loop_data);
+                      (unsigned)jolt_ms, (unsigned)GRIND_BURST_OFF_MS, expected_g);
+    if (knock_test) {
+        set_notice_message("Knocking");
+    }
+    switch_phase(knock_test ? GrindPhase::KNOCK_TEST : GrindPhase::BURST, loop_data);
+    return true;
 }
 
-void GrindController::update_knock_test(const GrindLoopData& loop_data) {
+void GrindController::update_burst(const GrindLoopData& loop_data) {
     if (!weight_sensor) {
         return;
     }
 
-    switch (knock_stage_) {
-        case KnockStage::TRAIN:
+    switch (burst_stage_) {
+        case BurstStage::TRAIN:
             if (grinder->is_pulse_train_done()) {
-                knock_stage_ = KnockStage::DROP;
-                knock_drop_start_ms_ = loop_data.now;
+                burst_stage_ = BurstStage::DROP;
+                burst_drop_start_ms_ = loop_data.now;
             }
             break;
 
-        case KnockStage::DROP: {
-            if (loop_data.now - knock_drop_start_ms_ < KNOCK_TEST_DROP_WAIT_MS) {
+        case BurstStage::DROP: {
+            // Grounds from the last jolt take the flow latency to land, as after any pulse
+            if (loop_data.now - burst_drop_start_ms_ < grind_latency_ms + GRIND_MOTOR_SETTLING_TIME_MS) {
                 break;
             }
-            // Read the way the pulse decision read the weight before the knock - stopped
+            // Read the way the pulse decision read the weight before the burst - stopped
             // rising, not merely quiet, with the same backstop - so the two compare
             float settled_weight;
             bool stable = weight_sensor->check_settling_complete(
                 GRIND_SCALE_PRECISION_SETTLING_TIME_MS, &settled_weight, GRIND_SETTLING_DRIFT_MAX_GPS);
             if (!stable) {
-                bool timed_out = (loop_data.now - knock_drop_start_ms_) >= GRIND_SETTLING_STABLE_TIMEOUT_MS;
+                bool timed_out = (loop_data.now - burst_drop_start_ms_) >= GRIND_SETTLING_STABLE_TIMEOUT_MS;
                 if (!(timed_out && weight_sensor->check_settling_complete(
                                        GRIND_SCALE_PRECISION_SETTLING_TIME_MS, &settled_weight))) {
                     break;
                 }
             }
+            burst_stage_ = BurstStage::DONE;
 
-            knock_result_.after_g = settled_weight;
-            knock_result_.released_g = settled_weight - knock_result_.before_g;
-            knock_result_.knocked = true;
-            knock_stage_ = KnockStage::DONE;
-            queue_log_message("[KNOCK] %u x %ums released %+.3fg (%.2fg -> %.2fg)\n",
-                              (unsigned)knock_result_.pulses, (unsigned)knock_result_.on_ms,
-                              knock_result_.released_g, knock_result_.before_g, knock_result_.after_g);
-
-            // What the test is for: the burst model learns it, unless no burst could
-            // have produced it
-            const float released = knock_result_.released_g;
-            if (isfinite(released) && released >= GRIND_PULSE_DELIVERED_MIN_G &&
-                released <= GRIND_PULSE_DELIVERED_MAX_G) {
-                pulse_window_push(burst_window_, released);
+            // Every burst is measured on its own between two settles, so the model learns
+            // from each one - unless no burst could have produced the reading
+            const float expected_g = get_burst_expected_g();
+            const float delivered_g = settled_weight - burst_before_g_;
+            const bool learned = isfinite(delivered_g) && delivered_g >= GRIND_PULSE_DELIVERED_MIN_G &&
+                                 delivered_g <= GRIND_PULSE_DELIVERED_MAX_G;
+            if (learned) {
+                pulse_window_push(burst_window_, delivered_g);
                 burst_window_dirty_ = true;
-                knock_result_.learned = true;
             }
-            knock_result_.burst_model_g = get_burst_expected_g();
-            queue_log_message("[BURST] Knock test measured %+.3fg%s -> model now %+.3fg from %u test(s)\n",
-                              released, knock_result_.learned ? "" : " - implausible, not learned",
-                              knock_result_.burst_model_g, (unsigned)burst_window_.count);
+            queue_log_message("[BURST] Delivered %+.3fg (%.2fg -> %.2fg), expected %+.3fg%s -> model %+.3fg\n",
+                              delivered_g, burst_before_g_, settled_weight, expected_g,
+                              learned ? "" : ", implausible - not learned", get_burst_expected_g());
 
-            char notice[sizeof(last_notice_message)];
-            snprintf(notice, sizeof(notice), "Knock %+.2fg", knock_result_.released_g);
-            set_notice_message(notice);
+            if (session_descriptor.knock_test) {
+                knock_result_.after_g = settled_weight;
+                knock_result_.released_g = delivered_g;
+                knock_result_.knocked = true;
+                knock_result_.learned = learned;
+                knock_result_.burst_model_g = get_burst_expected_g();
+                char notice[sizeof(last_notice_message)];
+                snprintf(notice, sizeof(notice), "Knock %+.2fg", delivered_g);
+                set_notice_message(notice);
+            }
 
             // The usual decision takes it from here and finishes the dose with pulses
             switch_phase(GrindPhase::PULSE_DECISION, loop_data);
@@ -1294,7 +1325,8 @@ void GrindController::update() {
         }
 
         case GrindPhase::KNOCK_TEST:
-            update_knock_test(loop_data);
+        case GrindPhase::BURST:
+            update_burst(loop_data);
             break;
 
         case GrindPhase::TIME_GRINDING:
@@ -1322,12 +1354,6 @@ void GrindController::update() {
             break;
 
         case GrindPhase::PULSE_SETTLING:
-            if (mode == GrindMode::WEIGHT && active_strategy) {
-                active_strategy->update(session_descriptor, strategy_context, loop_data);
-            }
-            break;
-
-        case GrindPhase::BURST:
             if (mode == GrindMode::WEIGHT && active_strategy) {
                 active_strategy->update(session_descriptor, strategy_context, loop_data);
             }
@@ -2531,23 +2557,12 @@ void GrindController::mark_coast_window_start() {
 }
 
 void GrindController::observe_coast(float coast_weight_g) {
-    // Once per grind: the first settle after the predictive stop. A knock test comes
-    // back through the pulse decision after its knock, before any pulse has fired.
+    // Once per grind: the first settle after the predictive stop. A grind with a burst
+    // comes back through the pulse decision after it, before any pulse has fired.
     if (coast_observed_) {
         return;
     }
     coast_observed_ = true;
-
-    // A burst fired straight after the stop lands in this same settle. Take out what it
-    // was expected to bring so the window keeps holding coast: the next prediction adds
-    // the expected burst back, so the total it stops short by is still a tail this
-    // grinder really produced, even when the burst figure is off.
-    if (burst_fired_) {
-        const float tail_g = coast_weight_g;
-        coast_weight_g -= burst_expected_g_;
-        queue_log_message("[BURST] Tail %+.3fg = coast %+.3fg + expected burst %+.3fg\n",
-                          tail_g, coast_weight_g, burst_expected_g_);
-    }
 
     // Convert the observed coast weight into a time using the SAME flow figure the
     // prediction was built on, so the multiply and divide cancel. Using pulse_flow_rate

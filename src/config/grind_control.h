@@ -52,33 +52,33 @@ enum class GrinderPurgeMode {
 // BURST BEFORE TARGET
 //------------------------------------------------------------------------------
 // Grounds pile up in the chute as a mound and trickle out late. Every weight grind
-// therefore ends its main run short by what a burst of jolts is expected to deliver,
-// plus a margin, and fires the burst straight after the predictive stop - no settle in
-// between - to shake the mound loose before the scale is read. Each jolt is as long as
-// the motor latency learned by Tune Pulses: the start-up kick without the grinding that
-// would follow it. Correction pulses then finish the dose as before.
+// therefore stops its main run short, waits for the scale to settle - which also lets
+// the burrs come to rest, so each jolt is a real start - and then fires a burst of
+// jolts to shake the mound loose. Each jolt is as long as the motor latency learned by
+// Tune Pulses: the start-up kick without the grinding that would follow it. After a
+// second settle, correction pulses finish the dose as before.
 //
-// A burst fired straight after the stop lands in the same settle as the coast, so an
-// ordinary grind cannot tell the two apart. The Chute Knock Test measures what the
-// burst delivers instead (same burst, fired after a settle); the coast model learns the
-// rest of the tail, so its total stays a measured one even if that figure is off.
+// Settling either side of the burst keeps every quantity measured on its own: the first
+// settle is pure coast (the coast model), the second minus the first is what the burst
+// delivered (the burst model, learned on every grind). Jolts fired straight after the
+// stop hit burrs that were still turning, ground fresh coffee, and delivered 0.3-0.5g
+// that varied grind to grind.
 #define GRIND_BURST_ENABLED 1
 #define GRIND_BURST_PULSES 4                                          // Jolts per burst
-#define GRIND_BURST_OFF_MS 150                                        // Before each jolt, including the first after the stop: the rotor slows between starts
+#define GRIND_BURST_OFF_MS 150                                        // Between jolts
 #define GRIND_BURST_MARGIN_G 0.05f                                    // The main run stops this much further short again, left for a correction
-#define GRIND_BURST_SEED_G 0.20f                                      // Expected delivery until a knock test has measured one (3 jolts measured +0.15g)
+#define GRIND_BURST_SEED_G 0.20f                                      // Expected delivery until a burst has been measured (3 jolts from rest measured +0.15g)
+#define GRIND_BURST_PLANNING_QUANTILE 0.75f                           // Burst assumed when placing the stop: upper quartile, so the dose tends to land short
 
 //------------------------------------------------------------------------------
 // CHUTE KNOCK TEST
 //------------------------------------------------------------------------------
-// Measures what the burst delivers, for the burst model. A real weight grind that stops
-// KNOCK_TEST_STOP_SHORT_G short of its target with no burst; at that first settle it
-// fires the burst, lets the scale settle again, and the difference between the two
-// settles is the measurement. Normal pulse correction then finishes the dose. Nothing
-// else from the session is learned.
+// The same grind with the knock point fixed instead of learned: a KNOCK_TEST_TARGET_G
+// dose whose main run stops KNOCK_TEST_STOP_SHORT_G short, fires the burst after the
+// first settle and shows what it released. Its burst measurement feeds the burst model
+// like any grind's; its coast and pulses are not learned.
 #define KNOCK_TEST_TARGET_G 18.5f                                     // Dose the test grinds
 #define KNOCK_TEST_STOP_SHORT_G 0.5f                                  // The predictive stop aims this far below target: the knock point
-#define KNOCK_TEST_DROP_WAIT_MS 1000                                  // After the last jolt, for released grounds to land before the scale is read
 
 //------------------------------------------------------------------------------
 // GRIND CONTROL TUNING

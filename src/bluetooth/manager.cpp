@@ -1452,11 +1452,11 @@ void BluetoothManager::generate_diagnostic_report() {
         }
         snprintf(buf, sizeof(buf),
                  "[BURST MODEL]\n"
-                 "  %s: %u jolts of the learned latency, %ums apart, straight after the main run\n"
-                 "  Main run aims at target - burst %.3fg - margin %.3fg %s\n",
+                 "  %s: at the first settle, %u jolts of the learned latency, %ums apart, then a settle\n"
+                 "  Typical burst %+.3fg (median), main run leaves room for %+.3fg (upper quartile) + margin %.3fg %s\n",
                  GRIND_BURST_ENABLED ? "On" : "Off", (unsigned)GRIND_BURST_PULSES, (unsigned)GRIND_BURST_OFF_MS,
-                 burst_window_expected_g(bursts), GRIND_BURST_MARGIN_G,
-                 bursts.count ? "(median of knock tests)" : "- seed, run the Chute Knock Test to measure");
+                 burst_window_expected_g(bursts), burst_window_planning_g(bursts), GRIND_BURST_MARGIN_G,
+                 bursts.count ? "" : "- seed, no burst measured yet");
         send_chunk(buf);
         if (bursts.count) {
             float sorted[PulseWindow::CAPACITY];
