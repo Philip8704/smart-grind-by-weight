@@ -199,7 +199,15 @@ class GrinderTool:
     async def cmd_upload(self, args: argparse.Namespace) -> int:
         """Upload firmware via BLE OTA."""
         firmware_path = args.firmware
-        
+        wifi = getattr(args, 'wifi', None)
+
+        if wifi and not firmware_path:
+            # Over WiFi the grinder takes the packaged -web-ota.bin, which grinder-ble finds itself
+            if not self.check_venv():
+                return 1
+            self.print_header("WiFi Upload")
+            return await self.run_async_command([str(self.venv_python), str(self.ble_tool), "upload", "--wifi", wifi])
+
         if not firmware_path:
             self.print_info("Finding latest firmware file...")
             build_dir = self.project_dir / ".pio" / "build"
@@ -231,7 +239,9 @@ class GrinderTool:
             cmd.extend(["--device", args.device])
         if hasattr(args, 'force_full') and args.force_full:
             cmd.append("--force-full")
-        
+        if wifi:
+            cmd.extend(["--wifi", wifi])
+
         return await self.run_async_command(cmd)
     
     async def cmd_build_upload(self, args: argparse.Namespace) -> int:
@@ -252,6 +262,8 @@ class GrinderTool:
             return 1
         
         cmd = [str(self.venv_python), str(self.ble_tool), "export"]
+        if getattr(args, 'wifi', None):
+            cmd.extend(["--wifi", args.wifi])
         
         if hasattr(args, 'db') and args.db:
             cmd.extend(["--db", args.db])
@@ -268,6 +280,8 @@ class GrinderTool:
             return 1
         
         cmd = [str(self.venv_python), str(self.ble_tool), "analyse"]
+        if getattr(args, 'wifi', None):
+            cmd.extend(["--wifi", args.wifi])
         
         if hasattr(args, 'db') and args.db:
             cmd.extend(["--db", args.db])
@@ -357,6 +371,8 @@ class GrinderTool:
             return 1
         
         cmd = [str(self.venv_python), str(self.ble_tool), "debug"]
+        if getattr(args, 'wifi', None):
+            cmd.extend(["--wifi", args.wifi])
         
         if hasattr(args, 'device') and args.device:
             cmd.extend(["--device", args.device])
@@ -371,6 +387,8 @@ class GrinderTool:
             return 1
 
         cmd = [str(self.venv_python), str(self.ble_tool), "info"]
+        if getattr(args, 'wifi', None):
+            cmd.extend(["--wifi", args.wifi])
 
         if hasattr(args, 'device') and args.device:
             cmd.extend(["--device", args.device])
@@ -385,6 +403,8 @@ class GrinderTool:
             return 1
 
         cmd = [str(self.venv_python), str(self.ble_tool), "diagnostics"]
+        if getattr(args, 'wifi', None):
+            cmd.extend(["--wifi", args.wifi])
 
         if hasattr(args, 'device') and args.device:
             cmd.extend(["--device", args.device])
@@ -473,6 +493,7 @@ def create_parser() -> argparse.ArgumentParser:
     upload_parser.add_argument('firmware', nargs='?', help='Path to firmware .bin file (finds latest if not specified)')
     upload_parser.add_argument('--force-full', action='store_true', help='Force full firmware update (skip delta patching)')
     upload_parser.add_argument('--device', default='GrindByWeight', help='Specify device name')
+    upload_parser.add_argument('--wifi', nargs='?', const='grinder.local', default=None, metavar='HOST', help='Use the grinder over WiFi instead of Bluetooth (default grinder.local)')
     
     build_upload_parser = subparsers.add_parser('build-upload', help='Build firmware and upload via BLE')
     build_upload_parser.add_argument('--force-full', action='store_true', help='Force full firmware update (skip delta patching)')
@@ -482,10 +503,12 @@ def create_parser() -> argparse.ArgumentParser:
     export_parser = subparsers.add_parser('export', help='Export grind data from device to database')
     export_parser.add_argument('--db', help='Specify database file (default: grinder_data.db)')
     export_parser.add_argument('--device', default='GrindByWeight', help='Specify device name')
+    export_parser.add_argument('--wifi', nargs='?', const='grinder.local', default=None, metavar='HOST', help='Use the grinder over WiFi instead of Bluetooth (default grinder.local)')
     
     analyze_parser = subparsers.add_parser('analyze', help='Export data and launch Streamlit report')
     analyze_parser.add_argument('--db', help='Specify database file (default: grinder_data.db)')
     analyze_parser.add_argument('--device', default='GrindByWeight', help='Specify device name')
+    analyze_parser.add_argument('--wifi', nargs='?', const='grinder.local', default=None, metavar='HOST', help='Use the grinder over WiFi instead of Bluetooth (default grinder.local)')
     
     report_parser = subparsers.add_parser('report', help='Launch Streamlit report (no data export)')
     report_parser.add_argument('--db', help='Specify database file (default: grinder_data.db)')
@@ -501,12 +524,15 @@ def create_parser() -> argparse.ArgumentParser:
     
     debug_parser = subparsers.add_parser('debug', help='Stream live debug logs from device')
     debug_parser.add_argument('--device', default='GrindByWeight', help='Specify device name')
+    debug_parser.add_argument('--wifi', nargs='?', const='grinder.local', default=None, metavar='HOST', help='Use the grinder over WiFi instead of Bluetooth (default grinder.local)')
     
     info_parser = subparsers.add_parser('info', help='Get comprehensive device system information')
     info_parser.add_argument('--device', default='GrindByWeight', help='Specify device name')
+    info_parser.add_argument('--wifi', nargs='?', const='grinder.local', default=None, metavar='HOST', help='Use the grinder over WiFi instead of Bluetooth (default grinder.local)')
 
     diagnostics_parser = subparsers.add_parser('diagnostics', help='Get comprehensive diagnostic report for GitHub issues')
     diagnostics_parser.add_argument('--device', default='GrindByWeight', help='Specify device name')
+    diagnostics_parser.add_argument('--wifi', nargs='?', const='grinder.local', default=None, metavar='HOST', help='Use the grinder over WiFi instead of Bluetooth (default grinder.local)')
     diagnostics_parser.add_argument('--save', metavar='FILE', help='Save report to file (default: print to console)')
 
     # Development Commands

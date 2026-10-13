@@ -2,6 +2,7 @@
 #include "../../network/wifi_manager.h"
 #include <Arduino.h>
 #include <algorithm>
+#include <cstring>
 #include "../../config/constants.h"
 #include "../../logging/grind_logging.h"
 #include "../../system/statistics_manager.h"
@@ -786,6 +787,26 @@ void MenuScreen::update_diagnostics(WeightSensor* weight_sensor) {
     }
 }
 
+// lv_label_set_text redraws even when the text is unchanged, and this page refreshes
+// every UI cycle - setting the same text each time made the BT / WiFi page redraw
+// continuously
+static void set_label_text_if_changed(lv_obj_t* label, const char* text) {
+    const char* current = lv_label_get_text(label);
+    if (!current || strcmp(current, text) != 0) {
+        lv_label_set_text(label, text);
+    }
+}
+
+static void set_hidden(lv_obj_t* obj, bool hidden) {
+    if (lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN) != hidden) {
+        if (hidden) {
+            lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+}
+
 void MenuScreen::update_ble_status() {
     if (!visible || !bluetooth_manager) return;
     
@@ -798,24 +819,20 @@ void MenuScreen::update_ble_status() {
     
     // Update status text
     if (bluetooth_manager->is_enabled()) {
-        if (bluetooth_manager->is_connected()) {
-            lv_label_set_text(ble_status_label, "Connected");
-        } else {
-            lv_label_set_text(ble_status_label, "Advertising");
-        }
-        lv_obj_clear_flag(ble_status_label, LV_OBJ_FLAG_HIDDEN);
+        set_label_text_if_changed(ble_status_label, bluetooth_manager->is_connected() ? "Connected" : "Advertising");
+        set_hidden(ble_status_label, false);
         
         // Show remaining time
         unsigned long remaining_ms = bluetooth_manager->get_bluetooth_timeout_remaining_ms();
         unsigned long remaining_min = remaining_ms / (60 * 1000);
         char timer_text[64];
         snprintf(timer_text, sizeof(timer_text), "Auto-disable in: %lu min", remaining_min);
-        lv_label_set_text(ble_timer_label, timer_text);
-        lv_obj_clear_flag(ble_timer_label, LV_OBJ_FLAG_HIDDEN);
+        set_label_text_if_changed(ble_timer_label, timer_text);
+        set_hidden(ble_timer_label, false);
     } else {
         // When nothing to display hide the status labels
-        lv_obj_add_flag(ble_status_label, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(ble_timer_label, LV_OBJ_FLAG_HIDDEN);
+        set_hidden(ble_status_label, true);
+        set_hidden(ble_timer_label, true);
     }
 
     // WiFi: the toggle follows what the manager reports, so a refused start (no network
@@ -847,16 +864,16 @@ void MenuScreen::update_ble_status() {
             }
             break;
     }
-    lv_label_set_text(wifi_status_label, text);
+    set_label_text_if_changed(wifi_status_label, text);
 
     if (wifi_manager.is_enabled()) {
         char timer_text[48];
         snprintf(timer_text, sizeof(timer_text), "Auto-disable in: %lu min",
                  wifi_manager.get_timeout_remaining_ms() / (60 * 1000));
-        lv_label_set_text(wifi_timer_label, timer_text);
-        lv_obj_clear_flag(wifi_timer_label, LV_OBJ_FLAG_HIDDEN);
+        set_label_text_if_changed(wifi_timer_label, timer_text);
+        set_hidden(wifi_timer_label, false);
     } else {
-        lv_obj_add_flag(wifi_timer_label, LV_OBJ_FLAG_HIDDEN);
+        set_hidden(wifi_timer_label, true);
     }
 }
 

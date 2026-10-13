@@ -23,6 +23,9 @@ input[type=file]{max-width:100%;color:var(--muted)}
 .bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:10px;display:none}.bar div{height:100%;width:0;background:var(--accent)}
 .msg{margin-top:8px;font-size:13px;min-height:1em}.msg.ok{color:var(--ok)}.msg.err{color:var(--accent)}.msg.warn{color:var(--warn)}
 pre{background:var(--mono);color:var(--monotext);border-radius:8px;padding:10px;margin:10px 0 0;height:320px;overflow:auto;font:12px/1.4 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-all}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px;margin:0}.kv dt{color:var(--muted)}.kv dd{margin:0}
+input.t{padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--text);font:inherit;min-width:0;flex:1 1 140px}
+code{font:12px ui-monospace,Consolas,monospace;background:var(--bg);padding:1px 5px;border-radius:4px}
 ul{list-style:none;padding:0;margin:0}li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}li a{color:var(--accent)}
 </style></head><body><main>
 <header><h1>Grind by Weight</h1><span id="info">Connecting...</span></header>
@@ -35,6 +38,12 @@ ul{list-style:none;padding:0;margin:0}li{display:flex;justify-content:space-betw
 <section><h2>Diagnostic report</h2>
 <div class="row"><a class="btn" href="/report" target="_blank">Open</a><a class="btn alt" href="/report?download=1">Download</a></div></section>
 
+<section><h2>Device</h2><dl class="kv" id="dev"><dt>Loading...</dt><dd></dd></dl></section>
+
+<section><h2>Grind sessions</h2>
+<p>The files the Bluetooth export reads. To merge them into the analysis database from a PC: <code>python tools/grinder.py export --wifi</code></p>
+<ul id="sessions"><li>Loading...</li></ul></section>
+
 <section><h2>Live log</h2>
 <p>Every log line as it is written. Also on TCP port 23 (telnet, nc, PuTTY raw).</p>
 <div class="row"><button id="lv" onclick="toggleLive()">Start</button><button class="alt" onclick="logbox.textContent=''">Clear</button>
@@ -42,6 +51,12 @@ ul{list-style:none;padding:0;margin:0}li{display:flex;justify-content:space-betw
 <pre id="log"></pre></section>
 
 <section><h2>Saved logs</h2><p>Kept across restarts, oldest first.</p><ul id="logs"><li>Loading...</li></ul></section>
+
+<section><h2>WiFi network</h2>
+<p>Move the grinder to another network. It reconnects straight away; if the details are wrong, enter them again in the web flasher over Bluetooth.</p>
+<form class="row" onsubmit="return setNet(event)"><input class="t" id="ssid" placeholder="Network name" maxlength="32" autocomplete="off">
+<input class="t" id="pw" type="password" placeholder="Password" maxlength="63" autocomplete="off"><button>Switch</button></form>
+<div class="msg" id="netmsg"></div></section>
 </main>
 <script>
 const $=id=>document.getElementById(id),logbox=$('log');let live=false,pos=null,timer=null,build=null;
@@ -66,5 +81,24 @@ pos=r.headers.get('X-Next');const t=await r.text();if(t){logbox.textContent+=t;i
 if($('follow').checked)logbox.scrollTop=logbox.scrollHeight}}catch(e){}timer=setTimeout(poll,700)}
 async function loadLogs(){try{const r=await fetch('/logs',{cache:'no-store'});const l=await r.json();
 $('logs').innerHTML=l.length?l.map(f=>'<li><a href="/logs/get?name='+encodeURIComponent(f.name)+'" download>'+f.name+'</a><span>'+(f.size/1024).toFixed(1)+' KB</span></li>').join(''):'<li>No saved logs</li>'}catch(e){$('logs').innerHTML='<li>Could not list logs</li>'}}
-status();loadLogs();setInterval(()=>{if(!$('up').disabled)status()},10000);
+function kb(b){return Math.round(b/1024)+' KB'}
+async function loadInfo(){try{const r=await fetch('/info',{cache:'no-store'});const j=await r.json(),s=j.system,rows=[];
+rows.push(['Firmware','v'+s.version+', build #'+s.build]);rows.push(['Uptime',s.uptime_h+'h '+s.uptime_m+'m']);
+rows.push(['Internal RAM',kb(s.int_free)+' free, lowest '+kb(s.int_min_ever)+', largest block '+kb(s.int_block)]);
+if(s.psram_total)rows.push(['PSRAM',kb(s.psram_free)+' free of '+kb(s.psram_total)]);
+const c=[];for(let i=0;i<3;i++)if(s.coast_n[i])c.push('P'+i+' '+s.coast_s[i].toFixed(3)+'s ('+s.coast_n[i]+')');
+rows.push(['Coast model',c.length?c.join(', '):'nothing learned yet']);
+rows.push(['Cradle reference',s.has_empty_ref?'stored':'missing - recalibrate']);
+rows.push(['Grind sessions',j.sessions.total_sessions+' stored']);
+rows.push(['WiFi',j.wifi.ssid+', '+j.wifi.ip+', '+j.wifi.rssi+' dBm']);
+const esc=t=>String(t).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+$('dev').innerHTML=rows.map(r=>'<dt>'+r[0]+'</dt><dd>'+esc(r[1])+'</dd>').join('')}catch(e){$('dev').innerHTML='<dt>Could not read device information</dt><dd></dd>'}}
+async function loadSessions(){try{const r=await fetch('/sessions',{cache:'no-store'});const l=(await r.json()).reverse();
+$('sessions').innerHTML=l.length?l.map(f=>'<li><a href="/sessions/get?id='+f.id+'" download>Session #'+f.id+'</a><span>'+(f.size/1024).toFixed(1)+' KB</span></li>').join(''):'<li>No sessions stored</li>'}catch(e){$('sessions').innerHTML='<li>Could not list sessions</li>'}}
+async function setNet(e){e.preventDefault();const ssid=$('ssid').value.trim(),pw=$('pw').value,m=$('netmsg');
+if(!ssid){m.textContent='Enter the network name';m.className='msg err';return false}
+if(!confirm('Move the grinder to "'+ssid+'"? This page loses the connection.'))return false;
+try{const r=await fetch('/wifi',{method:'POST',body:new URLSearchParams({ssid:ssid,password:pw})});m.textContent=await r.text();m.className='msg '+(r.ok?'warn':'err')}
+catch(err){m.textContent='Sent - the grinder is reconnecting';m.className='msg warn'}return false}
+status();loadInfo();loadSessions();loadLogs();setInterval(()=>{if(!$('up').disabled){status();loadInfo()}},10000);
 </script></body></html>)HTML";

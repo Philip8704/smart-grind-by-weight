@@ -102,6 +102,8 @@ uint32_t debug_log_persist_dropped_bytes();
 // Position just past the newest byte logged; a viewer that starts here sees only what
 // comes after. Positions are byte counts since boot and wrap harmlessly.
 uint32_t debug_log_live_position();
+// Position of the oldest byte still held - where a viewer that wants everything starts
+uint32_t debug_log_live_oldest();
 // Copies text logged after *position into out (not NUL-terminated), advances *position
 // and returns the bytes copied. A viewer that fell more than DEBUG_LIVE_BYTES behind is
 // moved up to the oldest byte still held, and *skipped says how much it missed.

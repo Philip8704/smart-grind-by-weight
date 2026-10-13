@@ -971,8 +971,13 @@ void BluetoothManager::refresh_system_info() {
 void BluetoothManager::update_system_info() {
     if (!sysinfo_system_characteristic) return;
     
-    // Create JSON-like structure for system info
     char buffer[BLE_SYSINFO_MAX_PAYLOAD_BYTES];
+    build_system_info_json(buffer, sizeof(buffer));
+    sysinfo_system_characteristic->setValue(buffer);
+    sysinfo_system_characteristic->notify();
+}
+
+void BluetoothManager::build_system_info_json(char* buffer, size_t buffer_size) {
     unsigned long uptime_ms = millis();
     unsigned long uptime_seconds = uptime_ms / 1000;
     unsigned long uptime_minutes = uptime_seconds / 60;
@@ -1017,7 +1022,7 @@ void BluetoothManager::update_system_info() {
         }
     }
 
-    snprintf(buffer, sizeof(buffer),
+    snprintf(buffer, buffer_size,
         "{"
         "\"version\":\"%s\","
         "\"build\":%d,"
@@ -1037,7 +1042,9 @@ void BluetoothManager::update_system_info() {
         "\"empty_ref\":%ld,"
         "\"has_empty_ref\":%d,"
         "\"flash_size\":%u,"
-        "\"cpu_freq\":%u"
+        "\"cpu_freq\":%u,"
+        "\"psram_total\":%u,"
+        "\"psram_free\":%u"
         "}",
         BUILD_FIRMWARE_VERSION,
         BUILD_NUMBER,
@@ -1057,11 +1064,10 @@ void BluetoothManager::update_system_info() {
         (long)empty_ref,
         has_empty_ref ? 1 : 0,
         (unsigned int)flash_size,
-        (unsigned int)ESP.getCpuFreqMHz()
+        (unsigned int)ESP.getCpuFreqMHz(),
+        (unsigned int)ESP.getPsramSize(),
+        (unsigned int)ESP.getFreePsram()
     );
-    
-    sysinfo_system_characteristic->setValue(buffer);
-    sysinfo_system_characteristic->notify();
 }
 
 void BluetoothManager::update_performance_info() {
@@ -1100,7 +1106,7 @@ void BluetoothManager::update_hardware_info() {
         "\"display_active\":true,"
         "\"touch_active\":true,"
         "\"ble_enabled\":true,"
-        "\"wifi_available\":false,"
+        "\"wifi_available\":true,"
         "\"flash_available\":true"
         "}"
     );
@@ -1589,6 +1595,7 @@ void BluetoothManager::write_diagnostic_report(const std::function<void(const ch
             "  Largest block:      %u KB%s\n"
             "  Lowest ever:        %u KB%s\n"
             "  LVGL pool free:     %u KB (%u%% fragmented)\n"
+            "  PSRAM free:         %u KB of %u KB\n"
             "\n",
             (unsigned)(mem.internal_free_bytes / 1024),
             (unsigned)(mem.internal_largest_block_bytes / 1024),
@@ -1596,7 +1603,9 @@ void BluetoothManager::write_diagnostic_report(const std::function<void(const ch
             (unsigned)(mem.internal_min_free_ever_bytes / 1024),
             (mem.internal_min_free_ever_bytes < 40960) ? "   <-- came close" : "",
             (unsigned)(mem.lvgl_pool_free_bytes / 1024),
-            (unsigned)mem.lvgl_pool_frag_pct);
+            (unsigned)mem.lvgl_pool_frag_pct,
+            (unsigned)(ESP.getFreePsram() / 1024),
+            (unsigned)(ESP.getPsramSize() / 1024));
         send_chunk(buf);
     }
 

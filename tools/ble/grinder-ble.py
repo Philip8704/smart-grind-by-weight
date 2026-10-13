@@ -30,6 +30,9 @@ import tempfile
 import sqlite3
 import hashlib
 import json
+import socket
+import urllib.error
+import urllib.request
 from typing import List, Dict, Optional, Tuple
 from pathlib import Path
 
@@ -138,6 +141,11 @@ MIN_SESSION_STRUCT_SIZE = min(SESSION_STRUCT_SIZE_BY_SCHEMA.values())
 # GrindSessionFlags in grind_logging.h
 SESSION_FLAG_VIBRATION_TEST = 0x01        # Motor run with an empty hopper, not a grind
 SESSION_FLAG_RETARED_AFTER_PURGE = 0x02   # Raw samples before the re-tare sit on a different zero
+# WiFi: the grinder's own web server (Menu -> BT / WiFi -> WiFi on)
+DEFAULT_WIFI_HOST = "grinder.local"
+WIFI_LOG_PORT = 23
+PACKAGED_WEB_OTA = Path(__file__).parent.parent / "web-flasher" / "firmware" / "pr-135" / "smart-grind-by-weight-pr-135-web-ota.bin"
+
 SESSION_FLAG_KNOCK_TEST = 0x04            # Grind stopped short of target to knock the chute (KNOCK_TEST phase), then finished
 BLE_OTA_READY = 0x01
 BLE_OTA_RECEIVING = 0x02
@@ -630,25 +638,9 @@ class GrinderBLETool:
                 self.safe_print(f"[ERROR] No data received for session {session_id}")
                 continue
             
-            # Process individual file
-            try:
-                file_data = b"".join(self.data_chunks)
-                self.safe_print(f"[INFO] Received {len(file_data)} bytes for session {session_id}")
-                
-                # Parse this single session file
-                sessions, events, measurements = self._parse_single_file_data(file_data, session_id)
-                all_sessions.extend(sessions)
-                all_events.extend(events) 
-                all_measurements.extend(measurements)
-                self.safe_print(f"[OK] Successfully processed session {session_id}")
-                
-            except Exception as e:
-                self.safe_print(f"[WARNING] Failed to process session {session_id}: {e}")
-                # Save corrupted file for debugging
-                with open(f"failed_session_{session_id}.bin", "wb") as f:
-                    f.write(file_data)
-                self.safe_print(f"[INFO] Saved corrupted session to failed_session_{session_id}.bin")
-                continue
+            file_data = b"".join(self.data_chunks)
+            self.safe_print(f"[INFO] Received {len(file_data)} bytes for session {session_id}")
+            self._collect_session_file(file_data, session_id, all_sessions, all_events, all_measurements)
         
         # Step 3: Store all successfully processed data
         if all_sessions:
@@ -660,6 +652,158 @@ class GrinderBLETool:
             self.safe_print("[ERROR] No sessions were successfully processed")
             return False
     
+    def _collect_session_file(self, file_data: bytes, session_id: int,
+                              all_sessions: List[Dict], all_events: List[Dict], all_measurements: List[Dict]) -> bool:
+        """Parses one session file (from either radio) and adds it to the export."""
+        try:
+            sessions, events, measurements = self._parse_single_file_data(file_data, session_id)
+            all_sessions.extend(sessions)
+            all_events.extend(events)
+            all_measurements.extend(measurements)
+            self.safe_print(f"[OK] Successfully processed session {session_id}")
+            return True
+        except Exception as e:
+            self.safe_print(f"[WARNING] Failed to process session {session_id}: {e}")
+            # Save corrupted file for debugging
+            with open(f"failed_session_{session_id}.bin", "wb") as f:
+                f.write(file_data)
+            self.safe_print(f"[INFO] Saved corrupted session to failed_session_{session_id}.bin")
+            return False
+
+    # === WiFi: the same functions through the grinder's web server ===
+    @staticmethod
+    def _http(host: str, path: str, data: Optional[bytes] = None, content_type: Optional[str] = None,
+              timeout: float = 60) -> bytes:
+        request = urllib.request.Request(f"http://{host}{path}", data=data,
+                                         method="POST" if data is not None else "GET")
+        if content_type:
+            request.add_header("Content-Type", content_type)
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return response.read()
+
+    def _wifi_build(self, host: str) -> Optional[int]:
+        try:
+            return json.loads(self._http(host, "/status", timeout=5)).get("build")
+        except Exception:
+            return None
+
+    def export_data_wifi(self, host: str, db_path: str = None) -> bool:
+        if db_path is None:
+            db_path = str(Path(__file__).parent.parent / "database" / "grinder_data.db")
+        self.safe_print(f"[INFO] Listing sessions on http://{host} ...")
+        try:
+            listing = json.loads(self._http(host, "/sessions", timeout=30))
+        except Exception as e:
+            self.safe_print(f"[ERROR] Could not reach the grinder over WiFi: {e}")
+            return False
+        if not listing:
+            self.safe_print("[OK] No sessions to export")
+            return True
+        self.safe_print(f"[INFO] Found {len(listing)} session files to export")
+
+        all_sessions, all_events, all_measurements = [], [], []
+        for i, entry in enumerate(listing):
+            session_id = entry["id"]
+            self.safe_print(f"[INFO] Downloading session {session_id} ({i + 1}/{len(listing)}, {entry.get('size', 0) // 1024} KB)")
+            try:
+                file_data = self._http(host, f"/sessions/get?id={session_id}", timeout=60)
+            except Exception as e:
+                self.safe_print(f"[ERROR] Session {session_id} failed to download: {e}")
+                continue
+            self._collect_session_file(file_data, session_id, all_sessions, all_events, all_measurements)
+
+        if all_sessions:
+            self.safe_print(f"\n[INFO] Storing data: {len(all_sessions)} sessions, {len(all_events)} events, {len(all_measurements)} measurements")
+            self._store_data(all_sessions, all_events, all_measurements, db_path)
+            self.safe_print("[OK] Data export completed successfully!")
+            return True
+        self.safe_print("[ERROR] No sessions were successfully processed")
+        return False
+
+    def get_diagnostic_report_wifi(self, host: str) -> str:
+        try:
+            return self._http(host, "/report", timeout=120).decode("utf-8", errors="replace")
+        except Exception as e:
+            self.safe_print(f"[ERROR] Could not get the report over WiFi: {e}")
+            return ""
+
+    def get_system_info_wifi(self, host: str) -> Dict:
+        try:
+            info = json.loads(self._http(host, "/info", timeout=30))
+        except Exception as e:
+            self.safe_print(f"[ERROR] Could not read device information over WiFi: {e}")
+            return {}
+        return {"system": info.get("system", {}), "sessions": info.get("sessions", {}), "wifi": info.get("wifi", {})}
+
+    def debug_monitor_wifi(self, host: str):
+        self.safe_print(f"[INFO] Live log from {host}:{WIFI_LOG_PORT} - Ctrl+C to stop")
+        try:
+            with socket.create_connection((host, WIFI_LOG_PORT), timeout=10) as sock:
+                sock.settimeout(None)
+                while True:
+                    data = sock.recv(4096)
+                    if not data:
+                        self.safe_print("\n[INFO] The grinder closed the log stream")
+                        break
+                    sys.stdout.write(data.decode("utf-8", errors="replace"))
+                    sys.stdout.flush()
+        except OSError as e:
+            self.safe_print(f"[ERROR] Could not open the live log: {e}")
+
+    def upload_firmware_wifi(self, host: str, firmware_path: Optional[str]) -> bool:
+        """Uploads the same detools patch the web flasher sends. A -web-ota.bin is sent as
+        it is; a raw firmware image is turned into one if detools is available here, and
+        otherwise the packaged web-ota file is used instead."""
+        patch_path = Path(firmware_path) if firmware_path else PACKAGED_WEB_OTA
+        if not patch_path.exists():
+            self.safe_print(f"[ERROR] {patch_path} not found - package the build first (tools/package_pr135_for_flasher.sh)")
+            return False
+        data = patch_path.read_bytes()
+        if "web-ota" not in patch_path.name:
+            with tempfile.TemporaryDirectory() as tmp:
+                empty = Path(tmp) / "empty.bin"
+                empty.write_bytes(b"")
+                patch = self.generate_delta_patch(empty, data)
+            if patch:
+                data = patch
+            elif PACKAGED_WEB_OTA.exists():
+                self.safe_print(f"[WARNING] Could not make a patch from {patch_path.name} here (no detools) - "
+                                f"sending the packaged {PACKAGED_WEB_OTA.name} instead")
+                data = PACKAGED_WEB_OTA.read_bytes()
+            else:
+                self.safe_print("[ERROR] No patch available - package the build first")
+                return False
+
+        before = self._wifi_build(host)
+        self.safe_print(f"[INFO] Uploading {len(data) // 1024} KB to http://{host} (device on build #{before})")
+        try:
+            reply = self._http(host, "/update", data=data, content_type="application/octet-stream", timeout=300)
+            self.safe_print(f"[OK] {reply.decode('utf-8', errors='replace')}")
+        except urllib.error.HTTPError as e:
+            self.safe_print(f"[ERROR] {e.read().decode('utf-8', errors='replace') or e}")
+            return False
+        except Exception as e:
+            self.safe_print(f"[ERROR] Upload failed: {e}")
+            return False
+
+        # It restarts with WiFi back on, so the new build can be read back
+        self.safe_print("[INFO] Waiting for the grinder to restart...")
+        deadline = time.time() + 180
+        gone = False
+        while time.time() < deadline:
+            time.sleep(3)
+            build = self._wifi_build(host)
+            if build is None:
+                gone = True
+            elif gone or build != before:
+                if build != before:
+                    self.safe_print(f"[OK] Now running build #{build}")
+                    return True
+                self.safe_print(f"[ERROR] Back on build #{build} - the update did not apply")
+                return False
+        self.safe_print("[WARNING] No answer within 3 minutes - check the grinder's screen")
+        return False
+
     def _parse_single_file_data(self, file_data: bytes, session_id: int) -> Tuple[List[Dict], List[Dict], List[Dict]]:
         """Parse data from a single session file.
         Format on device (LittleFS):
@@ -1085,7 +1229,7 @@ class GrinderBLETool:
                         f"{f', {remapped} stored under a new ID' if remapped else ''} - {total} in total")
 
     # === Analyze Data (Export + Streamlit Report) ===
-    async def analyze_data(self, db_path: str = None, skip_export: bool = False) -> bool:
+    async def analyze_data(self, db_path: str = None, skip_export: bool = False, wifi_host: Optional[str] = None) -> bool:
         """Export data from grinder and launch Streamlit report."""
         # Get the absolute path to ensure the database can be found
         tools_dir = Path(__file__).parent.parent
@@ -1102,12 +1246,16 @@ class GrinderBLETool:
         
         self.safe_print("[INFO] Starting data analysis workflow...")
         
-        if not skip_export:
+        if not skip_export and wifi_host:
+            if not self.export_data_wifi(wifi_host, str(db_full_path)):
+                self.safe_print("[ERROR] Data export failed, cannot launch report")
+                return False
+        elif not skip_export:
             # First, export the data
             if not await self.export_data(str(db_full_path)):
                 self.safe_print("[ERROR] Data export failed, cannot launch report")
                 return False
-            
+
             # Close BLE connection after successful data export
             self.safe_print("[INFO] Closing BLE connection...")
             await self.disconnect()
@@ -1241,7 +1389,30 @@ class GrinderBLETool:
         self.safe_print(f"   Heap Total:   {heap_total//1024:,} KB")
         self.safe_print(f"   Heap Used:    {heap_used_pct:.1f}%")
         self.safe_print(f"   Flash Size:   {flash_size//1024//1024:,} MB")
-        
+        if 'int_free' in system:
+            self.safe_print(f"   Internal:     {system['int_free']//1024} KB free, lowest {system.get('int_min_ever', 0)//1024} KB, "
+                            f"largest block {system.get('int_block', 0)//1024} KB")
+        if system.get('psram_total'):
+            self.safe_print(f"   PSRAM:        {system.get('psram_free', 0)//1024:,} KB free of {system['psram_total']//1024:,} KB")
+        wifi = info.get('wifi', {})
+        if wifi:
+            self.safe_print(f"[WIFI]:")
+            self.safe_print(f"   Network:      {wifi.get('ssid', '')}  {wifi.get('ip', '')}  {wifi.get('rssi', 0)} dBm")
+
+        # Placeholder sections only Bluetooth publishes
+        if performance:
+            self._print_performance_and_hardware(performance, hardware)
+
+        # Session Statistics
+        self.safe_print(f"[SESSION DATA]:")
+        total_sessions = sessions.get('total_sessions', 0)
+        self.safe_print(f"   Total:        {total_sessions} sessions")
+        self.safe_print(f"   Data Avail:   {'[YES]' if sessions.get('data_available', total_sessions > 0) else '[NO]'}")
+        self.safe_print(f"   Export:       {'[ACTIVE]' if sessions.get('export_active') else '[IDLE]'}")
+
+        self.safe_print("="*60 + "\n")
+
+    def _print_performance_and_hardware(self, performance: Dict, hardware: Dict):
         # Performance Information
         self.safe_print(f"[PERFORMANCE]:")
         self.safe_print(f"   System:       {'[HEALTHY]' if performance.get('system_healthy') else '[STRESSED]'}")
@@ -1261,15 +1432,6 @@ class GrinderBLETool:
         if not hardware.get('wifi_available'): hw_status.append("[ERROR] WiFi")
         
         self.safe_print(f"   Status:       {', '.join(hw_status)}")
-        
-        # Session Statistics
-        self.safe_print(f"[SESSION DATA]:")
-        total_sessions = sessions.get('total_sessions', 0)
-        self.safe_print(f"   Total:        {total_sessions} sessions")
-        self.safe_print(f"   Data Avail:   {'[YES]' if sessions.get('data_available') else '[NO]'}")
-        self.safe_print(f"   Export:       {'[ACTIVE]' if sessions.get('export_active') else '[IDLE]'}")
-        
-        self.safe_print("="*60 + "\n")
 
     async def get_diagnostic_report(self) -> str:
         """Get comprehensive diagnostic report from the device, streaming in real-time."""
@@ -1375,6 +1537,9 @@ async def main():
 
     for p in [upload_parser, export_parser, analyse_parser, connect_parser, debug_parser, sysinfo_parser, diagnostics_parser]:
         p.add_argument('--device', default=DEVICE_NAME, help='Device name to connect to')
+    for p in [upload_parser, export_parser, analyse_parser, debug_parser, sysinfo_parser, diagnostics_parser]:
+        p.add_argument('--wifi', nargs='?', const=DEFAULT_WIFI_HOST, default=None, metavar='HOST',
+                       help=f'Use the grinder over WiFi instead of Bluetooth (host, default {DEFAULT_WIFI_HOST})')
 
     args = parser.parse_args()
     tool = GrinderBLETool()
@@ -1382,7 +1547,31 @@ async def main():
     try:
         if args.command == 'scan':
             await tool.scan_devices()
-        
+
+        elif getattr(args, 'wifi', None):
+            host = args.wifi
+            if args.command == 'upload':
+                return 0 if tool.upload_firmware_wifi(host, args.firmware) else 1
+            elif args.command == 'export':
+                return 0 if tool.export_data_wifi(host, args.db) else 1
+            elif args.command == 'analyse':
+                return 0 if await tool.analyze_data(args.db, False, wifi_host=host) else 1
+            elif args.command == 'debug':
+                tool.debug_monitor_wifi(host)
+            elif args.command == 'info':
+                tool.print_system_info(tool.get_system_info_wifi(host))
+            elif args.command == 'diagnostics':
+                report = tool.get_diagnostic_report_wifi(host)
+                if not report:
+                    return 1
+                if args.save:
+                    with open(args.save, 'w', encoding='utf-8') as f:
+                        f.write(report)
+                    tool.safe_print(f"[OK] Diagnostic report saved to: {args.save}")
+                else:
+                    print(report)
+            return 0
+
         elif args.command in ['upload', 'export', 'analyse', 'connect', 'debug', 'info', 'diagnostics']:
             if not await tool.connect_to_device(args.device): return 1
 

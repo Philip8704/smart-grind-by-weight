@@ -583,6 +583,13 @@ uint32_t debug_log_live_position() {
     return total;
 }
 
+uint32_t debug_log_live_oldest() {
+    portENTER_CRITICAL(&g_mux);
+    uint32_t oldest = g_live_total - g_live_filled;
+    portEXIT_CRITICAL(&g_mux);
+    return oldest;
+}
+
 size_t debug_log_live_read(uint32_t* position, char* out, size_t out_size, uint32_t* skipped) {
     if (skipped) {
         *skipped = 0;

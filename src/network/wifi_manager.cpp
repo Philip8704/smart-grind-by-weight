@@ -8,9 +8,11 @@
 #include <vector>
 
 #include "web_page.h"
+#include "../bluetooth/data_stream.h"
 #include "../bluetooth/manager.h"
 #include "../controllers/grind_controller.h"
 #include "../logging/debug_log.h"
+#include "../logging/grind_logging.h"
 
 extern BluetoothManager g_bluetooth_manager;
 extern GrindController grind_controller;
@@ -48,6 +50,22 @@ bool read_credentials(char* ssid, size_t ssid_size, char* password, size_t passw
     strncpy(password, stored_password.c_str(), password_size - 1);
     password[password_size - 1] = '\0';
     return ssid[0] != '\0';
+}
+
+// Network names are user text; only quotes, backslashes and control characters need care
+String json_escape(const char* text) {
+    String out;
+    for (const char* c = text; c && *c; c++) {
+        if (*c == '"' || *c == '\\') {
+            out += '\\';
+            out += *c;
+        } else if ((unsigned char)*c < 0x20) {
+            out += ' ';
+        } else {
+            out += *c;
+        }
+    }
+    return out;
 }
 
 void set_resume_flag(bool resume) {
@@ -342,7 +360,7 @@ void WifiManager::service_log_client() {
         log_client_ = incoming;
         log_client_.setNoDelay(true);
         // Start with what the ring still holds, so the lead-up is visible too
-        log_client_position_ = debug_log_live_position() - DEBUG_LIVE_BYTES;
+        log_client_position_ = debug_log_live_oldest();
         LOG_BLE("[WIFI] Live log viewer connected\n");
     }
 
@@ -378,6 +396,12 @@ void WifiManager::register_routes() {
     http_->on("/live", HTTP_GET, [this]() { handle_live(); });
     http_->on("/logs", HTTP_GET, [this]() { handle_logs_list(); });
     http_->on("/logs/get", HTTP_GET, [this]() { handle_log_file(); });
+    // Everything else Bluetooth offers: device information, grind session files (the
+    // same bytes the Bluetooth export sends), and the WiFi network itself
+    http_->on("/info", HTTP_GET, [this]() { handle_info(); });
+    http_->on("/sessions", HTTP_GET, [this]() { handle_sessions_list(); });
+    http_->on("/sessions/get", HTTP_GET, [this]() { handle_session_file(); });
+    http_->on("/wifi", HTTP_POST, [this]() { handle_set_network(); });
     // Raw body (application/octet-stream): handle_update_upload() sees the bytes as they
     // arrive, handle_update_done() answers once the whole body is in
     http_->on("/update", HTTP_POST, [this]() { handle_update_done(); }, [this]() { handle_update_upload(); });
@@ -429,9 +453,9 @@ void WifiManager::handle_report() {
 
 void WifiManager::handle_live() {
     touch();
-    // Without a position, start as far back as the ring reaches; read() clamps it
+    // Without a position, start as far back as the ring reaches
     uint32_t position = http_->hasArg("from") ? (uint32_t)strtoul(http_->arg("from").c_str(), nullptr, 10)
-                                              : debug_log_live_position() - DEBUG_LIVE_BYTES;
+                                              : debug_log_live_oldest();
     String body;
     body.reserve(1024);
     while (body.length() < WIFI_LIVE_RESPONSE_MAX_BYTES) {
@@ -563,4 +587,97 @@ void WifiManager::handle_update_done() {
     http_->send(200, "text/plain", "Received - applying the update and restarting");
     update_finalize_pending_ = true;
     update_finalize_at_ms_ = millis() + WIFI_OTA_FINALIZE_DELAY_MS;
+}
+
+void WifiManager::handle_info() {
+    touch();
+    char system_json[BLE_SYSINFO_MAX_PAYLOAD_BYTES];
+    g_bluetooth_manager.build_system_info_json(system_json, sizeof(system_json));
+    char ssid[WIFI_SSID_MAX_LEN + 1];
+    char ip[16];
+    get_ssid(ssid, sizeof(ssid));
+    get_ip(ip, sizeof(ip));
+
+    String json;
+    json.reserve(sizeof(system_json) + 160);
+    json += "{\"system\":";
+    json += system_json;
+    json += ",\"sessions\":{\"total_sessions\":";
+    json += String((unsigned long)g_bluetooth_manager.get_session_total());
+    json += "},\"wifi\":{\"ssid\":\"";
+    json += json_escape(ssid);
+    json += "\",\"ip\":\"";
+    json += ip;
+    json += "\",\"rssi\":";
+    json += String(get_rssi());
+    json += "},\"grinding\":";
+    json += grind_controller.is_active() ? "true" : "false";
+    json += "}";
+    http_->sendHeader("Cache-Control", "no-store");
+    http_->send(200, "application/json", json);
+}
+
+void WifiManager::handle_sessions_list() {
+    touch();
+    // The same list the Bluetooth export starts from
+    static const uint32_t kMaxSessions = 100;
+    std::vector<uint32_t> ids(kMaxSessions);
+    DataStreamManager sessions;
+    uint32_t count = sessions.get_session_list(ids.data(), kMaxSessions);
+    ids.resize(count);
+    std::sort(ids.begin(), ids.end());
+
+    String json = "[";
+    for (size_t i = 0; i < ids.size(); i++) {
+        char path[48];
+        snprintf(path, sizeof(path), SESSION_FILE_FORMAT, (unsigned long)ids[i]);
+        size_t size = 0;
+        File file = LittleFS.open(path, "r");
+        if (file) {
+            size = file.size();
+            file.close();
+        }
+        if (i) json += ",";
+        json += "{\"id\":" + String((unsigned long)ids[i]) + ",\"size\":" + String((unsigned long)size) + "}";
+    }
+    json += "]";
+    http_->sendHeader("Cache-Control", "no-store");
+    http_->send(200, "application/json", json);
+}
+
+void WifiManager::handle_session_file() {
+    touch();
+    const String id_text = http_->arg("id");
+    char* end = nullptr;
+    unsigned long id = strtoul(id_text.c_str(), &end, 10);
+    if (id_text.length() == 0 || !end || *end != '\0' || id == 0) {
+        http_->send(400, "text/plain", "Unknown session");
+        return;
+    }
+    char path[48];
+    snprintf(path, sizeof(path), SESSION_FILE_FORMAT, id);
+    File file = LittleFS.open(path, "r");
+    if (!file) {
+        http_->send(404, "text/plain", "Session not found");
+        return;
+    }
+    char header[64];
+    snprintf(header, sizeof(header), "attachment; filename=\"session_%lu.bin\"", id);
+    http_->sendHeader("Content-Disposition", header);
+    http_->streamFile(file, "application/octet-stream");
+    file.close();
+}
+
+void WifiManager::handle_set_network() {
+    touch();
+    const String ssid = http_->arg("ssid");
+    const String password = http_->arg("password");
+    if (ssid.length() == 0 || ssid.length() > WIFI_SSID_MAX_LEN || password.length() > WIFI_PASSWORD_MAX_LEN) {
+        http_->send(400, "text/plain", "Network name 1-32 characters, password up to 63");
+        return;
+    }
+    // Applied by the next handle(), after this reply has gone out
+    request_set_credentials(ssid.c_str(), password.c_str());
+    LOG_BLE("[WIFI] Network '%s' set from the web page\n", ssid.c_str());
+    http_->send(200, "text/plain", "Switching to " + ssid + " - the grinder reconnects now");
 }

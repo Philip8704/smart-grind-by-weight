@@ -256,4 +256,9 @@ public:
     // Builds the diagnostic report and hands it out piece by piece. Bluetooth sends the
     // pieces as notifications, WiFi writes them into an HTTP response.
     void write_diagnostic_report(const std::function<void(const char*)>& send_chunk);
+
+    // The system information JSON Bluetooth publishes (memory, coast model, cradle
+    // reference), built for either radio
+    void build_system_info_json(char* out, size_t out_size);
+    uint32_t get_session_total() const { return data_stream.get_total_sessions(); }
 };

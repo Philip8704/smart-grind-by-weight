@@ -77,6 +77,10 @@ private:
     void handle_log_file();
     void handle_update_upload();
     void handle_update_done();
+    void handle_info();
+    void handle_sessions_list();
+    void handle_session_file();
+    void handle_set_network();
 
     std::atomic<State> state_{State::OFF};
     std::atomic<bool> has_credentials_{false};
