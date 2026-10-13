@@ -63,8 +63,8 @@ enum class GrinderPurgeMode {
 // burst delivers instead (same burst, fired after a settle); the coast model learns the
 // rest of the tail, so its total stays a measured one even if that figure is off.
 #define GRIND_BURST_ENABLED 1
-#define GRIND_BURST_PULSES 5                                          // Jolts per burst
-#define GRIND_BURST_OFF_MS 250                                        // Before each jolt: long enough for the rotor to slow, so every start is a fresh jolt
+#define GRIND_BURST_PULSES 4                                          // Jolts per burst
+#define GRIND_BURST_OFF_MS 150                                        // Before each jolt, including the first after the stop: the rotor slows between starts
 #define GRIND_BURST_MARGIN_G 0.05f                                    // The main run stops this much further short again, left for a correction
 #define GRIND_BURST_SEED_G 0.20f                                      // Expected delivery until a knock test has measured one (3 jolts measured +0.15g)
 
