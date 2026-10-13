@@ -43,7 +43,7 @@
 // report with 512-byte buffers and float-heavy snprintf - and NVS operations are
 // themselves stack-hungry. Both run shortly after a client connects, which is where a
 // panic was observed. Stack headroom per task is reported in the diagnostic report.
-#define SYS_TASK_BLUETOOTH_STACK_SIZE 8192                                     // 8KB stack for BLE operations
+#define SYS_TASK_BLUETOOTH_STACK_SIZE 10240                                    // BLE and, when it is on instead, WiFi (web server, report, file streaming)
 #define SYS_TASK_FILE_IO_STACK_SIZE 6144                                       // 6KB stack for LittleFS operations (was 4KB, increased for file operations)
 
 // Task Priorities (higher number = higher priority)

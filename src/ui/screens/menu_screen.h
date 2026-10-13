@@ -48,6 +48,9 @@ private:
     lv_obj_t* ble_startup_toggle;
     lv_obj_t* ble_status_label;
     lv_obj_t* ble_timer_label;
+    lv_obj_t* wifi_toggle;
+    lv_obj_t* wifi_status_label;
+    lv_obj_t* wifi_timer_label;
     lv_obj_t* logging_toggle;
     lv_obj_t* brightness_normal_slider;
     lv_obj_t* brightness_screensaver_slider;
@@ -117,6 +120,7 @@ public:
     void hide();
     void update_info(const WeightSensor* weight_sensor, unsigned long uptime_ms, size_t free_heap);
     void update_diagnostics(WeightSensor* weight_sensor);
+    // Bluetooth and WiFi sections of the BT / WiFi page
     void update_ble_status();
     void refresh_statistics(bool show_overlay = true);
     void update_brightness_labels(int normal_percent = -1, int screensaver_percent = -1); // Use negative value to leave unchanged
@@ -141,6 +145,7 @@ public:
     bool is_scale_page_active() const { return scale_active; }
     lv_obj_t* get_ble_toggle() const { return ble_toggle; }
     lv_obj_t* get_ble_startup_toggle() const { return ble_startup_toggle; }
+    lv_obj_t* get_wifi_toggle() const { return wifi_toggle; }
     lv_obj_t* get_logging_toggle() const { return logging_toggle; }
     lv_obj_t* get_refresh_stats_button() const { return refresh_stats_button; }
     lv_obj_t* get_diag_reset_button() const { return diag_reset_button; }

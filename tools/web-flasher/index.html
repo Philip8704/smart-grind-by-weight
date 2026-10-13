@@ -41,6 +41,7 @@
         
         .tabs {
             display: flex;
+            flex-wrap: wrap;  /* Four tabs do not fit side by side on a phone */
             margin-bottom: 20px;
             background: #f7fafc;
             border-radius: 8px;
@@ -48,7 +49,7 @@
         }
         
         .tab {
-            flex: 1;
+            flex: 1 1 auto;
             padding: 12px;
             text-align: center;
             background: transparent;
@@ -92,7 +93,7 @@
             color: #4a5568;
         }
         
-        input[type="text"], input[type="file"], select {
+        input[type="text"], input[type="password"], input[type="file"], select {
             width: 100%;
             padding: 12px;
             border: 2px solid #e2e8f0;
@@ -233,6 +234,7 @@
             <button class="tab active" onclick="showTab('ota')">OTA Update (BLE)</button>
             <button class="tab" onclick="showTab('initial')">Initial Setup (USB)</button>
             <button class="tab" onclick="showTab('diagnostics')">Diagnostics</button>
+            <button class="tab" onclick="showTab('wifi')">WiFi</button>
         </div>
         
         <!-- Initial Setup Tab -->
@@ -335,6 +337,34 @@
 
                 <div id="diagnosticsStatus"></div>
             </div>
+        </div>
+
+        <!-- WiFi Setup Tab -->
+        <div id="wifiTab" class="tab-content">
+            <div class="section">
+                <h3>📡 WiFi Setup</h3>
+                <p>Send your WiFi network name and password to the grinder over Bluetooth. They are stored on the grinder; you only need to do this again if they change.</p>
+                <p>Then on the grinder: <b>Menu → BT / WiFi → WiFi on</b> (Bluetooth switches off), and open <b>http://grinder.local</b> or the address shown on the grinder - for updates, the diagnostic report, saved logs and a live log. WiFi switches itself off after 30 minutes without use.</p>
+            </div>
+
+            <div class="form-group">
+                <label for="wifiSsid">Network name (SSID)</label>
+                <input type="text" id="wifiSsid" maxlength="32" autocomplete="off" spellcheck="false">
+            </div>
+
+            <div class="form-group">
+                <label for="wifiPassword">Password</label>
+                <input type="password" id="wifiPassword" maxlength="63" autocomplete="off">
+                <label style="font-weight: normal; display: flex; align-items: center; margin-top: 8px;">
+                    <input type="checkbox" onchange="document.getElementById('wifiPassword').type = this.checked ? 'text' : 'password'" style="margin-right: 8px;">
+                    Show password
+                </label>
+            </div>
+
+            <button class="btn" id="sendWifiBtn" onclick="sendWifiCredentials()">Connect & Send to Grinder</button>
+            <p style="margin-top: 10px; font-size: 13px; color: #64748b;">The grinder's Bluetooth has to be on (Menu → BT / WiFi). Only a 2.4 GHz network works.</p>
+
+            <div id="wifiStatus"></div>
         </div>
     </div>
 

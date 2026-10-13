@@ -51,6 +51,10 @@
 #define DEBUG_BOOT_LOG_WINDOW_MS 10000
 #define DEBUG_BOOT_LOG_BYTES 6144
 
+// Live tap (PSRAM): the newest log text for network viewers - the WiFi log port and the
+// web page's live log. Every line goes in; each viewer reads at its own position.
+#define DEBUG_LIVE_BYTES 16384
+
 // Rolling crash ring (RTC slow memory, survives a panic reset but not power loss).
 // Kept modest because this region is only ~8KB in total and is shared with the system.
 #define DEBUG_CRASH_LOG_BYTES 3072
@@ -93,3 +97,12 @@ const char* debug_log_reset_reason_name();
 size_t debug_log_copy_previous_boot_tail(char* out, size_t out_size);
 uint32_t debug_log_persist_segment_count();
 uint32_t debug_log_persist_dropped_bytes();
+
+// --- Live tap ---
+// Position just past the newest byte logged; a viewer that starts here sees only what
+// comes after. Positions are byte counts since boot and wrap harmlessly.
+uint32_t debug_log_live_position();
+// Copies text logged after *position into out (not NUL-terminated), advances *position
+// and returns the bytes copied. A viewer that fell more than DEBUG_LIVE_BYTES behind is
+// moved up to the oldest byte still held, and *skipped says how much it missed.
+size_t debug_log_live_read(uint32_t* position, char* out, size_t out_size, uint32_t* skipped);

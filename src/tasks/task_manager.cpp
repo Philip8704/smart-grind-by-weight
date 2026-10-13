@@ -7,6 +7,7 @@
 #include "../controllers/profile_controller.h"
 #include "../controllers/grind_controller.h"
 #include "../bluetooth/manager.h"
+#include "../network/wifi_manager.h"
 #include "../ui/ui_manager.h"
 #include "../hardware/WeightSensor.h"
 #include "../hardware/grinder.h"
@@ -467,10 +468,11 @@ void TaskManager::bluetooth_task_impl() {
     while (true) {
         uint32_t start_time = millis();
         
-        // Use existing bluetooth manager handle method
+        // Both radios are serviced here; only one is on at a time
         if (bluetooth_manager) {
             bluetooth_manager->handle();
         }
+        wifi_manager.handle();
         
         uint32_t end_time = millis();
         record_task_timing(4, start_time, end_time); // Task index 4 for bluetooth

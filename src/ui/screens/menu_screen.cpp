@@ -1,4 +1,5 @@
 #include "menu_screen.h"
+#include "../../network/wifi_manager.h"
 #include <Arduino.h>
 #include <algorithm>
 #include "../../config/constants.h"
@@ -126,7 +127,7 @@ void MenuScreen::create_menu_ui() {
     info_page = lv_menu_page_create(menu, "Info");
     create_info_page(info_page);
 
-    bluetooth_page = lv_menu_page_create(menu, "Bluetooth");
+    bluetooth_page = lv_menu_page_create(menu, "BT / WiFi");
     create_bluetooth_page(bluetooth_page);
 
     display_page = lv_menu_page_create(menu, "Display");
@@ -188,7 +189,7 @@ void MenuScreen::create_menu_ui() {
     }
 
     create_separator(main_page, "Settings");
-    lv_obj_t* bluetooth_item = create_menu_item(main_page, "Bluetooth");
+    lv_obj_t* bluetooth_item = create_menu_item(main_page, "BT / WiFi");
     lv_menu_set_load_page_event(menu, bluetooth_item, bluetooth_page);
 
     lv_obj_t* display_item = create_menu_item(main_page, "Display");
@@ -279,6 +280,8 @@ void MenuScreen::create_bluetooth_page(lv_obj_t* parent) {
     lv_obj_set_scroll_dir(parent, LV_DIR_VER);
     lv_obj_set_scrollbar_mode(parent, LV_SCROLLBAR_MODE_AUTO);
 
+    // One radio at a time: switching either on switches the other off
+    create_separator(parent, "Bluetooth");
     create_toggle_row(parent, "Enabled", &ble_toggle);
     create_toggle_row(parent, "Startup", &ble_startup_toggle);
 
@@ -296,6 +299,24 @@ void MenuScreen::create_bluetooth_page(lv_obj_t* parent) {
     lv_obj_set_style_text_color(ble_timer_label, lv_color_hex(THEME_COLOR_WARNING), 0);
     lv_obj_clear_flag(ble_timer_label, LV_OBJ_FLAG_SCROLLABLE);
 
+    create_separator(parent, "WiFi");
+    create_toggle_row(parent, "Enabled", &wifi_toggle);
+
+    wifi_status_label = lv_label_create(parent);
+    lv_label_set_text(wifi_status_label, "");
+    lv_obj_set_width(wifi_status_label, LV_PCT(100));
+    lv_label_set_long_mode(wifi_status_label, LV_LABEL_LONG_WRAP);
+    lv_obj_set_style_text_align(wifi_status_label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_font(wifi_status_label, &lv_font_montserrat_24, 0);
+    lv_obj_set_style_text_color(wifi_status_label, lv_color_hex(THEME_COLOR_TEXT_SECONDARY), 0);
+    lv_obj_clear_flag(wifi_status_label, LV_OBJ_FLAG_SCROLLABLE);
+
+    wifi_timer_label = lv_label_create(parent);
+    lv_label_set_text(wifi_timer_label, "");
+    lv_obj_set_style_text_font(wifi_timer_label, &lv_font_montserrat_24, 0);
+    lv_obj_set_style_text_color(wifi_timer_label, lv_color_hex(THEME_COLOR_WARNING), 0);
+    lv_obj_clear_flag(wifi_timer_label, LV_OBJ_FLAG_SCROLLABLE);
+
     // Register events for the toggles (done here because widgets are created lazily)
     using ET = EventBridgeLVGL::EventType;
     if (ble_toggle) {
@@ -305,6 +326,10 @@ void MenuScreen::create_bluetooth_page(lv_obj_t* parent) {
     if (ble_startup_toggle) {
         lv_obj_add_event_cb(ble_startup_toggle, EventBridgeLVGL::dispatch_event, LV_EVENT_VALUE_CHANGED,
                            reinterpret_cast<void*>(static_cast<intptr_t>(ET::BLE_STARTUP_TOGGLE)));
+    }
+    if (wifi_toggle) {
+        lv_obj_add_event_cb(wifi_toggle, EventBridgeLVGL::dispatch_event, LV_EVENT_VALUE_CHANGED,
+                           reinterpret_cast<void*>(static_cast<intptr_t>(ET::WIFI_TOGGLE)));
     }
 }
 
@@ -791,6 +816,47 @@ void MenuScreen::update_ble_status() {
         // When nothing to display hide the status labels
         lv_obj_add_flag(ble_status_label, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(ble_timer_label, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    // WiFi: the toggle follows what the manager reports, so a refused start (no network
+    // stored) or the auto-off flips it back by itself
+    if (!wifi_toggle || !wifi_status_label || !wifi_timer_label) return;
+    if (wifi_manager.is_switched_on()) {
+        lv_obj_add_state(wifi_toggle, LV_STATE_CHECKED);
+    } else {
+        lv_obj_clear_state(wifi_toggle, LV_STATE_CHECKED);
+    }
+
+    char ssid[WIFI_SSID_MAX_LEN + 1];
+    char ip[16];
+    char text[96];
+    wifi_manager.get_ssid(ssid, sizeof(ssid));
+    wifi_manager.get_ip(ip, sizeof(ip));
+    switch (wifi_manager.get_state()) {
+        case WifiManager::State::CONNECTED:
+            snprintf(text, sizeof(text), "%s\n%s.local\n%s", ip, WIFI_HOSTNAME, ssid);
+            break;
+        case WifiManager::State::CONNECTING:
+            snprintf(text, sizeof(text), wifi_manager.is_connect_slow() ? "Can't reach\n%s" : "Joining\n%s", ssid);
+            break;
+        default:
+            if (wifi_manager.has_credentials()) {
+                snprintf(text, sizeof(text), "Network: %s", ssid);
+            } else {
+                snprintf(text, sizeof(text), "Not set up - enter it in the web flasher");
+            }
+            break;
+    }
+    lv_label_set_text(wifi_status_label, text);
+
+    if (wifi_manager.is_enabled()) {
+        char timer_text[48];
+        snprintf(timer_text, sizeof(timer_text), "Auto-disable in: %lu min",
+                 wifi_manager.get_timeout_remaining_ms() / (60 * 1000));
+        lv_label_set_text(wifi_timer_label, timer_text);
+        lv_obj_clear_flag(wifi_timer_label, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(wifi_timer_label, LV_OBJ_FLAG_HIDDEN);
     }
 }
 

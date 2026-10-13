@@ -9,6 +9,7 @@
 #include <cstdint>
 #include "../../config/constants.h"
 #include "../../controllers/grind_controller.h"
+#include "../../network/wifi_manager.h"
 #include "../../controllers/grind_mode_traits.h"
 #include "../../logging/grind_logging.h"
 #include "../../system/diagnostics_controller.h"
@@ -45,6 +46,7 @@ void MenuUIController::register_events() {
 
     EventBridgeLVGL::register_handler(ET::BLE_TOGGLE, [this](lv_event_t*) { handle_ble_toggle(); });
     EventBridgeLVGL::register_handler(ET::BLE_STARTUP_TOGGLE, [this](lv_event_t*) { handle_ble_startup_toggle(); });
+    EventBridgeLVGL::register_handler(ET::WIFI_TOGGLE, [this](lv_event_t*) { handle_wifi_toggle(); });
     EventBridgeLVGL::register_handler(ET::LOGGING_TOGGLE, [this](lv_event_t*) { handle_logging_toggle(); });
 
     EventBridgeLVGL::register_handler(ET::GRIND_MODE_SWIPE_TOGGLE, [this](lv_event_t*) { handle_grind_mode_swipe_toggle(); });
@@ -401,6 +403,10 @@ void MenuUIController::handle_ble_toggle() {
         ui_manager_->menu_screen.update_ble_status();
     };
 
+    // One radio at a time. WiFi stops on the radio task within a cycle; Bluetooth's own
+    // start takes far longer than that.
+    wifi_manager.request_disable();
+
     auto operation = [ble]() {
         ble->enable();
         LOG_DEBUG_PRINTLN("Bluetooth enabled by user (30 minute timeout)");
@@ -408,6 +414,40 @@ void MenuUIController::handle_ble_toggle() {
 
     auto& overlay = BlockingOperationOverlay::getInstance();
     overlay.show_and_execute(BlockingOperation::BLE_ENABLING, operation, completion);
+}
+
+void MenuUIController::handle_wifi_toggle() {
+    if (!ui_manager_) return;
+
+    if (wifi_manager.is_switched_on()) {
+        wifi_manager.request_disable();
+        LOG_DEBUG_PRINTLN("WiFi disabled by user");
+        return;  // The page catches up on its next refresh
+    }
+
+    if (!wifi_manager.has_credentials()) {
+        // Leave the toggle off and say how to set it up, rather than start and fail
+        if (auto* toggle = ui_manager_->menu_screen.get_wifi_toggle()) {
+            lv_obj_clear_state(toggle, LV_STATE_CHECKED);
+        }
+        ui_manager_->show_confirmation(
+            "WIFI",
+            "No WiFi network set up yet."
+            "\n\n"
+            "Open the web flasher, go to the WiFi tab and send your network name and password over Bluetooth.",
+            "OK", lv_color_hex(THEME_COLOR_ACCENT),
+            [this]() { return_to_menu(); },
+            "CLOSE", [this]() { return_to_menu(); });
+        return;
+    }
+
+    // One radio at a time: Bluetooth goes off first, so the two never share the antenna
+    if (ui_manager_->bluetooth_manager && ui_manager_->bluetooth_manager->is_enabled()) {
+        ui_manager_->bluetooth_manager->disable();
+    }
+    wifi_manager.request_enable();
+    LOG_DEBUG_PRINTLN("WiFi enabled by user (30 minute timeout)");
+    ui_manager_->menu_screen.update_ble_status();
 }
 
 void MenuUIController::handle_ble_startup_toggle() {

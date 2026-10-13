@@ -9,6 +9,7 @@
 #include "ui/ui_manager.h"
 #include "config/constants.h"
 #include "bluetooth/manager.h"
+#include "network/wifi_manager.h"
 #include "tasks/task_manager.h"
 #include "tasks/weight_sampling_task.h"
 #include "tasks/grind_control_task.h"
@@ -81,6 +82,7 @@ void setup() {
     hardware_manager.set_grind_controller(&grind_controller);
     
     bluetooth_manager.init(hardware_manager.get_preferences());
+    wifi_manager.init();
     
     // Check for OTA failure to determine initial state
     String failed_ota_build = bluetooth_manager.check_ota_failure_after_boot();
@@ -120,9 +122,15 @@ void setup() {
         }
     });
     
-    // Enable BLE by default during bootup with 2-minute timeout
-    // (Previously disabled by default for security, now enabled for user convenience)
-    bluetooth_manager.enable_during_bootup();
+    // Bluetooth starts for a few minutes at boot - unless this boot follows an update
+    // uploaded over WiFi, in which case WiFi comes back instead so the browser that sent
+    // it can confirm the new build. One radio at a time either way.
+    if (wifi_manager.take_resume_after_update()) {
+        LOG_BLE("[STARTUP] Restarted after a WiFi update - WiFi on, Bluetooth off\n");
+        wifi_manager.request_enable();
+    } else {
+        bluetooth_manager.enable_during_bootup();
+    }
     
     // Initialize individual task modules BEFORE TaskManager creates FreeRTOS tasks
     // This ensures all task dependencies are ready before tasks start running
@@ -217,13 +225,14 @@ void loop() {
         bool is_grinding = grind_controller.is_active();
         const char* ble_state = bluetooth_manager.is_enabled() ? 
                                (bluetooth_manager.is_connected() ? "CONN" : "ADV") : "OFF";
+        const char* wifi_state = wifi_manager.is_connected() ? "CONN" : (wifi_manager.is_enabled() ? "JOIN" : "OFF");
         const char* grinder_state = is_grinding ? "ACTIVE" : "IDLE";
         const char* tasks_status = task_manager.are_tasks_healthy() ? "HEALTHY" : "ERROR";
         size_t free_heap_kb = ESP.getFreeHeap() / 1024;
         
-        LOG_BLE("[%lums MAIN_LOOP_HEARTBEAT] Cycles: %lu/10s | Avg: %lums (%lu-%lums) | Tasks: %s | BLE: %s | Grinder: %s | Mem: %zuKB | Build: #%d\n",
+        LOG_BLE("[%lums MAIN_LOOP_HEARTBEAT] Cycles: %lu/10s | Avg: %lums (%lu-%lums) | Tasks: %s | BLE: %s | WiFi: %s | Grinder: %s | Mem: %zuKB | Build: #%d\n",
                millis(), core1_cycle_count_10s, avg_cycle_time, core1_cycle_time_min_ms, core1_cycle_time_max_ms,
-               tasks_status, ble_state, grinder_state, free_heap_kb, BUILD_NUMBER);
+               tasks_status, ble_state, wifi_state, grinder_state, free_heap_kb, BUILD_NUMBER);
         
         // Reset Core 1 metrics for next interval
         core1_cycle_count_10s = 0;

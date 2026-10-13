@@ -83,6 +83,7 @@ private:
     BLECharacteristic* sysinfo_hardware_characteristic;
     BLECharacteristic* sysinfo_sessions_characteristic;
     BLECharacteristic* sysinfo_diagnostics_characteristic;
+    BLECharacteristic* sysinfo_wifi_config_characteristic;
     
     // Connection state
     // Written by the BLE host task, read by the Bluetooth task - see manager.cpp
@@ -150,6 +151,7 @@ private:
     void process_sessions_info_updates();
     void mark_sessions_info_dirty();
     void generate_diagnostic_report();
+    void handle_wifi_config(BLECharacteristic* characteristic);
     
 public:
     BluetoothManager();
@@ -245,4 +247,13 @@ public:
 
     // Drain a status message queued from BLE task; called by UI task
     bool dequeue_ui_status(char* out, size_t out_len);
+
+    // Shared with WiFi updates, which use the same delta path: one handler means one
+    // "update in progress" flag for the UI, the grind controller and both radios
+    OTAHandler& get_ota_handler() { return ota_handler; }
+    void report_ota_status(const char* status) { update_ui_status(status); }
+
+    // Builds the diagnostic report and hands it out piece by piece. Bluetooth sends the
+    // pieces as notifications, WiFi writes them into an HTTP response.
+    void write_diagnostic_report(const std::function<void(const char*)>& send_chunk);
 };

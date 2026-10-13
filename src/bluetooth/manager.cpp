@@ -19,6 +19,7 @@
 #include "../hardware/hardware_manager.h"
 #include "../hardware/WeightSensor.h"
 #include "../controllers/grind_controller.h"
+#include "../network/wifi_manager.h"
 
 BluetoothManager::BluetoothManager()
     : ble_server(nullptr)
@@ -40,6 +41,7 @@ BluetoothManager::BluetoothManager()
     , sysinfo_hardware_characteristic(nullptr)
     , sysinfo_sessions_characteristic(nullptr)
     , sysinfo_diagnostics_characteristic(nullptr)
+    , sysinfo_wifi_config_characteristic(nullptr)
     , device_connected(false)
     , ble_enabled(false), stack_ready(false), debug_stream_active(false)
     , enable_time(0)
@@ -260,6 +262,14 @@ void BluetoothManager::build_gatt_server() {
         BLECharacteristic::PROPERTY_WRITE
     );
     sysinfo_diagnostics_characteristic->setCallbacks(this);
+    delay(BLE_INIT_CHARACTERISTIC_DELAY_MS);
+
+    // WiFi network name and password, written by the web flasher
+    sysinfo_wifi_config_characteristic = sysinfo_service->createCharacteristic(
+        BLE_SYSINFO_WIFI_CONFIG_CHAR_UUID,
+        BLECharacteristic::PROPERTY_WRITE
+    );
+    sysinfo_wifi_config_characteristic->setCallbacks(this);
     delay(BLE_INIT_CHARACTERISTIC_DELAY_MS);
 
     ota_service->start();
@@ -902,9 +912,44 @@ void BluetoothManager::onWrite(BLECharacteristic* characteristic) {
     } else if (characteristic == sysinfo_diagnostics_characteristic) {
         LOG_BLE("  -> QUEUING DIAGNOSTIC REPORT REQUEST\n");
         diagnostic_report_pending = true; // Defer heavy work to bluetooth task context
+    } else if (characteristic == sysinfo_wifi_config_characteristic) {
+        handle_wifi_config(characteristic);
     } else {
         LOG_BLE("  -> UNKNOWN characteristic!\n");
     }
+}
+
+void BluetoothManager::handle_wifi_config(BLECharacteristic* characteristic) {
+    // [ssid length][ssid][password length][password], UTF-8, no terminators. Handed to
+    // the WiFi manager, which stores it from the radio task rather than this callback.
+    String value = characteristic->getValue();
+    const size_t length = value.length();
+    const uint8_t* data = reinterpret_cast<const uint8_t*>(value.c_str());
+    if (length < 2) {
+        LOG_BLE("[WIFI] Network setting rejected - too short\n");
+        return;
+    }
+    size_t ssid_length = data[0];
+    if (ssid_length == 0 || ssid_length > WIFI_SSID_MAX_LEN || 1 + ssid_length >= length) {
+        LOG_BLE("[WIFI] Network setting rejected - bad network name\n");
+        return;
+    }
+    size_t password_length = data[1 + ssid_length];
+    if (password_length > WIFI_PASSWORD_MAX_LEN || 2 + ssid_length + password_length != length) {
+        LOG_BLE("[WIFI] Network setting rejected - bad password length\n");
+        return;
+    }
+    char ssid[WIFI_SSID_MAX_LEN + 1];
+    char password[WIFI_PASSWORD_MAX_LEN + 1];
+    memcpy(ssid, data + 1, ssid_length);
+    ssid[ssid_length] = '\0';
+    memcpy(password, data + 2 + ssid_length, password_length);
+    password[password_length] = '\0';
+    wifi_manager.request_set_credentials(ssid, password);
+    memset(password, 0, sizeof(password));
+    // The attribute keeps its last value in the stack's memory; do not leave the password there
+    characteristic->setValue(reinterpret_cast<const uint8_t*>(""), 0);
+    LOG_BLE("[WIFI] Network '%s' received over Bluetooth\n", ssid);
 }
 
 void BluetoothManager::onRead(BLECharacteristic* characteristic) {
@@ -1131,14 +1176,6 @@ void BluetoothManager::generate_diagnostic_report() {
         return;
     }
 
-    LOG_BLE("DEBUG: debug_tx_characteristic is valid, starting report generation\n");
-
-    // Access global instances
-    extern HardwareManager hardware_manager;
-    extern GrindController grind_controller;
-
-    char buf[512];
-
     // Helper lambda to send chunk and flush in flow-controlled slices
     auto send_chunk = [this](const char* chunk) {
         if (!debug_tx_characteristic || !chunk) return;
@@ -1161,6 +1198,17 @@ void BluetoothManager::generate_diagnostic_report() {
             offset += part_len;
         }
     };
+
+    write_diagnostic_report(send_chunk);
+    LOG_BLE("=== DIAGNOSTICS: Report generation COMPLETED ===\n");
+}
+
+void BluetoothManager::write_diagnostic_report(const std::function<void(const char*)>& send_chunk) {
+    // Access global instances
+    extern HardwareManager hardware_manager;
+    extern GrindController grind_controller;
+
+    char buf[512];
 
     // Section 1: Header & Firmware Info
     unsigned long uptime_ms = millis();
@@ -1472,6 +1520,28 @@ void BluetoothManager::generate_diagnostic_report() {
             send_chunk(buf);
         }
         snprintf(buf, sizeof(buf), "\n");
+        send_chunk(buf);
+    }
+
+    // Section 1g: WiFi - whether the grinder is on the network, and where
+    {
+        char ssid[WIFI_SSID_MAX_LEN + 1];
+        char ip[16];
+        wifi_manager.get_ssid(ssid, sizeof(ssid));
+        wifi_manager.get_ip(ip, sizeof(ip));
+        const char* state = "off";
+        switch (wifi_manager.get_state()) {
+            case WifiManager::State::CONNECTED: state = "connected"; break;
+            case WifiManager::State::CONNECTING: state = wifi_manager.is_connect_slow() ? "cannot connect, retrying" : "connecting"; break;
+            case WifiManager::State::NOT_CONFIGURED: state = "no network stored"; break;
+            default: break;
+        }
+        snprintf(buf, sizeof(buf),
+                 "[WIFI]\n"
+                 "  State: %s%s%s\n"
+                 "  Network: %s\n"
+                 "\n",
+                 state, ip[0] ? " as " : "", ip, ssid[0] ? ssid : "(none stored)");
         send_chunk(buf);
     }
 
@@ -1861,7 +1931,13 @@ void BluetoothManager::generate_diagnostic_report() {
                     }
                     case NVS_TYPE_STR: {
                         String val = pref.getString(info.key, "");
-                        snprintf(buf, sizeof(buf), "    %s: \"%s\" (string)\n", info.key, val.c_str());
+                        // The report is meant to be shared; the WiFi password must never be in it
+                        if (strcmp(info.namespace_name, WIFI_PREFS_NAMESPACE) == 0 && strcmp(info.key, "pass") == 0) {
+                            snprintf(buf, sizeof(buf), "    %s: <hidden, %u characters> (string)\n",
+                                     info.key, (unsigned)val.length());
+                        } else {
+                            snprintf(buf, sizeof(buf), "    %s: \"%s\" (string)\n", info.key, val.c_str());
+                        }
                         break;
                     }
                     case NVS_TYPE_BLOB: {
@@ -2238,8 +2314,6 @@ void BluetoothManager::generate_diagnostic_report() {
     }
 
     // Final marker
-    LOG_BLE("DEBUG: Sending final marker\n");
     snprintf(buf, sizeof(buf), "=== END OF REPORT ===\n");
     send_chunk(buf);
-    LOG_BLE("=== DIAGNOSTICS: Report generation COMPLETED ===\n");
 }

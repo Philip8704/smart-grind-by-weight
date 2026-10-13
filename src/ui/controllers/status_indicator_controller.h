@@ -18,6 +18,7 @@ private:
     void update_warning_icon();
 
     UIManager* ui_manager_;
-    lv_obj_t* ble_status_icon_ = nullptr;
+    lv_obj_t* ble_status_icon_ = nullptr;  // Bluetooth or WiFi, whichever is on
+    bool showing_wifi_ = false;
     lv_obj_t* warning_icon_ = nullptr;
 };

@@ -4,6 +4,7 @@
 #include "../../controllers/grind_mode.h"
 #include "../../system/diagnostics_controller.h"
 #include "../ui_manager.h"
+#include "../../network/wifi_manager.h"
 
 StatusIndicatorController::StatusIndicatorController(UIManager* manager)
     : ui_manager_(manager) {}
@@ -49,8 +50,23 @@ void StatusIndicatorController::update_ble_status_icon() {
         return;
     }
 
+    // One slot for both radios, since only one is on at a time. Green = connected.
     auto* bluetooth = ui_manager_->bluetooth_manager;
-    if (bluetooth && bluetooth->is_enabled()) {
+    if (wifi_manager.is_enabled()) {
+        if (!showing_wifi_) {
+            lv_label_set_text(ble_status_icon_, LV_SYMBOL_WIFI);
+            showing_wifi_ = true;
+        }
+        lv_obj_clear_flag(ble_status_icon_, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_style_text_color(ble_status_icon_,
+                                    wifi_manager.is_connected() ? lv_color_hex(THEME_COLOR_SUCCESS)
+                                                                : lv_color_hex(THEME_COLOR_ACCENT),
+                                    0);
+    } else if (bluetooth && bluetooth->is_enabled()) {
+        if (showing_wifi_) {
+            lv_label_set_text(ble_status_icon_, LV_SYMBOL_BLUETOOTH);
+            showing_wifi_ = false;
+        }
         lv_obj_clear_flag(ble_status_icon_, LV_OBJ_FLAG_HIDDEN);
         lv_obj_set_style_text_color(ble_status_icon_,
                                     bluetooth->is_connected() ? lv_color_hex(THEME_COLOR_SUCCESS)

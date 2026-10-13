@@ -18,6 +18,7 @@ const BLE_DEBUG_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 // System Info Service UUIDs
 const BLE_SYSINFO_SERVICE_UUID = '77889900-aabb-ccdd-eeff-112233445566';
 const BLE_SYSINFO_DIAGNOSTICS_CHAR_UUID = '22334455-ff00-1111-2222-334455667788';
+const BLE_SYSINFO_WIFI_CONFIG_CHAR_UUID = '33445566-0011-2233-4455-667788990011';
 
 // Commands and status codes (from your Python implementation)
 const BLE_OTA_CMD_START = 0x01;
@@ -739,6 +740,70 @@ function downloadDiagnosticReport() {
         }, 3000);
     } catch (error) {
         statusDiv.innerHTML = '<div class="status error">Failed to download report.</div>';
+    }
+}
+
+// ========================================================================
+// WIFI SETUP
+// ========================================================================
+
+// Sends the network name and password as [ssid length][ssid][password length][password],
+// UTF-8. The grinder stores them; WiFi itself is switched on from its menu.
+async function sendWifiCredentials() {
+    const btn = document.getElementById('sendWifiBtn');
+    const statusDiv = document.getElementById('wifiStatus');
+    const ssid = document.getElementById('wifiSsid').value.trim();
+    const password = document.getElementById('wifiPassword').value;
+    const show = (text, type) => { statusDiv.innerHTML = `<div class="status ${type}">${text}</div>`; };
+
+    const encoder = new TextEncoder();
+    const ssidBytes = encoder.encode(ssid);
+    const passwordBytes = encoder.encode(password);
+    if (ssidBytes.length === 0 || ssidBytes.length > 32) {
+        show('Enter the network name (up to 32 characters).', 'error');
+        return;
+    }
+    if (passwordBytes.length > 63) {
+        show('The password can be at most 63 characters.', 'error');
+        return;
+    }
+    if (!('bluetooth' in navigator)) {
+        show('This browser has no Web Bluetooth - use Chrome or Edge.', 'error');
+        return;
+    }
+
+    const payload = new Uint8Array(2 + ssidBytes.length + passwordBytes.length);
+    payload[0] = ssidBytes.length;
+    payload.set(ssidBytes, 1);
+    payload[1 + ssidBytes.length] = passwordBytes.length;
+    payload.set(passwordBytes, 2 + ssidBytes.length);
+
+    let wifiDevice = null;
+    try {
+        btn.disabled = true;
+        show('Connecting to the grinder...', 'info');
+        wifiDevice = await navigator.bluetooth.requestDevice({
+            filters: [{ name: DEVICE_NAME }],
+            optionalServices: [BLE_SYSINFO_SERVICE_UUID]
+        });
+        const gatt = await wifiDevice.gatt.connect();
+        const sysinfoService = await gatt.getPrimaryService(BLE_SYSINFO_SERVICE_UUID);
+        let wifiChar;
+        try {
+            wifiChar = await sysinfoService.getCharacteristic(BLE_SYSINFO_WIFI_CONFIG_CHAR_UUID);
+        } catch (e) {
+            throw new Error('This grinder firmware has no WiFi yet - update it first');
+        }
+        await wifiChar.writeValue(payload);
+        show(`Sent. The grinder now knows "${ssid}" - switch WiFi on in its menu (BT / WiFi).`, 'success');
+    } catch (error) {
+        console.error('WiFi setup error:', error);
+        show(`Error: ${error.message}`, 'error');
+    } finally {
+        if (wifiDevice && wifiDevice.gatt.connected) {
+            wifiDevice.gatt.disconnect();
+        }
+        btn.disabled = false;
     }
 }
 

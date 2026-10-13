@@ -31,6 +31,11 @@ bool g_boot_marker_pending = true;
 uint32_t g_last_flush_ms = 0;
 uint32_t g_dropped_reported = 0;
 
+// --- Live tap, PSRAM. Written by any task, read by the network viewers.
+char* g_live = nullptr;
+uint32_t g_live_total = 0;              // Bytes ever written; the ring holds the last g_live_filled
+uint32_t g_live_filled = 0;
+
 // --- Boot log, PSRAM, cleared on every boot ---
 char* g_boot_buffer = nullptr;
 size_t g_boot_write = 0;
@@ -275,6 +280,11 @@ void debug_log_init() {
     g_stage = static_cast<char*>(
         heap_caps_malloc_prefer(DEBUG_PERSIST_STAGING_BYTES, 2,
                                 MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, MALLOC_CAP_8BIT));
+
+    // From boot, so a viewer that connects later still sees the last 16KB
+    g_live = static_cast<char*>(
+        heap_caps_malloc_prefer(DEBUG_LIVE_BYTES, 2,
+                                MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT, MALLOC_CAP_8BIT));
 }
 
 void debug_log_printf(const char* format, ...) {
@@ -323,6 +333,15 @@ void debug_log_printf(const char* format, ...) {
         if (persist) {
             stage_append(line, length);
         }
+    }
+
+    if (g_live) {
+        for (size_t i = 0; i < length; i++) {
+            g_live[(g_live_total + i) % DEBUG_LIVE_BYTES] = line[i];
+        }
+        g_live_total += length;
+        g_live_filled = (g_live_filled + length > DEBUG_LIVE_BYTES) ? DEBUG_LIVE_BYTES
+                                                                   : g_live_filled + length;
     }
 
     // Always roll the crash ring - this is the window that matters when it stops
@@ -555,4 +574,37 @@ uint32_t debug_log_persist_dropped_bytes() {
     uint32_t dropped = g_stage_dropped;
     portEXIT_CRITICAL(&g_mux);
     return dropped;
+}
+
+uint32_t debug_log_live_position() {
+    portENTER_CRITICAL(&g_mux);
+    uint32_t total = g_live_total;
+    portEXIT_CRITICAL(&g_mux);
+    return total;
+}
+
+size_t debug_log_live_read(uint32_t* position, char* out, size_t out_size, uint32_t* skipped) {
+    if (skipped) {
+        *skipped = 0;
+    }
+    if (!position || !out || out_size == 0 || !g_live) {
+        return 0;
+    }
+    portENTER_CRITICAL(&g_mux);
+    uint32_t oldest = g_live_total - g_live_filled;
+    uint32_t behind = g_live_total - *position;  // Unsigned: correct across the wrap
+    if (behind > g_live_filled) {
+        if (skipped) {
+            *skipped = behind - g_live_filled;
+        }
+        *position = oldest;
+        behind = g_live_filled;
+    }
+    size_t count = behind < out_size ? behind : out_size;
+    for (size_t i = 0; i < count; i++) {
+        out[i] = g_live[(*position + i) % DEBUG_LIVE_BYTES];
+    }
+    *position += count;
+    portEXIT_CRITICAL(&g_mux);
+    return count;
 }
